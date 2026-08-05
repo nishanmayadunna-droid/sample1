@@ -15,21 +15,20 @@ export default function CartView() {
   // Avoid a hydration mismatch: render nothing until the client cart is read.
   if (!hydrated) {
     return (
-      <p className="py-16 text-center text-zinc-500 dark:text-zinc-400">
-        Loading cart…
-      </p>
+      <p className="py-16 font-mono text-sm text-muted">Loading cart…</p>
     );
   }
 
   if (lines.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-4 py-20 text-center">
-        <p className="text-lg text-zinc-600 dark:text-zinc-300">
-          Your cart is empty.
+      <div className="flex flex-col items-start gap-5 py-16">
+        <p className="display text-3xl">Your cart is empty</p>
+        <p className="max-w-sm text-muted">
+          Nothing packed yet. Start with the field favourites.
         </p>
         <Link
           href="/products"
-          className="rounded-full bg-foreground px-6 py-3 font-medium text-background transition-opacity hover:opacity-90"
+          className="rounded-full bg-blaze px-6 py-3 font-medium text-white transition-transform hover:-translate-y-0.5"
         >
           Browse the shop
         </Link>
@@ -42,21 +41,21 @@ export default function CartView() {
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_20rem]">
-      <ul className="flex flex-col divide-y divide-black/[.08] dark:divide-white/[.12]">
+      <ul className="flex flex-col border-t border-line">
         {lines.map((line) => {
           const product = getProduct(line.id);
           if (!product) return null;
           return (
-            <li key={`${line.id}::${line.size}`} className="flex gap-4 py-5">
+            <li
+              key={`${line.id}::${line.size}`}
+              className="flex gap-4 border-b border-line py-5"
+            >
               <Link
                 href={`/products/${product.id}`}
-                className="shrink-0"
+                className="shrink-0 overflow-hidden rounded-lg border border-line"
                 aria-label={product.name}
               >
-                <ProductImage
-                  product={product}
-                  className="h-24 w-20 rounded-lg"
-                />
+                <ProductImage product={product} className="h-28 w-24" />
               </Link>
               <div className="flex flex-1 flex-col gap-1">
                 <div className="flex justify-between gap-4">
@@ -66,26 +65,26 @@ export default function CartView() {
                   >
                     {product.name}
                   </Link>
-                  <span className="font-medium">
+                  <span className="font-mono text-sm">
                     {formatPrice(product.price * line.quantity)}
                   </span>
                 </div>
-                <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                  Size {line.size} · {formatPrice(product.price)} each
+                <span className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted">
+                  Size {line.size} · {formatPrice(product.price)} ea
                 </span>
-                <div className="mt-auto flex items-center gap-3 pt-2">
-                  <div className="flex items-center rounded-md border border-black/[.15] dark:border-white/[.2]">
+                <div className="mt-auto flex items-center gap-3 pt-3">
+                  <div className="flex items-center rounded-md border border-line">
                     <button
                       type="button"
                       onClick={() =>
                         setQuantity(line.id, line.size, line.quantity - 1)
                       }
-                      className="px-3 py-1 text-lg leading-none hover:bg-black/[.04] dark:hover:bg-white/[.06]"
+                      className="px-3 py-1 text-lg leading-none text-muted hover:text-ink"
                       aria-label="Decrease quantity"
                     >
                       −
                     </button>
-                    <span className="min-w-8 text-center text-sm">
+                    <span className="min-w-8 text-center font-mono text-sm">
                       {line.quantity}
                     </span>
                     <button
@@ -93,7 +92,7 @@ export default function CartView() {
                       onClick={() =>
                         setQuantity(line.id, line.size, line.quantity + 1)
                       }
-                      className="px-3 py-1 text-lg leading-none hover:bg-black/[.04] dark:hover:bg-white/[.06]"
+                      className="px-3 py-1 text-lg leading-none text-muted hover:text-ink"
                       aria-label="Increase quantity"
                     >
                       +
@@ -102,7 +101,7 @@ export default function CartView() {
                   <button
                     type="button"
                     onClick={() => removeItem(line.id, line.size)}
-                    className="text-sm text-zinc-500 underline underline-offset-4 hover:text-red-600 dark:text-zinc-400"
+                    className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted underline-offset-4 hover:text-blaze hover:underline"
                   >
                     Remove
                   </button>
@@ -113,24 +112,24 @@ export default function CartView() {
         })}
       </ul>
 
-      <aside className="h-fit rounded-xl border border-black/[.08] bg-white p-6 dark:border-white/[.12] dark:bg-zinc-950">
-        <h2 className="text-lg font-semibold">Order summary</h2>
-        <dl className="mt-4 flex flex-col gap-2 text-sm">
+      <aside className="h-fit border border-line bg-surface p-6">
+        <h2 className="eyebrow text-muted">Order summary</h2>
+        <dl className="mt-5 flex flex-col gap-2.5 font-mono text-sm">
           <div className="flex justify-between">
-            <dt className="text-zinc-500 dark:text-zinc-400">Subtotal</dt>
+            <dt className="text-muted">Subtotal</dt>
             <dd>{formatPrice(subtotal)}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-zinc-500 dark:text-zinc-400">Shipping</dt>
+            <dt className="text-muted">Shipping</dt>
             <dd>{shipping === 0 ? "Free" : formatPrice(shipping)}</dd>
           </div>
-          <div className="mt-2 flex justify-between border-t border-black/[.08] pt-3 text-base font-semibold dark:border-white/[.12]">
+          <div className="mt-2 flex justify-between border-t border-line pt-3 text-base">
             <dt>Total</dt>
             <dd>{formatPrice(total)}</dd>
           </div>
         </dl>
         {shipping > 0 && (
-          <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="mt-3 font-mono text-[0.7rem] text-muted">
             Add {formatPrice(SHIPPING_THRESHOLD - subtotal)} more for free
             shipping.
           </p>
@@ -140,14 +139,14 @@ export default function CartView() {
           onClick={() =>
             alert("This is a demo store — checkout isn't wired up yet.")
           }
-          className="mt-6 h-12 w-full rounded-full bg-foreground font-medium text-background transition-opacity hover:opacity-90"
+          className="mt-6 w-full rounded-full bg-blaze py-4 font-medium text-white transition-transform hover:-translate-y-0.5"
         >
           Checkout
         </button>
         <button
           type="button"
           onClick={clear}
-          className="mt-2 h-10 w-full rounded-full text-sm text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white"
+          className="mt-2 w-full py-2 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted hover:text-ink"
         >
           Clear cart
         </button>

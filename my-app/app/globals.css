@@ -1,26 +1,123 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* --------------------------------------------------------------------------
+   Northbound — cold expedition-outfitter identity.
+   Frost paper, spruce-black ink, one blaze-orange field signal.
+-------------------------------------------------------------------------- */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  --bg: #e7e7e0;
+  --surface: #f1f1ea;
+  --text: #17241e;
+  --muted: #63675f;
+  --line: rgba(23, 36, 30, 0.16);
+  --accent: #cb4a1c;
+  --panel: #15231d;
+  --panel-ink: #e9e9e2;
+  --panel-muted: #9aa79d;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #0e1512;
+    --surface: #17211c;
+    --text: #e7e7df;
+    --muted: #949a8f;
+    --line: rgba(231, 231, 223, 0.16);
+    --accent: #cb4a1c;
+    --panel: #17211c;
+    --panel-ink: #e7e7df;
+    --panel-muted: #949a8f;
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-blaze: var(--accent);
+  --color-panel: var(--panel);
+  --color-panelink: var(--panel-ink);
+  --color-panelmuted: var(--panel-muted);
+  --font-display: var(--font-anton);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Display face: condensed poster grotesque, always set in caps. */
+.display {
+  font-family: var(--font-anton), ui-sans-serif, sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.005em;
+  line-height: 0.92;
+}
+
+/* Utility voice: monospace, tracked-out, uppercase — the spec/label register. */
+.eyebrow {
+  display: block;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.7rem;
+}
+
+/* Signature: a ruler-tick "measure" rule. Ticks hang from a baseline and take
+   their color from currentColor, so it reads on both frost and spruce panels. */
+.measure {
+  position: relative;
+  height: 9px;
+}
+.measure::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-top: 1px solid currentColor;
+  background-image: repeating-linear-gradient(
+    90deg,
+    currentColor 0 1px,
+    transparent 1px 9px
+  );
+  -webkit-mask-image: linear-gradient(180deg, #000 0 62%, transparent 62%);
+  mask-image: linear-gradient(180deg, #000 0 62%, transparent 62%);
+  opacity: 0.28;
+}
+
+/* Staggered load reveal for the hero. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.55em);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise {
+  animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+  * {
+    scroll-behavior: auto !important;
+  }
 }

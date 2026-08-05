@@ -5,24 +5,25 @@ import ProductImage from "./ProductImage";
 
 export default function ProductCard({ product }: { product: Product }) {
   return (
-    <Link
-      href={`/products/${product.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-black/[.08] bg-white transition-shadow hover:shadow-lg dark:border-white/[.12] dark:bg-zinc-950"
-    >
-      <ProductImage
-        product={product}
-        className="aspect-[4/5] w-full transition-transform duration-300 group-hover:scale-[1.03]"
-      />
-      <div className="flex flex-1 flex-col gap-1 p-4">
-        <span className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-          {product.category}
+    <Link href={`/products/${product.id}`} className="group flex flex-col">
+      <div className="overflow-hidden rounded-[10px] border border-line bg-surface">
+        <ProductImage
+          product={product}
+          className="aspect-[4/5] w-full transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+        />
+      </div>
+      <div className="flex flex-1 flex-col gap-1.5 pt-3">
+        <span className="font-mono text-[0.62rem] uppercase tracking-[0.16em] text-muted">
+          {product.spec.construction} · {product.spec.origin}
         </span>
-        <h3 className="font-medium text-zinc-900 dark:text-zinc-50">
-          {product.name}
-        </h3>
-        <span className="mt-auto pt-2 font-semibold text-zinc-900 dark:text-zinc-100">
-          {formatPrice(product.price)}
-        </span>
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="font-medium leading-snug decoration-blaze decoration-2 underline-offset-4 group-hover:underline">
+            {product.name}
+          </h3>
+          <span className="shrink-0 font-mono text-sm">
+            {formatPrice(product.price)}
+          </span>
+        </div>
       </div>
     </Link>
   );

@@ -43,55 +43,73 @@ export default async function ProductPage({
     .filter((p) => p.id !== product.id)
     .slice(0, 4);
 
+  const specRows: [string, string][] = [
+    ["Material", product.spec.material],
+    ["Construction", product.spec.construction],
+    ["Origin", product.spec.origin],
+  ];
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-      <nav className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
-        <Link href="/products" className="hover:underline">
+      <nav className="mb-8 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted">
+        <Link href="/products" className="hover:text-ink">
           Shop
         </Link>{" "}
-        /{" "}
+        <span className="text-blaze">/</span>{" "}
         <Link
           href={`/products?category=${encodeURIComponent(product.category)}`}
-          className="hover:underline"
+          className="hover:text-ink"
         >
           {product.category}
         </Link>{" "}
-        / <span className="text-zinc-700 dark:text-zinc-200">{product.name}</span>
+        <span className="text-blaze">/</span>{" "}
+        <span className="text-ink">{product.name}</span>
       </nav>
 
-      <div className="grid gap-8 md:grid-cols-2 md:gap-12">
-        <ProductImage
-          product={product}
-          className="aspect-[4/5] w-full rounded-2xl"
-        />
+      <div className="grid gap-10 md:grid-cols-2 md:gap-12">
+        <div className="overflow-hidden rounded-2xl border border-line md:sticky md:top-24 md:self-start">
+          <ProductImage product={product} className="aspect-[4/5] w-full" />
+        </div>
 
-        <div className="flex flex-col gap-6">
-          <div>
-            <span className="text-sm uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              {product.category}
-            </span>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-              {product.name}
-            </h1>
-            <p className="mt-2 text-2xl font-semibold">
-              {formatPrice(product.price)}
-            </p>
-          </div>
+        <div>
+          <span className="eyebrow text-muted">{product.category}</span>
+          <h1 className="display mt-3 text-[clamp(2.25rem,6vw,3.75rem)]">
+            {product.name}
+          </h1>
+          <p className="mt-3 font-mono text-lg">{formatPrice(product.price)}</p>
 
-          <p className="text-zinc-600 dark:text-zinc-300">
+          <p className="mt-6 max-w-prose leading-relaxed text-muted">
             {product.description}
           </p>
 
-          <ProductPurchase product={product} />
+          {/* Spec sheet */}
+          <dl className="mt-8 border-t border-line">
+            {specRows.map(([label, value]) => (
+              <div
+                key={label}
+                className="flex justify-between gap-4 border-b border-line py-3"
+              >
+                <dt className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-muted">
+                  {label}
+                </dt>
+                <dd className="font-mono text-sm">{value}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <div className="mt-8">
+            <ProductPurchase product={product} />
+          </div>
         </div>
       </div>
 
       {related.length > 0 && (
-        <section className="mt-20">
-          <h2 className="mb-6 text-2xl font-semibold tracking-tight">
+        <section className="mt-24">
+          <div className="measure text-ink mb-8" />
+          <h2 className="display text-[clamp(1.5rem,3vw,2rem)]">
             More in {product.category}
           </h2>
-          <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+          <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
             {related.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}

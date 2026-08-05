@@ -27,15 +27,18 @@ export default async function ProductsPage({
   const products = active ? getProductsByCategory(active) : getAllProducts();
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
-      <header className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight">
+    <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+      <header>
+        <span className="eyebrow text-muted">The collection</span>
+        <h1 className="display mt-2 text-[clamp(2rem,5vw,3.25rem)]">
           {active ?? "All products"}
         </h1>
-        <p className="mt-1 text-zinc-600 dark:text-zinc-300">
-          {products.length} item{products.length === 1 ? "" : "s"}
+        <p className="mt-2 font-mono text-xs text-muted">
+          {String(products.length).padStart(2, "0")} items in stock
         </p>
       </header>
+
+      <div className="measure text-ink my-8" />
 
       {/* Category filter */}
       <nav className="mb-10 flex flex-wrap gap-2">
@@ -50,7 +53,7 @@ export default async function ProductsPage({
         ))}
       </nav>
 
-      <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
@@ -71,10 +74,10 @@ function FilterPill({
   return (
     <Link
       href={href}
-      className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
+      className={`rounded-full border px-4 py-1.5 font-mono text-[0.7rem] uppercase tracking-[0.14em] transition-colors ${
         active
-          ? "border-foreground bg-foreground text-background"
-          : "border-black/[.15] hover:border-foreground dark:border-white/[.2]"
+          ? "border-blaze bg-blaze text-white"
+          : "border-line text-muted hover:border-ink hover:text-ink"
       }`}
     >
       {label}
