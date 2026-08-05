@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCart } from "@/app/context/CartContext";
-import { formatPrice, getProduct } from "@/lib/products";
+import { effectivePrice, formatPrice, getProduct } from "@/lib/products";
 import ProductImage from "./ProductImage";
 
 const SHIPPING_THRESHOLD = 7500; // Free shipping over $75.
@@ -66,11 +66,14 @@ export default function CartView() {
                     {product.name}
                   </Link>
                   <span className="font-mono text-sm">
-                    {formatPrice(product.price * line.quantity)}
+                    {formatPrice(effectivePrice(product) * line.quantity)}
                   </span>
                 </div>
                 <span className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted">
-                  Size {line.size} · {formatPrice(product.price)} ea
+                  Size {line.size} · {formatPrice(effectivePrice(product))} ea
+                  {product.salePrice != null && (
+                    <span className="ml-1 text-blaze">· sale</span>
+                  )}
                 </span>
                 <div className="mt-auto flex items-center gap-3 pt-3">
                   <div className="flex items-center rounded-md border border-line">

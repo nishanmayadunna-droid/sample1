@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  discountPercent,
   formatPrice,
   getAllProducts,
   getProduct,
@@ -76,7 +77,19 @@ export default async function ProductPage({
           <h1 className="display mt-3 text-[clamp(2.25rem,6vw,3.75rem)]">
             {product.name}
           </h1>
-          <p className="mt-3 font-mono text-lg">{formatPrice(product.price)}</p>
+          {product.salePrice != null ? (
+            <p className="mt-3 flex items-center gap-3 font-mono text-lg">
+              <span className="text-blaze">{formatPrice(product.salePrice)}</span>
+              <span className="text-base text-muted line-through">
+                {formatPrice(product.price)}
+              </span>
+              <span className="rounded bg-blaze px-1.5 py-0.5 text-xs font-medium text-white">
+                −{discountPercent(product)}% flash sale
+              </span>
+            </p>
+          ) : (
+            <p className="mt-3 font-mono text-lg">{formatPrice(product.price)}</p>
+          )}
 
           <p className="mt-6 max-w-prose leading-relaxed text-muted">
             {product.description}

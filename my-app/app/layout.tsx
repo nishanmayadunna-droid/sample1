@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono, Anton } from "next/font/google";
 import "./globals.css";
+import AnnouncementBar from "./components/AnnouncementBar";
 import Header from "./components/Header";
 
 const geistSans = Geist({
@@ -40,6 +41,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${anton.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <AnnouncementBar />
         <Header />
         <main className="flex-1">{children}</main>
         <footer className="mt-8 bg-panel text-panelmuted">

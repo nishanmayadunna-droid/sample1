@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
-import { getProduct } from "@/lib/products";
+import { effectivePrice, getProduct } from "@/lib/products";
 
 const STORAGE_KEY = "storefront:cart:v1";
 
@@ -126,7 +126,7 @@ export function useCart() {
     () =>
       lines.reduce((sum, l) => {
         const product = getProduct(l.id);
-        return sum + (product ? product.price * l.quantity : 0);
+        return sum + (product ? effectivePrice(product) * l.quantity : 0);
       }, 0),
     [lines],
   );

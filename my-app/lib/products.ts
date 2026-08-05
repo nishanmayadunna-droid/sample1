@@ -12,6 +12,8 @@ export type Product = {
   name: string;
   /** Price in cents, to avoid floating-point money bugs. */
   price: number;
+  /** Discounted price in cents when the item is in the flash sale. */
+  salePrice?: number;
   category: Category;
   description: string;
   sizes: string[];
@@ -59,6 +61,7 @@ export const products: Product[] = [
     id: "oxford-shirt",
     name: "Washed Oxford Shirt",
     price: 7200,
+    salePrice: 5400,
     category: "Tops",
     description:
       "A garment-dyed oxford with a lived-in softness on day one. Button-down collar, single chest pocket.",
@@ -93,6 +96,7 @@ export const products: Product[] = [
     id: "fleece-sweatpant",
     name: "Heavyweight Sweatpant",
     price: 6800,
+    salePrice: 4760,
     category: "Bottoms",
     description:
       "Brushed-back fleece with a relaxed taper and zip pockets. The one you reach for on the cold mornings.",
@@ -116,6 +120,7 @@ export const products: Product[] = [
     id: "puffer-vest",
     name: "Recycled Puffer Vest",
     price: 12800,
+    salePrice: 8960,
     category: "Outerwear",
     description:
       "Packable warmth from recycled down-alternative fill. Layers cleanly under a shell or over a hoodie.",
@@ -149,6 +154,7 @@ export const products: Product[] = [
     id: "canvas-tote",
     name: "Heavy Canvas Tote",
     price: 4200,
+    salePrice: 3150,
     category: "Accessories",
     description:
       "A structured 18oz canvas tote with reinforced handles and an interior pocket. Carries far more than it looks.",
@@ -194,4 +200,20 @@ const priceFormatter = new Intl.NumberFormat("en-US", {
 /** Format a price given in cents as a USD string, e.g. 2800 -> "$28.00". */
 export function formatPrice(cents: number): string {
   return priceFormatter.format(cents / 100);
+}
+
+/** The price actually charged: the sale price when on sale, else the list price. */
+export function effectivePrice(product: Product): number {
+  return product.salePrice ?? product.price;
+}
+
+/** Products currently in the flash sale. */
+export function getSaleProducts(): Product[] {
+  return products.filter((p) => p.salePrice != null);
+}
+
+/** Whole-percent discount for a sale item, e.g. 25 — or null if not on sale. */
+export function discountPercent(product: Product): number | null {
+  if (product.salePrice == null) return null;
+  return Math.round((1 - product.salePrice / product.price) * 100);
 }
