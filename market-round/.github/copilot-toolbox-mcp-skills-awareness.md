@@ -1,6 +1,6 @@
 # GitHub Copilot Toolbox — MCP & Skills awareness
 
-_Generated: 2026-08-08T20:01:45.237Z_
+_Generated: 2026-08-08T20:01:54.633Z_
 
 ## How to use this report
 
@@ -13,9 +13,9 @@ _Generated: 2026-08-08T20:01:45.237Z_
 
 ## MCP — workspace
 
-Workspace `mcp.json` _(folder: my-app)_
+Workspace `mcp.json` _(folder: market-round)_
 
-- **c:\Users\nisha\OneDrive\Desktop\saas\my-app\.vscode\mcp.json** — _File missing_
+- **c:\Users\nisha\OneDrive\Desktop\saas\market-round\.vscode\mcp.json** — _File missing_
 
 _No active workspace servers in mcp.json._
 
@@ -29,17 +29,7 @@ _No active user-scoped servers in mcp.json._
 
 ### Project-scoped
 
-- **find-skills** — `c:\Users\nisha\OneDrive\Desktop\saas\my-app\.agents\skills\find-skills`
-  - Helps users discover and install agent skills when they ask questions like "how do I do X", "find a skill for X", "is there a skill that can...", or express interest in extending capabilities. This skill should be used w
-
-- **frontend-design** — `c:\Users\nisha\OneDrive\Desktop\saas\my-app\.agents\skills\frontend-design`
-  - Guidance for distinctive, intentional visual design when building new UI or reshaping an existing one. Helps with aesthetic direction, typography, and making choices that don't read as templated defaults.
-
-- **skill-creator** — `c:\Users\nisha\OneDrive\Desktop\saas\my-app\.agents\skills\skill-creator`
-  - Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, edit, or optimize an existing skill, run evals to test a skill, benchmark skill pe
-
-- **using-superpowers** — `c:\Users\nisha\OneDrive\Desktop\saas\my-app\.agents\skills\using-superpowers`
-  - Use when starting any conversation - establishes how to find and use skills, requiring skill invocation before ANY response including clarifying questions
+_None found (or no workspace open)._
 
 ### User-scoped
 

@@ -1,11 +1,10 @@
 # GitHub Copilot instructions
 
-
 <!-- github-copilot-toolbox:mcp-skills-awareness-begin -->
 
 ### MCP & Skills awareness (GitHub Copilot Toolbox)
 
-_Last synced: 2026-08-08T20:01:45.392Z._
+_Last synced: 2026-08-08T20:01:54.641Z._
 
 - **Full report:** `.github/copilot-toolbox-mcp-skills-awareness.md` in this workspace (auto-overwritten on each scan). Use it as ground truth for configured servers and skill folders.
 - **MCP:** For **live tools**, use **Copilot Chat → Agent** and **trust/start** the right servers in the MCP UI.
@@ -14,7 +13,7 @@ _Last synced: 2026-08-08T20:01:45.392Z._
 
 #### Workspace MCP
 
-- `c:\Users\nisha\OneDrive\Desktop\saas\my-app\.vscode\mcp.json` _(workspace: my-app)_ — _file missing_
+- `c:\Users\nisha\OneDrive\Desktop\saas\market-round\.vscode\mcp.json` _(workspace: market-round)_ — _file missing_
 
 _No active workspace servers in mcp.json._
 
@@ -26,13 +25,7 @@ _No active user-scoped servers in mcp.json._
 
 #### Project skills
 
-- **find-skills** — `c:\Users\nisha\OneDrive\Desktop\saas\my-app\.agents\skills\find-skills` — Helps users discover and install agent skills when they ask questions like "how do I do X", "find a skill for X", "is there a skill that can...", or express interest in extending capabilities. This skill should be used w
-
-- **frontend-design** — `c:\Users\nisha\OneDrive\Desktop\saas\my-app\.agents\skills\frontend-design` — Guidance for distinctive, intentional visual design when building new UI or reshaping an existing one. Helps with aesthetic direction, typography, and making choices that don't read as templated defaults.
-
-- **skill-creator** — `c:\Users\nisha\OneDrive\Desktop\saas\my-app\.agents\skills\skill-creator` — Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, edit, or optimize an existing skill, run evals to test a skill, benchmark skill pe
-
-- **using-superpowers** — `c:\Users\nisha\OneDrive\Desktop\saas\my-app\.agents\skills\using-superpowers` — Use when starting any conversation - establishes how to find and use skills, requiring skill invocation before ANY response including clarifying questions
+_None found (or no workspace open)._
 
 #### User skills
 
