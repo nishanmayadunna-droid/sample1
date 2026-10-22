@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
-import { effectivePrice, getProduct } from "@/lib/products";
 
 const STORAGE_KEY = "storefront:cart:v1";
 
@@ -122,20 +121,12 @@ export function useCart() {
     [lines],
   );
 
-  const subtotal = useMemo(
-    () =>
-      lines.reduce((sum, l) => {
-        const product = getProduct(l.id);
-        return sum + (product ? effectivePrice(product) * l.quantity : 0);
-      }, 0),
-    [lines],
-  );
-
+  // Prices aren't known here — product data lives in Supabase, so CartView
+  // computes the subtotal from the products the cart page passes it.
   return {
     lines,
     hydrated,
     totalItems,
-    subtotal,
     addItem,
     removeItem,
     setQuantity,

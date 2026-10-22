@@ -1,20 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  discountPercent,
-  formatPrice,
-  getAllProducts,
-  getProduct,
-  getProductsByCategory,
-} from "@/lib/products";
+import { discountPercent, formatPrice } from "@/lib/products";
+import { getAllProducts, getProduct, getProductsByCategory } from "@/lib/catalog";
 import ProductImage from "../../components/ProductImage";
 import ProductCard from "../../components/ProductCard";
 import ProductPurchase from "../../components/ProductPurchase";
 
-// Pre-render every product page at build time.
-export function generateStaticParams() {
-  return getAllProducts().map((p) => ({ id: p.id }));
+// Re-fetch catalog data from Supabase at most once a minute (ISR).
+export const revalidate = 60;
+
+// Pre-render every product page at build time; new products render on demand.
+export async function generateStaticParams() {
+  return (await getAllProducts()).map((p) => ({ id: p.id }));
 }
 
 export async function generateMetadata({
@@ -23,7 +21,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const product = getProduct(id);
+  const product = await getProduct(id);
   if (!product) return { title: "Product not found" };
   return {
     title: product.name,
@@ -37,10 +35,10 @@ export default async function ProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const product = getProduct(id);
+  const product = await getProduct(id);
   if (!product) notFound();
 
-  const related = getProductsByCategory(product.category)
+  const related = (await getProductsByCategory(product.category))
     .filter((p) => p.id !== product.id)
     .slice(0, 4);
 
@@ -69,7 +67,12 @@ export default async function ProductPage({
 
       <div className="grid gap-10 md:grid-cols-2 md:gap-12">
         <div className="overflow-hidden rounded-2xl border border-line md:sticky md:top-24 md:self-start">
-          <ProductImage product={product} className="aspect-[4/5] w-full" />
+          <ProductImage
+            product={product}
+            className="aspect-[4/5] w-full"
+            sizes="(min-width: 768px) 50vw, 100vw"
+            preload
+          />
         </div>
 
         <div>

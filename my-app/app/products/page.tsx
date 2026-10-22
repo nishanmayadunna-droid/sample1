@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  CATEGORIES,
-  getAllProducts,
-  getProductsByCategory,
-  type Category,
-} from "@/lib/products";
+import { CATEGORIES, type Category } from "@/lib/products";
+import { getAllProducts, getProductsByCategory } from "@/lib/catalog";
 import ProductCard from "../components/ProductCard";
 
 export const metadata: Metadata = {
@@ -24,7 +20,9 @@ export default async function ProductsPage({
 }) {
   const { category } = await searchParams;
   const active = isCategory(category) ? category : null;
-  const products = active ? getProductsByCategory(active) : getAllProducts();
+  const products = active
+    ? await getProductsByCategory(active)
+    : await getAllProducts();
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16">

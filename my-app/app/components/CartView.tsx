@@ -2,15 +2,20 @@
 
 import Link from "next/link";
 import { useCart } from "@/app/context/CartContext";
-import { effectivePrice, formatPrice, getProduct } from "@/lib/products";
+import { effectivePrice, formatPrice, type Product } from "@/lib/products";
 import ProductImage from "./ProductImage";
 
 const SHIPPING_THRESHOLD = 7500; // Free shipping over $75.
 const SHIPPING_FLAT = 800;
 
-export default function CartView() {
-  const { lines, setQuantity, removeItem, clear, subtotal, hydrated } =
-    useCart();
+export default function CartView({ products }: { products: Product[] }) {
+  const { lines, setQuantity, removeItem, clear, hydrated } = useCart();
+  const getProduct = (id: string) => products.find((p) => p.id === id);
+  // Lines for products no longer in the catalog are skipped, not charged.
+  const subtotal = lines.reduce((sum, l) => {
+    const product = getProduct(l.id);
+    return sum + (product ? effectivePrice(product) * l.quantity : 0);
+  }, 0);
 
   // Avoid a hydration mismatch: render nothing until the client cart is read.
   if (!hydrated) {
@@ -55,7 +60,11 @@ export default function CartView() {
                 className="shrink-0 overflow-hidden rounded-lg border border-line"
                 aria-label={product.name}
               >
-                <ProductImage product={product} className="h-28 w-24" />
+                <ProductImage
+                  product={product}
+                  className="h-28 w-24"
+                  sizes="96px"
+                />
               </Link>
               <div className="flex flex-1 flex-col gap-1">
                 <div className="flex justify-between gap-4">

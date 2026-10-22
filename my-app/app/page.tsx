@@ -1,12 +1,6 @@
 import Link from "next/link";
-import {
-  CATEGORIES,
-  formatPrice,
-  getFeaturedProducts,
-  getProduct,
-  getProductsByCategory,
-  getSaleProducts,
-} from "@/lib/products";
+import { CATEGORIES, formatPrice } from "@/lib/products";
+import { getAllProducts } from "@/lib/catalog";
 import ProductCard from "./components/ProductCard";
 import ProductImage from "./components/ProductImage";
 import FlashCountdown from "./components/FlashCountdown";
@@ -27,10 +21,15 @@ const PROMISES: [string, string][] = [
   ["Carbon-neutral", "Every order offset"],
 ];
 
-export default function Home() {
-  const featured = getFeaturedProducts();
-  const sale = getSaleProducts();
-  const hero = getProduct("field-jacket")!;
+// Re-fetch catalog data from Supabase at most once a minute (ISR).
+export const revalidate = 60;
+
+export default async function Home() {
+  // One query; every section below is a slice of the full catalog.
+  const products = await getAllProducts();
+  const featured = products.filter((p) => p.featured);
+  const sale = products.filter((p) => p.salePrice != null);
+  const hero = products.find((p) => p.id === "field-jacket") ?? featured[0];
 
   return (
     <div>
@@ -82,28 +81,32 @@ export default function Home() {
           </div>
 
           {/* Field-tag feature — a hangtag for one hero product. */}
-          <Link
-            href={`/products/${hero.id}`}
-            className="rise group block"
-            style={{ animationDelay: "300ms" }}
-          >
-            <div className="overflow-hidden rounded-xl border border-white/15">
-              <ProductImage
-                product={hero}
-                className="aspect-[4/3] w-full transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-              />
-              <div className="flex items-end justify-between gap-4 bg-black/25 p-5">
-                <div>
-                  <span className="eyebrow text-panelmuted">Field tested</span>
-                  <p className="mt-1.5 font-medium">{hero.name}</p>
-                  <p className="mt-1 font-mono text-xs text-panelmuted">
-                    {hero.spec.material} · {hero.spec.origin}
-                  </p>
+          {hero && (
+            <Link
+              href={`/products/${hero.id}`}
+              className="rise group block"
+              style={{ animationDelay: "300ms" }}
+            >
+              <div className="overflow-hidden rounded-xl border border-white/15">
+                <ProductImage
+                  product={hero}
+                  className="aspect-[4/3] w-full transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+                  sizes="(min-width: 1024px) 45vw, 100vw"
+                  preload
+                />
+                <div className="flex items-end justify-between gap-4 bg-black/25 p-5">
+                  <div>
+                    <span className="eyebrow text-panelmuted">Field tested</span>
+                    <p className="mt-1.5 font-medium">{hero.name}</p>
+                    <p className="mt-1 font-mono text-xs text-panelmuted">
+                      {hero.spec.material} · {hero.spec.origin}
+                    </p>
+                  </div>
+                  <span className="font-mono">{formatPrice(hero.price)}</span>
                 </div>
-                <span className="font-mono">{formatPrice(hero.price)}</span>
               </div>
-            </div>
-          </Link>
+            </Link>
+          )}
         </div>
         <div className="measure text-panelink opacity-70" />
       </section>
@@ -121,7 +124,7 @@ export default function Home() {
         <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
           {CATEGORIES.map((category) => {
             const [from, to] = CATEGORY_SWATCH[category];
-            const count = getProductsByCategory(category).length;
+            const count = products.filter((p) => p.category === category).length;
             return (
               <Link
                 key={category}
