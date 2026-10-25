@@ -13,7 +13,7 @@ const supabase = createClient(
   { auth: { persistSession: false } },
 );
 
-type ProductRow = {
+export type ProductRow = {
   id: string;
   name: string;
   price: number;
@@ -29,10 +29,10 @@ type ProductRow = {
   featured: boolean;
 };
 
-const COLUMNS =
+export const COLUMNS =
   "id, name, price, sale_price, category, description, sizes, material, construction, origin, swatch, image_url, featured";
 
-function toProduct(row: ProductRow): Product {
+export function toProduct(row: ProductRow): Product {
   return {
     id: row.id,
     name: row.name,
