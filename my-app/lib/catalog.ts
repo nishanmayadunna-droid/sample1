@@ -52,7 +52,9 @@ function toProduct(row: ProductRow): Product {
   };
 }
 
-const selectProducts = () => supabase.from("products").select(COLUMNS);
+// Unpublished products (hidden by an admin) never reach the shop.
+const selectProducts = () =>
+  supabase.from("products").select(COLUMNS).eq("published", true);
 
 // cache() dedupes calls within one render (e.g. generateMetadata + page).
 export const getAllProducts = cache(async (): Promise<Product[]> => {
