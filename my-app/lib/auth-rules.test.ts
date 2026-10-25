@@ -104,7 +104,19 @@ describe("safeCallbackUrl", () => {
     ["/products/x?y=1", "/products/x?y=1"],
   ])("keeps %s", (u, e) => expect(safeCallbackUrl(u)).toBe(e));
 
-  it.each(["//evil.com", "/\\evil.com", "https://evil.com", "evil", "", null, undefined])(
+  it.each([
+    "//evil.com",
+    "/\\evil.com",
+    "https://evil.com",
+    "evil",
+    "",
+    null,
+    undefined,
+    // Browsers strip tab/CR/LF from URLs, turning these into //evil.com.
+    "/\t/evil.com",
+    "/\n/evil.com",
+    "/\r\\evil.com",
+  ])(
     "rejects %j",
     (u) => expect(safeCallbackUrl(u)).toBe("/account"),
   );

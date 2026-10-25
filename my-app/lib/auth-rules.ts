@@ -80,15 +80,20 @@ export function resolveGoogleSignIn(
 }
 
 /**
- * Only same-origin paths are allowed as post-sign-in destinations. `//host`
- * and `/\host` are treated as external by browsers, so they're rejected too.
+ * Only same-origin paths are allowed as post-sign-in destinations. Browsers
+ * treat `//host` and `/\host` as external and strip tab/CR/LF before parsing,
+ * so control characters and backslashes are rejected outright and the rest is
+ * resolved with the URL parser against a dummy origin.
  */
 export function safeCallbackUrl(
   url: string | null | undefined,
   fallback = "/account",
 ): string {
-  if (!url || url[0] !== "/" || url[1] === "/" || url[1] === "\\") {
+  if (!url || url[0] !== "/" || /[\u0000-\u001F\u007F\\]/.test(url)) {
     return fallback;
   }
-  return url;
+  const base = "http://same-origin.invalid";
+  const parsed = new URL(url, base);
+  if (parsed.origin !== base) return fallback;
+  return parsed.pathname + parsed.search + parsed.hash;
 }
