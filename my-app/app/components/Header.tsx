@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { SessionProvider } from "next-auth/react";
 import { useCart } from "@/app/context/CartContext";
+import AccountNav from "./AccountNav";
 
 export default function Header() {
   const { totalItems, hydrated } = useCart();
@@ -23,6 +25,9 @@ export default function Header() {
           >
             Shop
           </Link>
+          <SessionProvider>
+            <AccountNav />
+          </SessionProvider>
           <Link
             href="/cart"
             className="text-muted transition-colors hover:text-ink"
