@@ -3,6 +3,7 @@ import {
   normalizeEmail,
   resolveGoogleSignIn,
   safeCallbackUrl,
+  signedInRedirect,
   validateSignUp,
 } from "./auth-rules";
 
@@ -96,6 +97,17 @@ describe("resolveGoogleSignIn", () => {
       action: "create",
       email: "bob@x.com",
     }));
+});
+
+describe("signedInRedirect", () => {
+  it("sends a signed-in user with a live account to the destination", () =>
+    expect(signedInRedirect("u1", { id: "u1" }, "/cart")).toBe("/cart"));
+  it("stays on /signin when the session has no id", () =>
+    expect(signedInRedirect(undefined, null, "/cart")).toBeNull());
+  // A deleted row with a still-valid JWT must not bounce between /signin and
+  // /account forever.
+  it("stays on /signin when the account row no longer exists", () =>
+    expect(signedInRedirect("u1", null, "/account")).toBeNull());
 });
 
 describe("safeCallbackUrl", () => {

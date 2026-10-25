@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { safeCallbackUrl } from "@/lib/auth-rules";
+import { safeCallbackUrl, signedInRedirect } from "@/lib/auth-rules";
+import { findUserById } from "@/lib/users";
 import SignInForm from "./SignInForm";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -15,7 +16,10 @@ export default async function SignInPage({
   const destination = safeCallbackUrl(callbackUrl);
 
   const session = await auth();
-  if (session?.user) redirect(destination);
+  const sessionUserId = session?.user?.id;
+  const account = sessionUserId ? await findUserById(sessionUserId) : null;
+  const signedInDestination = signedInRedirect(sessionUserId, account, destination);
+  if (signedInDestination) redirect(signedInDestination);
 
   return (
     <div className="mx-auto w-full max-w-md px-4 py-12 sm:px-6">

@@ -80,6 +80,20 @@ export function resolveGoogleSignIn(
 }
 
 /**
+ * Where /signin should send a visitor who already has a session, or null to
+ * show the form. Requires the account row to still exist: otherwise a valid
+ * JWT for a deleted user would loop /signin ⇄ /account (requireUser sends them
+ * back here).
+ */
+export function signedInRedirect(
+  sessionUserId: string | undefined,
+  account: { id: string } | null,
+  destination: string,
+): string | null {
+  return sessionUserId && account?.id === sessionUserId ? destination : null;
+}
+
+/**
  * Only same-origin paths are allowed as post-sign-in destinations. Browsers
  * treat `//host` and `/\host` as external and strip tab/CR/LF before parsing,
  * so control characters and backslashes are rejected outright and the rest is
