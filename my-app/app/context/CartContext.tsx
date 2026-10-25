@@ -1,15 +1,20 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
+import type { CartLine } from "@/lib/cart-rules";
+
+export type { CartLine } from "@/lib/cart-rules";
 
 const STORAGE_KEY = "storefront:cart:v1";
+// Which signed-in user the browser cart belongs to (absent for a guest cart).
+const OWNER_KEY = "storefront:cart:owner";
 
-/** A single line in the cart: a product in a specific size, with a quantity. */
-export type CartLine = {
-  id: string;
-  size: string;
-  quantity: number;
-};
+/**
+ * Where a cart change came from: "local" for the shopper's own edits in this
+ * tab, "remote" for a cart applied from the server or another tab. Only local
+ * changes are saved to the account, which keeps sync from looping.
+ */
+export type CartChangeSource = "local" | "remote";
 
 // ---------------------------------------------------------------------------
 // Module-level store, read via useSyncExternalStore. This keeps localStorage
@@ -19,6 +24,9 @@ export type CartLine = {
 
 const EMPTY: CartLine[] = [];
 const listeners = new Set<() => void>();
+const changeListeners = new Set<
+  (lines: CartLine[], source: CartChangeSource) => void
+>();
 const lineKey = (id: string, size: string) => `${id}::${size}`;
 
 function readStorage(): CartLine[] {
@@ -34,7 +42,7 @@ function readStorage(): CartLine[] {
 
 let cart: CartLine[] = readStorage();
 
-function setCart(next: CartLine[]) {
+function setCart(next: CartLine[], source: CartChangeSource = "local") {
   cart = next;
   if (typeof window !== "undefined") {
     try {
@@ -44,7 +52,19 @@ function setCart(next: CartLine[]) {
     }
   }
   listeners.forEach((notify) => notify());
+  changeListeners.forEach((listener) => listener(cart, source));
 }
+
+function readOwner(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(OWNER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+let owner: string | null = readOwner();
 
 function subscribe(notify: () => void): () => void {
   listeners.add(notify);
@@ -53,6 +73,8 @@ function subscribe(notify: () => void): () => void {
     if (event.key === STORAGE_KEY) {
       cart = readStorage();
       notify();
+    } else if (event.key === OWNER_KEY) {
+      owner = readOwner();
     }
   };
   window.addEventListener("storage", onStorage);
@@ -99,6 +121,43 @@ export function setQuantity(id: string, size: string, quantity: number) {
 
 export function clear() {
   setCart(EMPTY);
+}
+
+// ---------------------------------------------------------------------------
+// Account sync hooks (used by app/components/CartSync.tsx).
+// ---------------------------------------------------------------------------
+
+/** Replaces the whole cart with lines from the server; reported as "remote". */
+export function replaceCart(lines: CartLine[]) {
+  setCart(lines.length === 0 ? EMPTY : lines, "remote");
+}
+
+export function getCartLines(): CartLine[] {
+  return cart;
+}
+
+export function onCartChange(
+  listener: (lines: CartLine[], source: CartChangeSource) => void,
+): () => void {
+  changeListeners.add(listener);
+  return () => {
+    changeListeners.delete(listener);
+  };
+}
+
+export function getCartOwner(): string | null {
+  return owner;
+}
+
+export function setCartOwner(next: string | null) {
+  owner = next;
+  if (typeof window === "undefined") return;
+  try {
+    if (next === null) window.localStorage.removeItem(OWNER_KEY);
+    else window.localStorage.setItem(OWNER_KEY, next);
+  } catch {
+    // Storage blocked: the in-memory owner still works for this tab.
+  }
 }
 
 export function useCart() {
