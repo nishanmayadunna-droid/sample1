@@ -12,12 +12,26 @@ import {
 } from "@/app/context/CartContext";
 import { decideSync, mergeCartLines, type CartLine } from "@/lib/cart-rules";
 import { createCartSaver } from "@/lib/cart-saver";
+import { createSyncGate } from "@/lib/sync-gate";
 
-// Module-level so SignOutButton can flush a pending save before signing out.
-export const cartSaver = createCartSaver((lines) => saveAccountCart(lines));
+// Every cart Server Action runs through this gate. The actions call auth(),
+// which re-sets the session cookie, so one finishing after sign-out would sign
+// the user back in; sign-out closes the gate and waits for them first.
+const gate = createSyncGate();
+
+// Module-level so sign-out can flush a pending save first.
+export const cartSaver = createCartSaver((lines) =>
+  gate.run(() => saveAccountCart(lines)),
+);
 
 export function flushCartSync(): Promise<void> {
   return cartSaver.flush();
+}
+
+/** Saves any pending cart, then waits for in-flight syncs and blocks new ones. */
+export async function prepareCartForSignOut(): Promise<void> {
+  await flushCartSync();
+  await gate.close();
 }
 
 async function loadSafely(): Promise<CartLine[] | null> {
@@ -77,8 +91,9 @@ export default function CartSync() {
       }
     }
 
-    void sync();
-    const onFocus = () => void sync();
+    const runSync = () => void gate.run(sync);
+    runSync();
+    const onFocus = runSync;
     window.addEventListener("focus", onFocus);
 
     const stopWatching = onCartChange((lines, source) => {
