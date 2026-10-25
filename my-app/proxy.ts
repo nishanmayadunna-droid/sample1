@@ -12,6 +12,19 @@ export default auth((req) => {
   return NextResponse.redirect(url);
 });
 
+// Server Actions POST to the current page URL. The auth() wrapper re-sets the
+// session cookie on every request it handles, so an action that finishes after
+// sign-out would sign the user back in; skip them (they check auth themselves).
+// Matcher values must be inline literals: Next ignores variables here.
 export const config = {
-  matcher: ["/account/:path*", "/admin/:path*"],
+  matcher: [
+    {
+      source: "/account/:path*",
+      missing: [{ type: "header", key: "next-action" }],
+    },
+    {
+      source: "/admin/:path*",
+      missing: [{ type: "header", key: "next-action" }],
+    },
+  ],
 };
