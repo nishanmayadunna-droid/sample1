@@ -6,22 +6,29 @@ import { loadAccountCart, saveAccountCart } from "@/app/cart/actions";
 import {
   getCartLines,
   getCartOwner,
+  isCartDirty,
   onCartChange,
   replaceCart,
+  setCartDirty,
   setCartOwner,
 } from "@/app/context/CartContext";
 import { decideSync, mergeCartLines, type CartLine } from "@/lib/cart-rules";
 import { createCartSaver } from "@/lib/cart-saver";
 import { createSyncGate } from "@/lib/sync-gate";
 
-// Every cart Server Action runs through this gate. The actions call auth(),
-// which re-sets the session cookie, so one finishing after sign-out would sign
-// the user back in; sign-out closes the gate and waits for them first.
+// Cart Server Actions run through this gate so sign-out can wait for the ones
+// in flight and block new ones. A request that reaches proxy.ts's auth()
+// wrapper gets the session cookie re-set, so a cart action finishing after
+// sign-out could sign the user back in. proxy.ts now skips Server Action
+// requests; the gate is the second line of defence.
 const gate = createSyncGate();
 
-// Module-level so sign-out can flush a pending save first.
-export const cartSaver = createCartSaver((lines) =>
-  gate.run(() => saveAccountCart(lines)),
+// Module-level so sign-out can flush a pending save first. A confirmed save of
+// the latest cart clears the shared dirty flag.
+export const cartSaver = createCartSaver(
+  (lines) => gate.run(() => saveAccountCart(lines)),
+  1000,
+  () => setCartDirty(false),
 );
 
 export function flushCartSync(): Promise<void> {
@@ -43,11 +50,17 @@ async function loadSafely(): Promise<CartLine[] | null> {
   }
 }
 
+/** Saves the browser cart now (it has changes the server hasn't confirmed). */
+async function pushLocalCart() {
+  cartSaver.schedule(getCartLines());
+  await flushCartSync();
+}
+
 /**
  * Keeps the browser cart and the signed-in account's cart in step. Renders
  * nothing. Decisions come from decideSync (lib/cart-rules.ts): merge a guest
- * cart on sign-in, pull on load/focus, clear on sign-out. Only touches the
- * cart store, never React state.
+ * cart on sign-in, push unsaved changes, otherwise pull on load/focus, and
+ * clear on sign-out. Only touches the cart store, never React state.
  */
 export default function CartSync() {
   const { data: session, status } = useSession();
@@ -57,12 +70,23 @@ export default function CartSync() {
     let active = true;
 
     async function sync() {
-      const action = decideSync({ status, userId, owner: getCartOwner() });
+      const action = decideSync({
+        status,
+        userId,
+        owner: getCartOwner(),
+        dirty: isCartDirty(),
+      });
 
       if (action === "clear") {
         cartSaver.cancel();
         replaceCart([]);
         setCartOwner(null);
+        setCartDirty(false);
+        return;
+      }
+
+      if (action === "push") {
+        await pushLocalCart();
         return;
       }
 
@@ -73,38 +97,36 @@ export default function CartSync() {
         const merged = mergeCartLines(getCartLines(), account);
         replaceCart(merged);
         setCartOwner(userId);
-        cartSaver.schedule(merged);
-        await flushCartSync();
+        setCartDirty(true);
+        await pushLocalCart();
         return;
       }
 
       if (action === "pull" && userId) {
-        // Never overwrite a change that hasn't reached the server; retry it.
-        if (cartSaver.hasPending()) {
-          await flushCartSync();
-          return;
-        }
         const account = await loadSafely();
-        if (!active || account === null || cartSaver.hasPending()) return;
+        if (!active || account === null) return;
+        // A local change (in any tab) may have landed while loading.
+        if (getCartOwner() === userId && isCartDirty()) return;
         replaceCart(account);
         setCartOwner(userId);
+        setCartDirty(false);
       }
     }
 
     const runSync = () => void gate.run(sync);
     runSync();
-    const onFocus = runSync;
-    window.addEventListener("focus", onFocus);
+    window.addEventListener("focus", runSync);
 
     const stopWatching = onCartChange((lines, source) => {
       if (source === "local" && userId && getCartOwner() === userId) {
+        setCartDirty(true);
         cartSaver.schedule(lines);
       }
     });
 
     return () => {
       active = false;
-      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("focus", runSync);
       stopWatching();
     };
   }, [status, userId]);

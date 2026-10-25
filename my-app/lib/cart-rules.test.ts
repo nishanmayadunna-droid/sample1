@@ -73,13 +73,18 @@ describe("mergeCartLines", () => {
 
 describe("decideSync", () => {
   it.each([
-    [{ status: "loading", userId: null, owner: null }, "wait"],
-    [{ status: "authenticated", userId: null, owner: null }, "wait"],
-    [{ status: "authenticated", userId: "u1", owner: null }, "merge"],
-    [{ status: "authenticated", userId: "u1", owner: "u1" }, "pull"],
-    // Another user's leftover cart is replaced, never merged into this account.
-    [{ status: "authenticated", userId: "u2", owner: "u1" }, "pull"],
-    [{ status: "unauthenticated", userId: null, owner: "u1" }, "clear"],
-    [{ status: "unauthenticated", userId: null, owner: null }, "none"],
+    [{ status: "loading", userId: null, owner: null, dirty: false }, "wait"],
+    [{ status: "authenticated", userId: null, owner: null, dirty: false }, "wait"],
+    [{ status: "authenticated", userId: "u1", owner: null, dirty: false }, "merge"],
+    [{ status: "authenticated", userId: "u1", owner: null, dirty: true }, "merge"],
+    [{ status: "authenticated", userId: "u1", owner: "u1", dirty: false }, "pull"],
+    // Unsaved local changes (this tab, another tab, or before a reload) are
+    // pushed instead of being overwritten by the older server copy.
+    [{ status: "authenticated", userId: "u1", owner: "u1", dirty: true }, "push"],
+    // Another user's leftover cart is replaced, never merged or pushed.
+    [{ status: "authenticated", userId: "u2", owner: "u1", dirty: false }, "pull"],
+    [{ status: "authenticated", userId: "u2", owner: "u1", dirty: true }, "pull"],
+    [{ status: "unauthenticated", userId: null, owner: "u1", dirty: true }, "clear"],
+    [{ status: "unauthenticated", userId: null, owner: null, dirty: false }, "none"],
   ] as const)("%j → %s", (input, expected) => expect(decideSync(input)).toBe(expected));
 });

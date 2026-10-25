@@ -13,9 +13,11 @@ export type CartSaver = {
   cancel(): void;
 };
 
+/** `onIdle` runs when the latest scheduled cart has been saved successfully. */
 export function createCartSaver(
   save: (lines: CartLine[]) => Promise<void>,
   delayMs = 1000,
+  onIdle?: () => void,
 ): CartSaver {
   let pending: CartLine[] | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -32,7 +34,10 @@ export function createCartSaver(
     try {
       await save(lines);
       // Newer lines may have been scheduled while saving; keep those pending.
-      if (pending === lines) pending = null;
+      if (pending === lines) {
+        pending = null;
+        onIdle?.();
+      }
     } catch (error) {
       // Stay pending so the next flush/schedule retries.
       console.error("cart save failed", error);

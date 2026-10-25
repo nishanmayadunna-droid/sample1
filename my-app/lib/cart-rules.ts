@@ -67,23 +67,27 @@ export function mergeCartLines(local: CartLine[], account: CartLine[]): CartLine
 }
 
 export type SyncStatus = "authenticated" | "unauthenticated" | "loading";
-export type SyncAction = "wait" | "merge" | "pull" | "clear" | "none";
+export type SyncAction = "wait" | "merge" | "pull" | "push" | "clear" | "none";
 
 /**
  * What the client sync should do, given the session and who owns the browser
  * cart. Only a guest cart (no owner) is merged; another user's leftover cart is
  * replaced by this account's cart so it never leaks into the wrong account.
+ * `dirty` (shared by all tabs) means this user's browser cart has changes the
+ * server hasn't confirmed; those are pushed rather than overwritten by a pull.
  */
 export function decideSync(input: {
   status: SyncStatus;
   userId: string | null;
   owner: string | null;
+  dirty: boolean;
 }): SyncAction {
-  const { status, userId, owner } = input;
+  const { status, userId, owner, dirty } = input;
   if (status === "loading") return "wait";
   if (status === "authenticated") {
     if (!userId) return "wait";
-    return owner === null ? "merge" : "pull";
+    if (owner === null) return "merge";
+    return owner === userId && dirty ? "push" : "pull";
   }
   return owner === null ? "none" : "clear";
 }

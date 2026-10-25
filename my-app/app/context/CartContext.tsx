@@ -8,6 +8,9 @@ export type { CartLine } from "@/lib/cart-rules";
 const STORAGE_KEY = "storefront:cart:v1";
 // Which signed-in user the browser cart belongs to (absent for a guest cart).
 const OWNER_KEY = "storefront:cart:owner";
+// Set while this user's cart has local changes the server hasn't confirmed.
+// Shared by all tabs and survives reloads, so no tab pulls over them.
+const DIRTY_KEY = "storefront:cart:dirty";
 
 /**
  * Where a cart change came from: "local" for the shopper's own edits in this
@@ -66,6 +69,17 @@ function readOwner(): string | null {
 
 let owner: string | null = readOwner();
 
+function readDirty(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(DIRTY_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+let dirty = readDirty();
+
 function subscribe(notify: () => void): () => void {
   listeners.add(notify);
   // Keep other tabs in sync.
@@ -75,6 +89,8 @@ function subscribe(notify: () => void): () => void {
       notify();
     } else if (event.key === OWNER_KEY) {
       owner = readOwner();
+    } else if (event.key === DIRTY_KEY) {
+      dirty = readDirty();
     }
   };
   window.addEventListener("storage", onStorage);
@@ -200,4 +216,19 @@ export function useCart() {
     setQuantity,
     clear,
   };
+}
+
+export function isCartDirty(): boolean {
+  return dirty;
+}
+
+export function setCartDirty(next: boolean) {
+  dirty = next;
+  if (typeof window === "undefined") return;
+  try {
+    if (next) window.localStorage.setItem(DIRTY_KEY, "1");
+    else window.localStorage.removeItem(DIRTY_KEY);
+  } catch {
+    // Storage blocked: the in-memory flag still protects this tab.
+  }
 }

@@ -87,3 +87,35 @@ it("cancel drops pending lines", async () => {
   await vi.advanceTimersByTimeAsync(2000);
   expect(save).not.toHaveBeenCalled();
 });
+
+it("calls onIdle after the latest lines are saved", async () => {
+  const onIdle = vi.fn();
+  const saver = createCartSaver(vi.fn().mockResolvedValue(undefined), 1000, onIdle);
+  saver.schedule(a);
+  await saver.flush();
+  expect(onIdle).toHaveBeenCalledTimes(1);
+});
+
+it("does not call onIdle when a save fails", async () => {
+  const onIdle = vi.fn();
+  const saver = createCartSaver(vi.fn().mockRejectedValue(new Error("x")), 1000, onIdle);
+  saver.schedule(a);
+  await saver.flush();
+  expect(onIdle).not.toHaveBeenCalled();
+});
+
+it("does not call onIdle while newer lines are still pending", async () => {
+  const onIdle = vi.fn();
+  let resolveFirst!: () => void;
+  const save = vi
+    .fn()
+    .mockImplementationOnce(() => new Promise<void>((r) => (resolveFirst = r)))
+    .mockResolvedValue(undefined);
+  const saver = createCartSaver(save, 1000, onIdle);
+  saver.schedule(a);
+  const flushing = saver.flush();
+  saver.schedule(b);
+  resolveFirst();
+  await flushing;
+  expect(onIdle).not.toHaveBeenCalled();
+});

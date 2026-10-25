@@ -4,8 +4,10 @@ import {
   clear,
   getCartLines,
   getCartOwner,
+  isCartDirty,
   onCartChange,
   replaceCart,
+  setCartDirty,
   setCartOwner,
   setQuantity,
 } from "./CartContext";
@@ -14,6 +16,7 @@ import {
 beforeEach(() => {
   replaceCart([]);
   setCartOwner(null);
+  setCartDirty(false);
 });
 
 it("reports local mutations as local", () => {
@@ -64,4 +67,12 @@ it("round-trips the owner", () => {
   expect(getCartOwner()).toBe("u1");
   setCartOwner(null);
   expect(getCartOwner()).toBeNull();
+});
+
+it("round-trips the dirty flag", () => {
+  expect(isCartDirty()).toBe(false);
+  setCartDirty(true);
+  expect(isCartDirty()).toBe(true);
+  setCartDirty(false);
+  expect(isCartDirty()).toBe(false);
 });
