@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isValidProductId, MAX_IMAGE_BYTES, type FieldName } from "@/lib/product-form";
 import { CATEGORIES } from "@/lib/products";
@@ -46,6 +46,7 @@ export default function ProductForm({
   product?: AdminProduct;
 }) {
   const [state, submit, pending] = useActionState(action, initialState);
+  const [, startTransition] = useTransition();
   const [id, setId] = useState(product?.id ?? "");
   const [imagePath, setImagePath] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
@@ -87,7 +88,17 @@ export default function ProductForm({
   }
 
   return (
-    <form action={submit} className="max-w-2xl">
+    <form
+      // Submitted from onSubmit rather than `action={submit}`: React 19 resets a
+      // form after every form action, which would wipe (create) or revert
+      // (edit) the admin's input whenever validation returns an error.
+      onSubmit={(event) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        startTransition(() => submit(formData));
+      }}
+      className="max-w-2xl"
+    >
       {mode === "create" ? (
         <Field label="ID (used in the product URL)" error={errors.id}>
           <input
