@@ -22,22 +22,31 @@ function isCartLine(value: unknown): value is CartLine {
     typeof size === "string" &&
     size !== "" &&
     Number.isInteger(quantity) &&
-    (quantity as number) >= 1 &&
-    (quantity as number) <= MAX_LINE_QUANTITY
+    (quantity as number) >= 1
   );
+}
+
+/** Clamps to 1..MAX_LINE_QUANTITY so an over-large line is kept, not lost. */
+export function clampQuantity(quantity: number): number {
+  return Math.min(Math.max(quantity, 1), MAX_LINE_QUANTITY);
 }
 
 /**
  * Turns untrusted input (localStorage, a Server Action payload, a jsonb column)
- * into valid lines: invalid lines dropped, duplicates collapsed to the larger
- * quantity at their first position, capped at MAX_CART_LINES.
+ * into valid lines: invalid lines dropped, quantities clamped to
+ * MAX_LINE_QUANTITY, duplicates collapsed to the larger quantity at their first
+ * position, capped at MAX_CART_LINES.
  */
 export function sanitizeCartLines(raw: unknown): CartLine[] {
   if (!Array.isArray(raw)) return [];
   const byKey = new Map<string, CartLine>();
   for (const value of raw) {
     if (!isCartLine(value)) continue;
-    const line = { id: value.id, size: value.size, quantity: value.quantity };
+    const line = {
+      id: value.id,
+      size: value.size,
+      quantity: clampQuantity(value.quantity),
+    };
     const existing = byKey.get(lineKey(line));
     if (!existing) {
       if (byKey.size < MAX_CART_LINES) byKey.set(lineKey(line), line);

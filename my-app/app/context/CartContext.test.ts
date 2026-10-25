@@ -7,6 +7,7 @@ import {
   onCartChange,
   replaceCart,
   setCartOwner,
+  setQuantity,
 } from "./CartContext";
 
 // Runs in Node: no window, so the store keeps state in memory only.
@@ -38,6 +39,24 @@ it("stops notifying after unsubscribe", () => {
   onCartChange(listener)();
   addItem("a", "M");
   expect(listener).not.toHaveBeenCalled();
+});
+
+it("caps a line's quantity at 99 when adding", () => {
+  addItem("a", "M", 98);
+  addItem("a", "M", 5);
+  expect(getCartLines()).toEqual([{ id: "a", size: "M", quantity: 99 }]);
+});
+
+it("caps a line's quantity at 99 when setting it", () => {
+  addItem("a", "M");
+  setQuantity("a", "M", 150);
+  expect(getCartLines()).toEqual([{ id: "a", size: "M", quantity: 99 }]);
+});
+
+it("refuses a 51st distinct line", () => {
+  for (let i = 0; i < 51; i++) addItem(`p${i}`, "M");
+  expect(getCartLines()).toHaveLength(50);
+  expect(getCartLines().some((line) => line.id === "p50")).toBe(false);
 });
 
 it("round-trips the owner", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
-import type { CartLine } from "@/lib/cart-rules";
+import { clampQuantity, MAX_CART_LINES, type CartLine } from "@/lib/cart-rules";
 
 export type { CartLine } from "@/lib/cart-rules";
 
@@ -91,15 +91,21 @@ const getServerSnapshot = () => EMPTY;
 // the first client render — no setState-in-effect required.
 const noopSubscribe = () => () => {};
 
+// Limits match lib/cart-rules.ts, which the account sync enforces server-side,
+// so the browser never holds a cart the server would trim.
 export function addItem(id: string, size: string, quantity = 1) {
   const key = lineKey(id, size);
   const index = cart.findIndex((l) => lineKey(l.id, l.size) === key);
   if (index === -1) {
-    setCart([...cart, { id, size, quantity }]);
+    if (cart.length >= MAX_CART_LINES) return;
+    setCart([...cart, { id, size, quantity: clampQuantity(quantity) }]);
     return;
   }
   const next = [...cart];
-  next[index] = { ...next[index], quantity: next[index].quantity + quantity };
+  next[index] = {
+    ...next[index],
+    quantity: clampQuantity(next[index].quantity + quantity),
+  };
   setCart(next);
 }
 
@@ -114,8 +120,11 @@ export function setQuantity(id: string, size: string, quantity: number) {
     removeItem(id, size);
     return;
   }
+  const capped = clampQuantity(quantity);
   setCart(
-    cart.map((l) => (lineKey(l.id, l.size) === key ? { ...l, quantity } : l)),
+    cart.map((l) =>
+      lineKey(l.id, l.size) === key ? { ...l, quantity: capped } : l,
+    ),
   );
 }
 

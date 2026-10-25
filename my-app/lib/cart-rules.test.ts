@@ -13,12 +13,17 @@ describe("sanitizeCartLines", () => {
       l("b", "L", 99),
     ]));
 
+  it("clamps quantities above 99 instead of dropping the line", () =>
+    expect(sanitizeCartLines([l("a", "M", 100), l("b", "S", 250)])).toEqual([
+      l("a", "M", 99),
+      l("b", "S", 99),
+    ]));
+
   it.each([
     { id: "", size: "M", quantity: 1 },
     { id: "a", size: "", quantity: 1 },
     { id: 1, size: "M", quantity: 1 },
     { id: "a", size: "M", quantity: 0 },
-    { id: "a", size: "M", quantity: 100 },
     { id: "a", size: "M", quantity: 1.5 },
     { id: "a", size: "M", quantity: "2" },
     { id: "a", size: "M" },
