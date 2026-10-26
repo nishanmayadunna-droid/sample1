@@ -2,7 +2,8 @@
 // Import only from Server Components (it bundles supabase-js).
 import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
-import type { LegacyCategory, Product } from "./products";
+import { categoryNameFor } from "./category-form";
+import type { Category, Product } from "./products";
 
 // The catalog is public and per-user state isn't involved, so a cookie-less
 // client is used. That keeps product pages statically generated (ISR) instead
@@ -18,7 +19,7 @@ export type ProductRow = {
   name: string;
   price: number;
   sale_price: number | null;
-  category: LegacyCategory;
+  category: string; // a category slug (or, until the FK migration, a display name)
   description: string;
   sizes: string[];
   material: string;
@@ -32,13 +33,14 @@ export type ProductRow = {
 export const COLUMNS =
   "id, name, price, sale_price, category, description, sizes, material, construction, origin, swatch, image_url, featured";
 
-export function toProduct(row: ProductRow): Product {
+export function toProduct(row: ProductRow, categories: Category[]): Product {
   return {
     id: row.id,
     name: row.name,
     price: row.price,
     salePrice: row.sale_price ?? undefined,
     category: row.category,
+    categoryName: categoryNameFor(row.category, categories),
     description: row.description,
     sizes: row.sizes,
     spec: {
@@ -52,6 +54,24 @@ export function toProduct(row: ProductRow): Product {
   };
 }
 
+type CategoryRow = { slug: string; name: string; swatch: string[]; sort_order: number };
+
+export const getCategories = cache(async (): Promise<Category[]> => {
+  const { data, error } = await supabase
+    .from("categories")
+    .select("slug, name, swatch, sort_order")
+    .order("sort_order")
+    .order("name")
+    .overrideTypes<CategoryRow[], { merge: false }>();
+  if (error) throw new Error(`Failed to load categories: ${error.message}`);
+  return data.map((row) => ({
+    slug: row.slug,
+    name: row.name,
+    swatch: [row.swatch[0], row.swatch[1]],
+    sortOrder: row.sort_order,
+  }));
+});
+
 // Unpublished products (hidden by an admin) never reach the shop.
 const selectProducts = () =>
   supabase.from("products").select(COLUMNS).eq("published", true);
@@ -62,7 +82,8 @@ export const getAllProducts = cache(async (): Promise<Product[]> => {
     .order("sort_order")
     .overrideTypes<ProductRow[], { merge: false }>();
   if (error) throw new Error(`Failed to load products: ${error.message}`);
-  return data.map(toProduct);
+  const categories = await getCategories();
+  return data.map((row) => toProduct(row, categories));
 });
 
 export const getProduct = cache(
@@ -72,17 +93,20 @@ export const getProduct = cache(
       .maybeSingle()
       .overrideTypes<ProductRow, { merge: false }>();
     if (error) throw new Error(`Failed to load product ${id}: ${error.message}`);
-    return data ? toProduct(data) : undefined;
+    return data ? toProduct(data, await getCategories()) : undefined;
   },
 );
 
 export const getProductsByCategory = cache(
-  async (category: LegacyCategory): Promise<Product[]> => {
+  async (category: Category): Promise<Product[]> => {
+    // Matches both the slug and the old display name until the FK migration
+    // converts every product to slugs.
     const { data, error } = await selectProducts()
-      .eq("category", category)
+      .in("category", [category.slug, category.name])
       .order("sort_order")
       .overrideTypes<ProductRow[], { merge: false }>();
-    if (error) throw new Error(`Failed to load ${category}: ${error.message}`);
-    return data.map(toProduct);
+    if (error) throw new Error(`Failed to load ${category.slug}: ${error.message}`);
+    const categories = await getCategories();
+    return data.map((row) => toProduct(row, categories));
   },
 );

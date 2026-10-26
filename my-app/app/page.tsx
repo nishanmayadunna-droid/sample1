@@ -1,18 +1,11 @@
 import Link from "next/link";
-import { CATEGORIES, formatPrice } from "@/lib/products";
-import { getAllProducts } from "@/lib/catalog";
+import { formatPrice } from "@/lib/products";
+import { getAllProducts, getCategories } from "@/lib/catalog";
+import { productsInCategory } from "@/lib/category-form";
 import ProductCard from "./components/ProductCard";
 import ProductImage from "./components/ProductImage";
 import FlashCountdown from "./components/FlashCountdown";
 import Newsletter from "./components/Newsletter";
-
-// Representative gradient per category for the shop-by-category tiles.
-const CATEGORY_SWATCH: Record<string, [string, string]> = {
-  Tops: ["#1e293b", "#0f172a"],
-  Bottoms: ["#3b82f6", "#1e3a8a"],
-  Outerwear: ["#4d7c0f", "#365314"],
-  Accessories: ["#d97706", "#78350f"],
-};
 
 const PROMISES: [string, string][] = [
   ["Free shipping", "On orders over $75"],
@@ -26,7 +19,14 @@ export const revalidate = 60;
 
 export default async function Home() {
   // One query; every section below is a slice of the full catalog.
-  const products = await getAllProducts();
+  const [products, categories] = await Promise.all([getAllProducts(), getCategories()]);
+  // Shop-by-category tiles skip categories with no published products.
+  const categoryTiles = categories
+    .map((category) => ({
+      category,
+      count: productsInCategory(products, category, categories).length,
+    }))
+    .filter((tile) => tile.count > 0);
   const featured = products.filter((p) => p.featured);
   const sale = products.filter((p) => p.salePrice != null);
   const hero = products.find((p) => p.id === "field-jacket") ?? featured[0];
@@ -72,7 +72,7 @@ export default async function Home() {
                 Shop the collection
               </Link>
               <Link
-                href="/products?category=Outerwear"
+                href="/products?category=outerwear"
                 className="font-mono text-xs uppercase tracking-[0.16em] underline-offset-4 hover:underline"
               >
                 Shop outerwear →
@@ -122,13 +122,12 @@ export default async function Home() {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
-          {CATEGORIES.map((category) => {
-            const [from, to] = CATEGORY_SWATCH[category];
-            const count = products.filter((p) => p.category === category).length;
+          {categoryTiles.map(({ category, count }) => {
+            const [from, to] = category.swatch;
             return (
               <Link
-                key={category}
-                href={`/products?category=${encodeURIComponent(category)}`}
+                key={category.slug}
+                href={`/products?category=${encodeURIComponent(category.slug)}`}
                 className="group relative flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-xl border border-line p-5 text-white"
                 style={{ background: `linear-gradient(150deg, ${from}, ${to})` }}
               >
@@ -137,7 +136,7 @@ export default async function Home() {
                   {String(count).padStart(2, "0")} styles
                 </span>
                 <span className="display relative mt-1 text-2xl leading-none">
-                  {category}
+                  {category.name}
                 </span>
                 <span className="relative mt-2 font-mono text-xs text-white/80">
                   Shop →

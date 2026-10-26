@@ -3,7 +3,8 @@
 import { useActionState, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isValidProductId, MAX_IMAGE_BYTES, type FieldName } from "@/lib/product-form";
-import { CATEGORIES } from "@/lib/products";
+import { resolveCategoryParam } from "@/lib/category-form";
+import type { Category } from "@/lib/products";
 import type { AdminProduct } from "@/lib/admin-products";
 import ProductImage from "@/app/components/ProductImage";
 import { requestImageUpload, type ProductFormState } from "./actions";
@@ -40,10 +41,13 @@ export default function ProductForm({
   mode,
   action,
   product,
+  categories,
 }: {
   mode: "create" | "update";
   action: (prev: ProductFormState, formData: FormData) => Promise<ProductFormState>;
   product?: AdminProduct;
+  /** Options for the category select (value = slug, label = name). */
+  categories: Category[];
 }) {
   const [state, submit, pending] = useActionState(action, initialState);
   const [, startTransition] = useTransition();
@@ -142,11 +146,16 @@ export default function ProductForm({
       <Field label="Category" error={errors.category}>
         <select
           name="category"
-          defaultValue={product?.category ?? CATEGORIES[0]}
+          defaultValue={
+            (product && resolveCategoryParam(product.category, categories)?.slug) ??
+            categories[0]?.slug
+          }
           className={inputClass}
         >
-          {CATEGORIES.map((category) => (
-            <option key={category}>{category}</option>
+          {categories.map((category) => (
+            <option key={category.slug} value={category.slug}>
+              {category.name}
+            </option>
           ))}
         </select>
       </Field>

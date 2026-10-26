@@ -1,9 +1,6 @@
 // Product types and pure helpers. Safe to import from client components —
 // the data itself lives in Supabase and is fetched via `@/lib/catalog`.
 
-/** The four original categories; removed once categories come from the database. */
-export type LegacyCategory = "Tops" | "Bottoms" | "Outerwear" | "Accessories";
-
 /** A product category, managed by admins in the `categories` table. */
 export type Category = {
   slug: string;
@@ -27,7 +24,10 @@ export type Product = {
   price: number;
   /** Discounted price in cents when the item is in the flash sale. */
   salePrice?: number;
-  category: LegacyCategory;
+  /** Category slug (or, until the FK migration, the old display name). */
+  category: string;
+  /** The category's display name. */
+  categoryName: string;
   description: string;
   sizes: string[];
   spec: Spec;
@@ -38,12 +38,6 @@ export type Product = {
   featured?: boolean;
 };
 
-export const CATEGORIES: LegacyCategory[] = [
-  "Tops",
-  "Bottoms",
-  "Outerwear",
-  "Accessories",
-];
 
 const priceFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",

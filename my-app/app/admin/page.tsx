@@ -37,7 +37,7 @@ export default async function AdminPage() {
             <div className="min-w-0 flex-1">
               <p className="font-medium">{product.name}</p>
               <p className="font-mono text-xs text-muted">
-                {product.id} · {product.category}
+                {product.id} · {product.categoryName}
               </p>
             </div>
             <p className="text-sm">

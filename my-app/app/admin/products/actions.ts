@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-guards";
+import { getCategories } from "@/lib/catalog";
 import {
   createImageUpload,
   deleteProduct,
@@ -30,8 +31,6 @@ export type ProductFormState = {
   errors: Partial<Record<FieldName | "form", string>>;
 };
 
-// Temporary: replaced by the database categories in the next commit.
-const LEGACY_CATEGORY_VALUES = ["Tops", "Bottoms", "Outerwear", "Accessories"];
 const UPLOAD_FAILED = "Photo upload failed. Try again.";
 const SOMETHING_WRONG = "Something went wrong, please try again.";
 
@@ -41,6 +40,10 @@ function revalidateProduct(id: string) {
   revalidatePath(`/products/${id}`);
   revalidatePath("/cart");
   revalidatePath("/admin");
+}
+
+async function categorySlugs(): Promise<string[]> {
+  return (await getCategories()).map((category) => category.slug);
 }
 
 function formFields(formData: FormData): Record<string, string | undefined> {
@@ -66,7 +69,7 @@ export async function createProductAction(
 ): Promise<ProductFormState> {
   await requireAdmin("/admin");
   const fields = formFields(formData);
-  const parsed = parseProductForm(fields, "create", LEGACY_CATEGORY_VALUES);
+  const parsed = parseProductForm(fields, "create", await categorySlugs());
   if (!parsed.ok) return { errors: parsed.errors };
   const id = parsed.id!;
 
@@ -94,7 +97,7 @@ export async function updateProductAction(
   await requireAdmin(`/admin/products/${id}`);
   if (!(await getProductForAdmin(id))) notFound();
   const fields = formFields(formData);
-  const parsed = parseProductForm(fields, "update", LEGACY_CATEGORY_VALUES);
+  const parsed = parseProductForm(fields, "update", await categorySlugs());
   if (!parsed.ok) return { errors: parsed.errors };
 
   try {
