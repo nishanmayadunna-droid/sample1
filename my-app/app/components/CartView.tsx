@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCart } from "@/app/context/CartContext";
+import { MAX_LINE_QUANTITY } from "@/lib/cart-rules";
 import { effectivePrice, formatPrice, type Product } from "@/lib/products";
 import ProductImage from "./ProductImage";
 
@@ -104,7 +105,8 @@ export default function CartView({ products }: { products: Product[] }) {
                       onClick={() =>
                         setQuantity(line.id, line.size, line.quantity + 1)
                       }
-                      className="px-3 py-1 text-lg leading-none text-muted hover:text-ink"
+                      disabled={line.quantity >= MAX_LINE_QUANTITY}
+                      className="px-3 py-1 text-lg leading-none text-muted hover:text-ink disabled:opacity-40"
                       aria-label="Increase quantity"
                     >
                       +
