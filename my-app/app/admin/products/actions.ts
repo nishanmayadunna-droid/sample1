@@ -30,6 +30,8 @@ export type ProductFormState = {
   errors: Partial<Record<FieldName | "form", string>>;
 };
 
+// Temporary: replaced by the database categories in the next commit.
+const LEGACY_CATEGORY_VALUES = ["Tops", "Bottoms", "Outerwear", "Accessories"];
 const UPLOAD_FAILED = "Photo upload failed. Try again.";
 const SOMETHING_WRONG = "Something went wrong, please try again.";
 
@@ -64,7 +66,7 @@ export async function createProductAction(
 ): Promise<ProductFormState> {
   await requireAdmin("/admin");
   const fields = formFields(formData);
-  const parsed = parseProductForm(fields, "create");
+  const parsed = parseProductForm(fields, "create", LEGACY_CATEGORY_VALUES);
   if (!parsed.ok) return { errors: parsed.errors };
   const id = parsed.id!;
 
@@ -92,7 +94,7 @@ export async function updateProductAction(
   await requireAdmin(`/admin/products/${id}`);
   if (!(await getProductForAdmin(id))) notFound();
   const fields = formFields(formData);
-  const parsed = parseProductForm(fields, "update");
+  const parsed = parseProductForm(fields, "update", LEGACY_CATEGORY_VALUES);
   if (!parsed.ok) return { errors: parsed.errors };
 
   try {

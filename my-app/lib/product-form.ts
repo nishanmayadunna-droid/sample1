@@ -1,6 +1,5 @@
 // Pure validation for the admin product form and photo paths. No I/O, so it is
 // shared by the Server Actions, the form and the unit tests.
-import { CATEGORIES, type LegacyCategory } from "@/lib/products";
 
 export type FieldName =
   | "id"
@@ -22,7 +21,7 @@ export type ProductInput = {
   name: string;
   price: number;
   sale_price: number | null;
-  category: LegacyCategory;
+  category: string; // a category slug
   description: string;
   sizes: string[];
   material: string;
@@ -72,6 +71,8 @@ function parseSizes(raw: string | undefined): string[] | null {
 export function parseProductForm(
   fields: Record<string, string | undefined>,
   mode: "create" | "update",
+  /** Slugs of the existing categories (from getCategories()). */
+  categorySlugs: string[],
 ):
   | { ok: true; id: string | null; value: ProductInput }
   | { ok: false; errors: Partial<Record<FieldName, string>> } {
@@ -98,7 +99,7 @@ export function parseProductForm(
     }
   }
 
-  const category = CATEGORIES.find((c) => c === fields.category);
+  const category = categorySlugs.find((slug) => slug === fields.category);
   if (!category) errors.category = "Pick a category.";
 
   const description = text(fields.description, 2000);
