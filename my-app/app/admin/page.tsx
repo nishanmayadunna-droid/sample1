@@ -5,6 +5,7 @@ import { listProductsForAdmin } from "@/lib/admin-products";
 import { formatPrice } from "@/lib/products";
 import ProductImage from "../components/ProductImage";
 import PublishToggle from "./PublishToggle";
+import AdminTabs from "./AdminTabs";
 
 export const metadata: Metadata = { title: "Admin" };
 
@@ -14,6 +15,7 @@ export default async function AdminPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
+      <AdminTabs active="products" />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow text-muted">Staff only</p>
