@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CATEGORIES, type Category } from "@/lib/products";
+import { CATEGORIES, type LegacyCategory } from "@/lib/products";
 import { getAllProducts, getProductsByCategory } from "@/lib/catalog";
 import ProductCard from "../components/ProductCard";
 
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: "Browse the full Northbound collection.",
 };
 
-function isCategory(value: string | undefined): value is Category {
+function isCategory(value: string | undefined): value is LegacyCategory {
   return !!value && (CATEGORIES as string[]).includes(value);
 }
 

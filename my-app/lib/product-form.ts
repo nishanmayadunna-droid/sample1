@@ -1,6 +1,6 @@
 // Pure validation for the admin product form and photo paths. No I/O, so it is
 // shared by the Server Actions, the form and the unit tests.
-import { CATEGORIES, type Category } from "@/lib/products";
+import { CATEGORIES, type LegacyCategory } from "@/lib/products";
 
 export type FieldName =
   | "id"
@@ -22,7 +22,7 @@ export type ProductInput = {
   name: string;
   price: number;
   sale_price: number | null;
-  category: Category;
+  category: LegacyCategory;
   description: string;
   sizes: string[];
   material: string;

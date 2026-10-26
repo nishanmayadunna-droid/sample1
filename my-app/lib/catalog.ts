@@ -2,7 +2,7 @@
 // Import only from Server Components (it bundles supabase-js).
 import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
-import type { Category, Product } from "./products";
+import type { LegacyCategory, Product } from "./products";
 
 // The catalog is public and per-user state isn't involved, so a cookie-less
 // client is used. That keeps product pages statically generated (ISR) instead
@@ -18,7 +18,7 @@ export type ProductRow = {
   name: string;
   price: number;
   sale_price: number | null;
-  category: Category;
+  category: LegacyCategory;
   description: string;
   sizes: string[];
   material: string;
@@ -77,7 +77,7 @@ export const getProduct = cache(
 );
 
 export const getProductsByCategory = cache(
-  async (category: Category): Promise<Product[]> => {
+  async (category: LegacyCategory): Promise<Product[]> => {
     const { data, error } = await selectProducts()
       .eq("category", category)
       .order("sort_order")
