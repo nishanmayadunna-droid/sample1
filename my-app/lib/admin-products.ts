@@ -93,7 +93,35 @@ function bucketPathOf(url: string | null | undefined): string | null {
   if (!url) return null;
   const marker = `/storage/v1/object/public/${BUCKET}/`;
   const index = url.indexOf(marker);
-  return index === -1 ? null : decodeURIComponent(url.slice(index + marker.length));
+  if (index === -1) return null;
+  try {
+    return decodeURIComponent(url.slice(index + marker.length));
+  } catch {
+    return null; // a hand-edited URL with a broken %-escape: leave the file alone
+  }
+}
+
+/**
+ * Permanently deletes the product row, then best-effort deletes its photo.
+ * Returns false when no product had this id. Cart lines that still point at
+ * it are harmless: the shop skips ids it can't find.
+ */
+export async function deleteProduct(id: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin
+    .from("products")
+    .delete()
+    .eq("id", id)
+    .select("image_url")
+    .returns<{ image_url: string | null }[]>();
+  if (error) fail(error);
+  if (data.length === 0) return false;
+
+  const photoPath = bucketPathOf(data[0].image_url);
+  if (photoPath) {
+    const { error: removeError } = await supabaseAdmin.storage.from(BUCKET).remove([photoPath]);
+    if (removeError) console.error("deleted product's image not removed", photoPath, removeError);
+  }
+  return true;
 }
 
 /** Points the product at `path`, then best-effort deletes its previous photo. */

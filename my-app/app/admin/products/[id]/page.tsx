@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth-guards";
 import { getProductForAdmin } from "@/lib/admin-products";
 import { updateProductAction } from "../actions";
 import ProductForm from "../ProductForm";
+import DeleteProduct from "../DeleteProduct";
 
 export const metadata: Metadata = { title: "Admin" };
 
@@ -36,6 +37,7 @@ export default async function EditProductPage({
         action={updateProductAction.bind(null, product.id)}
         product={product}
       />
+      <DeleteProduct id={product.id} name={product.name} />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-guards";
 import {
   createImageUpload,
+  deleteProduct,
   getProductForAdmin,
   imageExists,
   insertProduct,
@@ -14,6 +15,7 @@ import {
 } from "@/lib/admin-products";
 import {
   imagePathFor,
+  isDeleteConfirmed,
   isValidImagePath,
   isValidProductId,
   MAX_IMAGE_BYTES,
@@ -128,4 +130,30 @@ export async function requestImageUpload(
   } catch {
     return { error: UPLOAD_FAILED };
   }
+}
+
+export type DeleteProductState = { error: string | null };
+
+/** Hard delete: removes the product and its photo. The admin must type the id to confirm. */
+export async function deleteProductAction(
+  id: string,
+  _prev: DeleteProductState,
+  formData: FormData,
+): Promise<DeleteProductState> {
+  await requireAdmin(`/admin/products/${id}`);
+  const typed = formData.get("confirmation");
+  if (typeof typed !== "string" || !isDeleteConfirmed(id, typed)) {
+    return { error: "Type the product ID to confirm." };
+  }
+
+  let deleted: boolean;
+  try {
+    deleted = await deleteProduct(id);
+  } catch {
+    return { error: SOMETHING_WRONG };
+  }
+  if (!deleted) notFound();
+
+  revalidateProduct(id);
+  redirect("/admin");
 }

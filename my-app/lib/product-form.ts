@@ -172,3 +172,8 @@ export function isValidImagePath(id: string, path: string): boolean {
   // id is a validated slug, so it has no regex metacharacters.
   return new RegExp(`^${id}-\\d+\\.(jpg|png|webp)$`).test(path);
 }
+
+/** Hard delete needs the admin to type the product id exactly (surrounding spaces ignored). */
+export function isDeleteConfirmed(id: string, typed: string): boolean {
+  return id !== "" && typed.trim() === id;
+}

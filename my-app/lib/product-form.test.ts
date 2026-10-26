@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   imagePathFor,
+  isDeleteConfirmed,
   isValidImagePath,
   parsePriceToCents,
   parseProductForm,
@@ -147,4 +148,12 @@ describe("isValidImagePath", () => {
     "tee-shirt-123.jpg",
     "tee-123.jpg.png",
   ])("rejects %s for tee", (path) => expect(isValidImagePath("tee", path)).toBe(false));
+});
+
+describe("isDeleteConfirmed", () => {
+  it("accepts the exact id", () => expect(isDeleteConfirmed("trail-cap", "trail-cap")).toBe(true));
+  it("ignores surrounding whitespace", () =>
+    expect(isDeleteConfirmed("trail-cap", "  trail-cap ")).toBe(true));
+  it.each(["", "trail", "Trail-Cap", "trail-cap-2", "other"])("rejects %j", (typed) =>
+    expect(isDeleteConfirmed("trail-cap", typed)).toBe(false));
 });
