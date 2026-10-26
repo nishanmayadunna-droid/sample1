@@ -3,7 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isValidProductId, MAX_IMAGE_BYTES, type FieldName } from "@/lib/product-form";
-import { resolveCategoryParam } from "@/lib/category-form";
+import { categorySelectDefault } from "@/lib/category-form";
 import type { Category } from "@/lib/products";
 import type { AdminProduct } from "@/lib/admin-products";
 import ProductImage from "@/app/components/ProductImage";
@@ -57,6 +57,7 @@ export default function ProductForm({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const errors: Partial<Record<FieldName | "form", string>> = state.errors;
+  const categoryDefault = categorySelectDefault(product?.category, categories);
 
   // Uploads straight to Storage with a one-time signed URL from the server, so
   // the photo never passes through a size-limited Server Action body.
@@ -146,12 +147,14 @@ export default function ProductForm({
       <Field label="Category" error={errors.category}>
         <select
           name="category"
-          defaultValue={
-            (product && resolveCategoryParam(product.category, categories)?.slug) ??
-            categories[0]?.slug
-          }
+          defaultValue={categoryDefault.value}
           className={inputClass}
         >
+          {categoryDefault.missing !== null && (
+            <option value="" disabled>
+              {categoryDefault.missing} (missing, pick another)
+            </option>
+          )}
           {categories.map((category) => (
             <option key={category.slug} value={category.slug}>
               {category.name}

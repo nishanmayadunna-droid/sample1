@@ -2,7 +2,7 @@
 // Import only from Server Components (it bundles supabase-js).
 import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { categoryNameFor } from "./category-form";
+import { categoryNameFor, productsInCategory } from "./category-form";
 import type { Category, Product } from "./products";
 
 // The catalog is public and per-user state isn't involved, so a cookie-less
@@ -97,16 +97,12 @@ export const getProduct = cache(
   },
 );
 
+// Filters the full catalog with the same slug-or-legacy-name rule the rest of
+// the shop uses. A database filter can't: until the FK migration, a renamed
+// seeded category's products still store the old name ('Outerwear').
 export const getProductsByCategory = cache(
   async (category: Category): Promise<Product[]> => {
-    // Matches both the slug and the old display name until the FK migration
-    // converts every product to slugs.
-    const { data, error } = await selectProducts()
-      .in("category", [category.slug, category.name])
-      .order("sort_order")
-      .overrideTypes<ProductRow[], { merge: false }>();
-    if (error) throw new Error(`Failed to load ${category.slug}: ${error.message}`);
-    const categories = await getCategories();
-    return data.map((row) => toProduct(row, categories));
+    const [products, categories] = await Promise.all([getAllProducts(), getCategories()]);
+    return productsInCategory(products, category, categories);
   },
 );

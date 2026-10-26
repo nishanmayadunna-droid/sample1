@@ -85,3 +85,18 @@ export function productsInCategory<T extends { category: string }>(
     (p) => resolveCategoryParam(p.category, categories)?.slug === category.slug,
   );
 }
+
+/**
+ * Default for the product form's category select. A product whose category no
+ * longer exists gets an empty value (and its raw value to show as "missing"),
+ * so saving it asks the admin to pick a category instead of silently moving
+ * it to the first one.
+ */
+export function categorySelectDefault(
+  storedCategory: string | undefined,
+  categories: Category[],
+): { value: string; missing: string | null } {
+  if (storedCategory === undefined) return { value: categories[0]?.slug ?? "", missing: null };
+  const category = resolveCategoryParam(storedCategory, categories);
+  return category ? { value: category.slug, missing: null } : { value: "", missing: storedCategory };
+}

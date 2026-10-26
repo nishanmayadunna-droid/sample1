@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Category } from "./products";
 import {
   categoryNameFor,
+  categorySelectDefault,
   parseCategoryForm,
   productsInCategory,
   resolveCategoryParam,
@@ -86,4 +87,37 @@ describe("productsInCategory", () => {
       "b",
     ]);
   });
+});
+
+describe("categorySelectDefault", () => {
+  it("selects the product's resolved slug", () =>
+    expect(categorySelectDefault("Outerwear", categories)).toEqual({ value: "outerwear", missing: null }));
+  it("selects the first category for a new product", () =>
+    expect(categorySelectDefault(undefined, categories)).toEqual({ value: "tops", missing: null }));
+  // A missing category must not silently become "Tops" on the next save.
+  it("keeps a missing category unselectable instead of defaulting to the first", () =>
+    expect(categorySelectDefault("gone", categories)).toEqual({ value: "", missing: "gone" }));
+});
+
+describe("renamed categories", () => {
+  const renamed: Category[] = [
+    ...categories.filter((c) => c.slug !== "outerwear"),
+    { slug: "outerwear", name: "Jackets", swatch: ["#4d7c0f", "#365314"], sortOrder: 3 },
+    { slug: "coats", name: "Outerwear", swatch: ["#000000", "#111111"], sortOrder: 5 },
+  ];
+  const products = [
+    { id: "legacy", category: "Outerwear" }, // stored before the FK migration
+    { id: "new", category: "outerwear" },
+    { id: "coat", category: "coats" },
+  ];
+
+  it("keeps legacy rows in the renamed category (slug wins over another's name)", () =>
+    expect(
+      productsInCategory(products, renamed.find((c) => c.slug === "outerwear")!, renamed).map((p) => p.id),
+    ).toEqual(["legacy", "new"]));
+
+  it("does not give legacy rows to a new category that took the old name", () =>
+    expect(
+      productsInCategory(products, renamed.find((c) => c.slug === "coats")!, renamed).map((p) => p.id),
+    ).toEqual(["coat"]));
 });
