@@ -35,15 +35,27 @@ export const CATEGORIES: Category[] = [
   "Accessories",
 ];
 
-const priceFormatter = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
+// Prices are Sri Lankan rupees stored in cents. Intl's LKR format prints
+// "LKR 850.00", so the "Rs" prefix is added by hand around a plain number.
+const amountFormatter = new Intl.NumberFormat("en-LK", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 });
 
-/** Format a price given in cents as a USD string, e.g. 2800 -> "$28.00". */
+/** Format a price given in cents as rupees, e.g. 85000 -> "Rs 850.00". */
 export function formatPrice(cents: number): string {
-  return priceFormatter.format(cents / 100);
+  return `Rs ${amountFormatter.format(cents / 100)}`;
 }
+
+/** Like formatPrice but drops ".00" for whole rupees, e.g. 500000 -> "Rs 5,000". */
+export function formatPriceWhole(cents: number): string {
+  return formatPrice(cents).replace(/.00$/, "");
+}
+
+/** Orders at or above this subtotal (in cents) ship free. */
+export const FREE_SHIPPING_THRESHOLD = 500000; // Rs 5,000
+/** Flat shipping charge (in cents) below the threshold. */
+export const SHIPPING_FLAT = 35000; // Rs 350
 
 /** The price actually charged: the sale price when on sale, else the list price. */
 export function effectivePrice(product: Product): number {

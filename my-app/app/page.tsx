@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { CATEGORIES, formatPrice } from "@/lib/products";
+import {
+  CATEGORIES,
+  formatPrice,
+  formatPriceWhole,
+  FREE_SHIPPING_THRESHOLD,
+} from "@/lib/products";
 import { getAllProducts } from "@/lib/catalog";
 import ProductCard from "./components/ProductCard";
 import ProductImage from "./components/ProductImage";
@@ -15,7 +20,7 @@ const CATEGORY_SWATCH: Record<string, [string, string]> = {
 };
 
 const PROMISES: [string, string][] = [
-  ["Free shipping", "On orders over $75"],
+  ["Free shipping", `On orders over ${formatPriceWhole(FREE_SHIPPING_THRESHOLD)}`],
   ["30-day returns", "No restocking fees"],
   ["Built to be repaired", "Free repairs for a year"],
   ["Carbon-neutral", "Every order offset"],

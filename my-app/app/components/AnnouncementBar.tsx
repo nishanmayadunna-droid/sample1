@@ -1,3 +1,5 @@
+import { formatPriceWhole, FREE_SHIPPING_THRESHOLD } from "@/lib/products";
+
 export default function AnnouncementBar() {
   return (
     <div className="bg-blaze text-white">
@@ -6,7 +8,7 @@ export default function AnnouncementBar() {
         <span aria-hidden="true" className="opacity-60">
           ·
         </span>
-        <span>Free shipping over $75</span>
+        <span>Free shipping over {formatPriceWhole(FREE_SHIPPING_THRESHOLD)}</span>
       </p>
     </div>
   );

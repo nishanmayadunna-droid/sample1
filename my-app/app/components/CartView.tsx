@@ -3,11 +3,14 @@
 import Link from "next/link";
 import { useCart } from "@/app/context/CartContext";
 import { MAX_LINE_QUANTITY } from "@/lib/cart-rules";
-import { effectivePrice, formatPrice, type Product } from "@/lib/products";
+import {
+  effectivePrice,
+  formatPrice,
+  FREE_SHIPPING_THRESHOLD,
+  SHIPPING_FLAT,
+  type Product,
+} from "@/lib/products";
 import ProductImage from "./ProductImage";
-
-const SHIPPING_THRESHOLD = 7500; // Free shipping over $75.
-const SHIPPING_FLAT = 800;
 
 export default function CartView({ products }: { products: Product[] }) {
   const { lines, setQuantity, removeItem, clear, hydrated } = useCart();
@@ -42,7 +45,7 @@ export default function CartView({ products }: { products: Product[] }) {
     );
   }
 
-  const shipping = subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_FLAT;
+  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FLAT;
   const total = subtotal + shipping;
 
   return (
@@ -144,7 +147,7 @@ export default function CartView({ products }: { products: Product[] }) {
         </dl>
         {shipping > 0 && (
           <p className="mt-3 font-mono text-[0.7rem] text-muted">
-            Add {formatPrice(SHIPPING_THRESHOLD - subtotal)} more for free
+            Add {formatPrice(FREE_SHIPPING_THRESHOLD - subtotal)} more for free
             shipping.
           </p>
         )}
