@@ -32,14 +32,14 @@ export type ProductInput = {
   sort_order: number;
 };
 
-const MAX_PRICE_CENTS = 10_000_000; // exclusive: prices stay under $100,000
+const MAX_PRICE_CENTS = 100_000_000; // exclusive: prices stay under Rs 1,000,000
 const PRICE_PATTERN = /^(\d+)(?:\.(\d{1,2}))?$/;
 const ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
 const MAX_SIZES = 12;
 const MAX_SIZE_LENGTH = 20;
 
-/** Dollars ("28", "28.5", "28.50") → integer cents, or null if invalid. */
+/** Rupees ("850", "28.5", "28.50") → integer cents, or null if invalid. */
 export function parsePriceToCents(raw: string | undefined): number | null {
   const match = PRICE_PATTERN.exec((raw ?? "").trim());
   if (!match) return null;
@@ -88,12 +88,12 @@ export function parseProductForm(
   if (name === null) errors.name = "Name is required (max 100 characters).";
 
   const price = parsePriceToCents(fields.price);
-  if (price === null) errors.price = "Enter a price like 28.00.";
+  if (price === null) errors.price = "Enter a price like 850.00.";
 
   let salePrice: number | null = null;
   if ((fields.salePrice ?? "").trim() !== "") {
     salePrice = parsePriceToCents(fields.salePrice);
-    if (salePrice === null) errors.salePrice = "Enter a price like 28.00.";
+    if (salePrice === null) errors.salePrice = "Enter a price like 850.00.";
     else if (price !== null && salePrice >= price) {
       errors.salePrice = "Sale price must be lower than the price.";
     }

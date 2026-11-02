@@ -16,7 +16,8 @@ const initialState: ProductFormState = { errors: {} };
 const inputClass =
   "mt-2 w-full rounded-md border border-line bg-bg px-4 py-3 outline-none focus:border-ink";
 
-const dollars = (cents: number | undefined) =>
+// Prices are stored in cents; the form edits rupees.
+const rupees = (cents: number | undefined) =>
   cents == null ? "" : (cents / 100).toFixed(2);
 
 function Field({
@@ -124,12 +125,12 @@ export default function ProductForm({
       </Field>
 
       <div className="grid gap-x-4 sm:grid-cols-2">
-        <Field label="Price (USD)" error={errors.price}>
+        <Field label="Price (Rs)" error={errors.price}>
           <input
             name="price"
             inputMode="decimal"
-            defaultValue={dollars(product?.price)}
-            placeholder="28.00"
+            defaultValue={rupees(product?.price)}
+            placeholder="850.00"
             className={inputClass}
             required
           />
@@ -138,7 +139,7 @@ export default function ProductForm({
           <input
             name="salePrice"
             inputMode="decimal"
-            defaultValue={dollars(product?.salePrice)}
+            defaultValue={rupees(product?.salePrice)}
             className={inputClass}
           />
         </Field>

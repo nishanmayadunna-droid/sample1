@@ -37,10 +37,11 @@ describe("parsePriceToCents", () => {
     ["28.5", 2850],
     ["28.50", 2850],
     ["19.99", 1999],
+    ["100000", 10000000], // Rs 100,000 is a valid price in rupees
     [" 7.10 ", 710],
   ])("%j → %i", (raw, cents) => expect(parsePriceToCents(raw)).toBe(cents));
 
-  it.each(["0", "-1", "28.999", "abc", "", undefined, "100000"])("%j → null", (raw) =>
+  it.each(["0", "-1", "28.999", "abc", "", undefined, "1000000"])("%j → null", (raw) =>
     expect(parsePriceToCents(raw)).toBeNull());
 });
 
@@ -77,7 +78,7 @@ describe("parseProductForm", () => {
     expect(errorsFor({ name }).name).toBe("Name is required (max 100 characters)."));
 
   it("rejects a bad price", () =>
-    expect(errorsFor({ price: "abc" }).price).toBe("Enter a price like 28.00."));
+    expect(errorsFor({ price: "abc" }).price).toBe("Enter a price like 850.00."));
 
   it("accepts a sale price below the price", () => {
     const result = parseProductForm({ ...valid, salePrice: "20" }, "create", SLUGS);

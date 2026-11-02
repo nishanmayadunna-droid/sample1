@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatPrice } from "@/lib/products";
+import { formatPrice, formatPriceWhole, FREE_SHIPPING_THRESHOLD } from "@/lib/products";
 import { getAllProducts, getCategories } from "@/lib/catalog";
 import { productsInCategory } from "@/lib/category-form";
 import ProductCard from "./components/ProductCard";
@@ -8,7 +8,7 @@ import FlashCountdown from "./components/FlashCountdown";
 import Newsletter from "./components/Newsletter";
 
 const PROMISES: [string, string][] = [
-  ["Free shipping", "On orders over $75"],
+  ["Free shipping", `On orders over ${formatPriceWhole(FREE_SHIPPING_THRESHOLD)}`],
   ["30-day returns", "No restocking fees"],
   ["Built to be repaired", "Free repairs for a year"],
   ["Carbon-neutral", "Every order offset"],
