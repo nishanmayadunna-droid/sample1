@@ -5,8 +5,20 @@ import { SessionProvider } from "next-auth/react";
 import { useCart } from "@/app/context/CartContext";
 import AccountNav from "./AccountNav";
 import CartSync from "./CartSync";
+import LangToggle from "./LangToggle";
+import { initLangStore } from "@/app/context/LangContext";
+import type { Lang } from "@/lib/i18n";
 
-export default function Header() {
+export default function Header({
+  defaultLang,
+  bilingual,
+}: {
+  defaultLang: Lang;
+  bilingual: boolean;
+}) {
+  // Header renders before every other client component, so the language
+  // store knows the server's language before anything hydrates.
+  initLangStore(defaultLang);
   const { totalItems, hydrated } = useCart();
 
   return (
@@ -26,6 +38,7 @@ export default function Header() {
           >
             Shop
           </Link>
+          <LangToggle show={bilingual} />
           <SessionProvider>
             <AccountNav />
             <CartSync />

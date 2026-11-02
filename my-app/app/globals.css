@@ -41,22 +41,23 @@
   --color-panel: var(--panel);
   --color-panelink: var(--panel-ink);
   --color-panelmuted: var(--panel-muted);
-  --font-display: var(--font-anton);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-anton), var(--font-sinhala-bold);
+  --font-sans: var(--font-geist-sans), var(--font-sinhala);
+  --font-mono: var(--font-geist-mono), var(--font-sinhala);
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-geist-sans), var(--font-sinhala), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 /* Display face: condensed poster grotesque, always set in caps. */
 .display {
-  font-family: var(--font-anton), ui-sans-serif, sans-serif;
+  /* Anton has no Sinhala glyphs; they come from the bold-only Noto face. */
+  font-family: var(--font-anton), var(--font-sinhala-bold), ui-sans-serif, sans-serif;
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.005em;
@@ -66,7 +67,7 @@ body {
 /* Utility voice: monospace, tracked-out, uppercase — the spec/label register. */
 .eyebrow {
   display: block;
-  font-family: var(--font-mono), ui-monospace, monospace;
+  font-family: var(--font-mono), var(--font-sinhala), ui-monospace, monospace;
   text-transform: uppercase;
   letter-spacing: 0.2em;
   font-size: 0.7rem;
@@ -120,4 +121,19 @@ body {
   * {
     scroll-behavior: auto !important;
   }
+}
+
+/* Sinhala / English: both texts are in the page; html[data-lang] shows one
+   (see app/components/L.tsx and lib/i18n.ts). */
+html[data-lang="si"] .l-en,
+html[data-lang="en"] .l-si {
+  display: none;
+}
+
+/* Tracking breaks up Sinhala conjuncts, and its glyphs stand taller. */
+.l-si {
+  letter-spacing: normal;
+}
+html[data-lang="si"] .display {
+  line-height: 1.15;
 }

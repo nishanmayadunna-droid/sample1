@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Geist, Geist_Mono, Anton } from "next/font/google";
+import { Geist, Geist_Mono, Anton, Noto_Sans_Sinhala } from "next/font/google";
 import "./globals.css";
 import AnnouncementBar from "./components/AnnouncementBar";
 import Header from "./components/Header";
+import InlineScript from "./components/InlineScript";
+import { getStoreSettings } from "@/lib/storefront";
+import { langBootScript } from "@/lib/i18n";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,6 +24,24 @@ const anton = Anton({
   weight: "400",
 });
 
+// Sinhala text: regular for body copy, and a bold-only face that the Anton
+// headings fall back to (Anton has no Sinhala glyphs).
+const sinhala = Noto_Sans_Sinhala({
+  variable: "--font-sinhala",
+  subsets: ["sinhala"],
+  weight: "400",
+});
+
+const sinhalaBold = Noto_Sans_Sinhala({
+  variable: "--font-sinhala-bold",
+  subsets: ["sinhala"],
+  weight: "700",
+});
+
+// Store settings (language) are re-read at most once a minute; admin saves
+// revalidate the layout at once.
+export const revalidate = 60;
+
 export const metadata: Metadata = {
   title: {
     default: "Northbound — Hard-wearing field apparel",
@@ -30,19 +51,28 @@ export const metadata: Metadata = {
     "Honest materials, quiet design, and hardware built to outlast the season. Field apparel for the cold miles.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const settings = await getStoreSettings();
+
+  // Every visitor gets the same HTML in the default language; the boot script
+  // switches html[data-lang] to their saved choice before first paint.
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${anton.variable} h-full antialiased`}
+      lang={settings.defaultLang}
+      data-lang={settings.defaultLang}
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} ${anton.variable} ${sinhala.variable} ${sinhalaBold.variable} h-full antialiased`}
     >
+      <head>
+        <InlineScript html={langBootScript(settings)} />
+      </head>
       <body className="min-h-full flex flex-col">
         <AnnouncementBar />
-        <Header />
+        <Header defaultLang={settings.defaultLang} bilingual={settings.bilingual} />
         <main className="flex-1">{children}</main>
         <footer className="mt-8 bg-panel text-panelmuted">
           <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-12 sm:flex-row sm:items-end sm:justify-between sm:px-6">
