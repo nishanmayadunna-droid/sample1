@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { summarizeCart } from "./cart-summary";
+import { cartBadgeCount, summarizeCart } from "./cart-summary";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_FLAT } from "./products";
 
 const tee = { id: "tee", price: 100000 };
@@ -47,5 +47,23 @@ describe("summarizeCart", () => {
   it("is all zero for an empty cart", () => {
     const s = summarizeCart([], products);
     expect([s.itemCount, s.subtotal, s.shipping, s.total]).toEqual([0, 0, 0, 0]);
+  });
+});
+
+describe("cartBadgeCount", () => {
+  it("counts only lines whose product still exists", () => {
+    expect(
+      cartBadgeCount(
+        [
+          { id: "tee", size: "M", quantity: 2 },
+          { id: "hidden", size: "M", quantity: 3 },
+        ],
+        products,
+      ),
+    ).toBe(2);
+  });
+
+  it("counts every line when the product list couldn't be loaded", () => {
+    expect(cartBadgeCount([{ id: "tee", size: "M", quantity: 2 }], [])).toBe(2);
   });
 });

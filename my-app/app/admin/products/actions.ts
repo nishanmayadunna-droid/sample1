@@ -35,6 +35,8 @@ const UPLOAD_FAILED = "Photo upload failed. Try again.";
 const SOMETHING_WRONG = "Something went wrong, please try again.";
 
 function revalidateProduct(id: string) {
+  // The root layout passes the catalog to the search box and cart drawer.
+  revalidatePath("/", "layout");
   revalidatePath("/");
   revalidatePath("/products");
   revalidatePath(`/products/${id}`);

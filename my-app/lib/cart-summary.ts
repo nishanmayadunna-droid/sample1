@@ -44,3 +44,16 @@ export function summarizeCart<P extends Pick<Product, "id" | "price" | "salePric
     toFreeShipping: Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal),
   };
 }
+
+/**
+ * The header badge: items whose product still exists, so a hidden or deleted
+ * product isn't counted. With no product list (the shell couldn't load it)
+ * every line counts, rather than showing an empty cart.
+ */
+export function cartBadgeCount(
+  lines: CartLine[],
+  products: Pick<Product, "id" | "price" | "salePrice">[],
+): number {
+  if (products.length === 0) return lines.reduce((sum, line) => sum + line.quantity, 0);
+  return summarizeCart(lines, products).itemCount;
+}

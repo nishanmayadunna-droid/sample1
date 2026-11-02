@@ -25,7 +25,8 @@ export default function CartView({ products }: { products: Product[] }) {
     );
   }
 
-  if (lines.length === 0) {
+  // A cart holding only products that are gone counts as empty.
+  if (items.length === 0) {
     return (
       <div className="flex flex-col items-start gap-5 py-16">
         <p className="display text-3xl">

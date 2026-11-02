@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/app/context/CartContext";
 import { closeCartDrawer, useCartDrawer } from "@/app/context/CartDrawerContext";
 import { useLang } from "@/app/context/LangContext";
@@ -24,6 +25,7 @@ export default function CartDrawer({ products }: { products: ShellProduct[] }) {
   const open = useCartDrawer();
   const { lines, setQuantity, removeItem } = useCart();
   const lang = useLang();
+  const router = useRouter();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -31,6 +33,9 @@ export default function CartDrawer({ products }: { products: ShellProduct[] }) {
   useEffect(() => {
     if (!open) return;
     closeRef.current?.focus();
+    // The product list comes from the root layout, which an open tab never
+    // re-fetches on its own; refresh it so prices and hidden products are current.
+    router.refresh();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (event: KeyboardEvent) => {
@@ -41,7 +46,7 @@ export default function CartDrawer({ products }: { products: ShellProduct[] }) {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, router]);
 
   if (!open) return null;
 

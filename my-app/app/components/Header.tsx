@@ -6,6 +6,7 @@ import { useCart } from "@/app/context/CartContext";
 import { openCartDrawer } from "@/app/context/CartDrawerContext";
 import { initLangStore, useLang } from "@/app/context/LangContext";
 import { tr, type Lang } from "@/lib/i18n";
+import { cartBadgeCount } from "@/lib/cart-summary";
 import type { Category, ShellProduct } from "@/lib/products";
 import AccountNav from "./AccountNav";
 import CartSync from "./CartSync";
@@ -31,7 +32,9 @@ export default function Header({
   // store knows the server's language before anything hydrates.
   initLangStore(defaultLang);
   const lang = useLang();
-  const { totalItems, hydrated } = useCart();
+  const { lines, hydrated } = useCart();
+  // Hidden or deleted products aren't counted, matching the drawer and /cart.
+  const totalItems = cartBadgeCount(lines, products);
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/95 backdrop-blur">
