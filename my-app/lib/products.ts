@@ -36,6 +36,8 @@ export type Product = {
   /** Public URL of the product photo in the `product-images` bucket. */
   imageUrl?: string;
   featured?: boolean;
+  /** When the product was added (ISO timestamp); drives "New In". */
+  createdAt: string;
 };
 
 

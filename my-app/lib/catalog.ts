@@ -28,10 +28,11 @@ export type ProductRow = {
   swatch: string[];
   image_url: string | null;
   featured: boolean;
+  created_at: string;
 };
 
 export const COLUMNS =
-  "id, name, price, sale_price, category, description, sizes, material, construction, origin, swatch, image_url, featured";
+  "id, name, price, sale_price, category, description, sizes, material, construction, origin, swatch, image_url, featured, created_at";
 
 export function toProduct(row: ProductRow, categories: Category[]): Product {
   return {
@@ -51,6 +52,7 @@ export function toProduct(row: ProductRow, categories: Category[]): Product {
     swatch: [row.swatch[0], row.swatch[1]],
     imageUrl: row.image_url ?? undefined,
     featured: row.featured,
+    createdAt: row.created_at,
   };
 }
 
