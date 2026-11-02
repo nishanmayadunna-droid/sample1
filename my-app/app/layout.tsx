@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Geist, Geist_Mono, Anton, Noto_Sans_Sinhala } from "next/font/google";
 import "./globals.css";
-import AnnouncementBar from "./components/AnnouncementBar";
+import Footer from "./components/Footer";
+import PromiseStrip from "./components/PromiseStrip";
 import Header from "./components/Header";
 import InlineScript from "./components/InlineScript";
-import L from "./components/L";
 import CartDrawer from "./components/CartDrawer";
-import { getStoreSettings } from "@/lib/storefront";
-import { getAllProducts } from "@/lib/catalog";
-import { toShellProduct, type ShellProduct } from "@/lib/products";
+import { getStoreSettings, getVisiblePromises } from "@/lib/storefront";
+import { getAllProducts, getCategories } from "@/lib/catalog";
+import { toShellProduct, type Category, type ShellProduct } from "@/lib/products";
 import { langBootScript } from "@/lib/i18n";
 
 const geistSans = Geist({
@@ -65,12 +64,28 @@ async function getShellProducts(): Promise<ShellProduct[]> {
   }
 }
 
+/** Categories for the menu and footer; none if they can't be read. */
+async function getShellCategories(): Promise<Category[]> {
+  try {
+    return await getCategories();
+  } catch (error) {
+    console.error("shell categories query failed", error);
+    return [];
+  }
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [settings, products] = await Promise.all([getStoreSettings(), getShellProducts()]);
+  // Each read falls back on its own, so the shell never fails the page.
+  const [settings, products, categories, promises] = await Promise.all([
+    getStoreSettings(),
+    getShellProducts(),
+    getShellCategories(),
+    getVisiblePromises(),
+  ]);
 
   // Every visitor gets the same HTML in the default language; the boot script
   // switches html[data-lang] to their saved choice before first paint.
@@ -85,33 +100,15 @@ export default async function RootLayout({
         <InlineScript html={langBootScript(settings)} />
       </head>
       <body className="min-h-full flex flex-col">
-        <AnnouncementBar />
-        <Header defaultLang={settings.defaultLang} bilingual={settings.bilingual} />
+        <PromiseStrip promises={promises} />
+        <Header
+          defaultLang={settings.defaultLang}
+          bilingual={settings.bilingual}
+          categories={categories}
+        />
         <main className="flex-1">{children}</main>
         <CartDrawer products={products} />
-        <footer className="mt-8 bg-panel text-panelmuted">
-          <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-12 sm:flex-row sm:items-end sm:justify-between sm:px-6">
-            <div>
-              <p className="display text-2xl text-panelink">
-                North<span className="text-blaze">·</span>bound
-              </p>
-              <p className="mt-2 max-w-xs text-sm leading-relaxed">
-                <L
-                  si="Demo සාප්පුවකි. ඉවත දමන්න නොව, දිගු කලක් අඳින්නට."
-                  en="A demo storefront. Built to be worn out, not thrown out."
-                />
-              </p>
-            </div>
-            <nav className="flex gap-6 font-mono text-[0.7rem] uppercase tracking-[0.16em]">
-              <Link href="/products" className="hover:text-panelink">
-                <L si="සියල්ල බලන්න" en="Shop all" />
-              </Link>
-              <Link href="/cart" className="hover:text-panelink">
-                <L si="කරත්තය" en="Cart" />
-              </Link>
-            </nav>
-          </div>
-        </footer>
+        <Footer categories={categories} promises={promises} />
       </body>
     </html>
   );

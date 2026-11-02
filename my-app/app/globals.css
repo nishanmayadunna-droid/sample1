@@ -152,3 +152,18 @@ html[data-lang="si"] .display {
     animation: none;
   }
 }
+
+/* Promise strip: phones show one promise at a time, fading in. */
+@keyframes promise-fade {
+  from {
+    opacity: 0;
+  }
+}
+.promise-fade {
+  animation: promise-fade 400ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .promise-fade {
+    animation: none;
+  }
+}

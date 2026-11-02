@@ -23,12 +23,12 @@ export default function ProductCard({ product }: { product: Product }) {
         <span className="font-mono text-[0.62rem] uppercase tracking-[0.16em] text-muted">
           {product.spec.construction} · {product.spec.origin}
         </span>
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
           <h3 className="font-medium leading-snug decoration-blaze decoration-2 underline-offset-4 group-hover:underline">
             {product.name}
           </h3>
           {product.salePrice != null ? (
-            <span className="flex shrink-0 items-baseline gap-2">
+            <span className="flex flex-wrap items-baseline gap-x-2">
               <span className="font-mono text-sm text-blaze">
                 {formatPrice(product.salePrice)}
               </span>
