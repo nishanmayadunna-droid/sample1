@@ -26,7 +26,7 @@ export type CartLineSummary<P> = {
 };
 
 /** How far the cart is from a rule it doesn't meet yet. */
-export type Nudge = { promotion: Promotion; kind: RuleKind; missing: number };
+export type Nudge = { promotion: Promotion; kind: RuleKind; missing: number; target: number };
 
 export type CartSummary<P> = {
   /** Lines whose product still exists, priced. */
@@ -102,7 +102,12 @@ export function summarizeCart<P extends CartProduct>(
       const { matched, total } = scopeTotal(rule);
       if (matched === 0) continue;
       if (total < rule.minSubtotal) {
-        nudges.push({ promotion: promo, kind: rule.kind, missing: rule.minSubtotal - total });
+        nudges.push({
+          promotion: promo,
+          kind: rule.kind,
+          missing: rule.minSubtotal - total,
+          target: rule.minSubtotal,
+        });
         continue;
       }
       if (rule.kind === "amount_off_order") {

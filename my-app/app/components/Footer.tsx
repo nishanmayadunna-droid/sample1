@@ -10,9 +10,12 @@ const headingClass = "font-mono text-[0.7rem] uppercase tracking-[0.16em] text-p
 export default function Footer({
   categories,
   promises,
+  freeShippingThreshold,
 }: {
   categories: Category[];
   promises: StorePromise[];
+  /** From the running promotions; null hides the free-shipping line. */
+  freeShippingThreshold: number | null;
 }) {
   return (
     <footer className="mt-8 bg-panel text-panelmuted">
@@ -92,7 +95,7 @@ export default function Footer({
             </li>
           </ul>
           <ul className="mt-5 flex flex-col gap-2 border-t border-white/10 pt-4 text-sm">
-            {promiseItems(promises).map((item) => (
+            {promiseItems(promises, freeShippingThreshold).map((item) => (
               <li key={item.key} className="flex items-start gap-2">
                 <PromiseIcon icon={item.icon} className="mt-0.5 h-4 w-4 text-blaze" />
                 <L si={item.si} en={item.en} />

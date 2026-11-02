@@ -29,7 +29,7 @@ describe("summarizeCart", () => {
     const below = { id: "below", category: "tops", price: 499999 };
     const s = summarizeCart([line("below")], [below], [freeOver5000], FEE, categories);
     expect([s.shipping, s.total]).toEqual([FEE, 499999 + FEE]);
-    expect(s.nudges).toEqual([{ promotion: freeOver5000, kind: "free_shipping", missing: 1 }]);
+    expect(s.nudges).toEqual([{ promotion: freeOver5000, kind: "free_shipping", missing: 1, target: 500000 }]);
   });
 
   it("drops lines for products that are gone", () => {
@@ -83,7 +83,7 @@ describe("summarizeCart", () => {
   it("nudges toward an unmet order discount whose scope is in the cart", () => {
     const order = promo({ rules: [rule({ kind: "amount_off_order", value: 50000, minSubtotal: 1200000 })] });
     const s = summarizeCart([line("tee")], products, [order], FEE, categories);
-    expect(s.nudges).toEqual([{ promotion: order, kind: "amount_off_order", missing: 200000 }]);
+    expect(s.nudges).toEqual([{ promotion: order, kind: "amount_off_order", missing: 200000, target: 1200000 }]);
   });
 });
 

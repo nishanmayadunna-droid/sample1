@@ -6,7 +6,8 @@ import PromiseStrip from "./components/PromiseStrip";
 import Header from "./components/Header";
 import InlineScript from "./components/InlineScript";
 import CartDrawer from "./components/CartDrawer";
-import { getStoreSettings, getVisiblePromises } from "@/lib/storefront";
+import { getRunningPromotions, getStoreSettings, getVisiblePromises } from "@/lib/storefront";
+import { freeShippingThreshold } from "@/lib/promotions";
 import { getAllProducts, getCategories } from "@/lib/catalog";
 import { toShellProduct, type Category, type ShellProduct } from "@/lib/products";
 import { langBootScript } from "@/lib/i18n";
@@ -80,12 +81,14 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   // Each read falls back on its own, so the shell never fails the page.
-  const [settings, products, categories, promises] = await Promise.all([
+  const [settings, products, categories, promises, promotions] = await Promise.all([
     getStoreSettings(),
     getShellProducts(),
     getShellCategories(),
     getVisiblePromises(),
+    getRunningPromotions(),
   ]);
+  const shippingThreshold = freeShippingThreshold(promotions);
 
   // Every visitor gets the same HTML in the default language; the boot script
   // switches html[data-lang] to their saved choice before first paint.
@@ -100,7 +103,7 @@ export default async function RootLayout({
         <InlineScript html={langBootScript(settings)} />
       </head>
       <body className="min-h-full flex flex-col">
-        <PromiseStrip promises={promises} />
+        <PromiseStrip promises={promises} freeShippingThreshold={shippingThreshold} />
         <Header
           defaultLang={settings.defaultLang}
           bilingual={settings.bilingual}
@@ -108,8 +111,17 @@ export default async function RootLayout({
           products={products}
         />
         <main className="flex-1">{children}</main>
-        <CartDrawer products={products} />
-        <Footer categories={categories} promises={promises} />
+        <CartDrawer
+          products={products}
+          promotions={promotions}
+          shippingFee={settings.shippingFee}
+          categories={categories}
+        />
+        <Footer
+          categories={categories}
+          promises={promises}
+          freeShippingThreshold={shippingThreshold}
+        />
       </body>
     </html>
   );

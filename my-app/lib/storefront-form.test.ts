@@ -4,6 +4,7 @@ import {
   MAX_VISIBLE_PROMISES,
   parseLanguageSettings,
   parsePromiseForm,
+  promiseItems,
 } from "./storefront-form";
 
 describe("parseLanguageSettings", () => {
@@ -74,5 +75,21 @@ describe("parsePromiseForm", () => {
 describe("canShowPromise", () => {
   it("allows up to three visible", () => {
     expect([0, 2, 3].map(canShowPromise)).toEqual([true, true, false]);
+  });
+});
+
+describe("promiseItems", () => {
+  const promises = [
+    { id: "a", icon: "box" as const, textSi: "si", textEn: "en", sortOrder: 1, visible: true },
+  ];
+
+  it("leaves out the free-shipping line when no promotion offers it", () => {
+    expect(promiseItems(promises, null).map((i) => i.key)).toEqual(["a"]);
+  });
+
+  it("starts with the free-shipping line from the promotion's threshold", () => {
+    const items = promiseItems(promises, 300000);
+    expect(items[0]).toMatchObject({ key: "free-shipping", en: "Free shipping over Rs 3,000" });
+    expect(items).toHaveLength(2);
   });
 });

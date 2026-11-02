@@ -8,8 +8,15 @@ import PromiseIcon from "./PromiseIcon";
 const ROTATE_MS = 4000;
 
 /** Black strip at the very top: every promise in a row, or one at a time on phones. */
-export default function PromiseStrip({ promises }: { promises: StorePromise[] }) {
-  const items = promiseItems(promises);
+export default function PromiseStrip({
+  promises,
+  freeShippingThreshold,
+}: {
+  promises: StorePromise[];
+  /** From the running promotions; null hides the free-shipping line. */
+  freeShippingThreshold: number | null;
+}) {
+  const items = promiseItems(promises, freeShippingThreshold);
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
