@@ -50,7 +50,9 @@ export default function CartDrawer({ products }: { products: ShellProduct[] }) {
 
   if (!open) return null;
 
-  const { items, itemCount, subtotal, toFreeShipping } = summarizeCart(lines, products);
+  // Task 5 passes the real promotions, fee and categories.
+  const { items, itemCount, subtotal, nudges } = summarizeCart(lines, products, [], 35000, []);
+  const toFreeShipping = nudges.find((n) => n.kind === "free_shipping")?.missing ?? 0;
   const progress = Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD) * 100));
 
   // Keep Tab inside the drawer.

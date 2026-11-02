@@ -14,7 +14,9 @@ export default function CartView({ products }: { products: Product[] }) {
   const { lines, setQuantity, removeItem, clear, hydrated } = useCart();
   const lang = useLang();
   // Lines for products no longer in the catalog are skipped, not charged.
-  const { items, subtotal, shipping, total, toFreeShipping } = summarizeCart(lines, products);
+  // Task 5 passes the real promotions, fee and categories.
+  const { items, subtotal, shipping, total, nudges } = summarizeCart(lines, products, [], 35000, []);
+  const toFreeShipping = nudges.find((n) => n.kind === "free_shipping")?.missing ?? 0;
 
   // Avoid a hydration mismatch: render nothing until the client cart is read.
   if (!hydrated) {
