@@ -64,7 +64,7 @@ export const FREE_SHIPPING_THRESHOLD = 500000; // Rs 5,000
 export const SHIPPING_FLAT = 35000; // Rs 350
 
 /** The price actually charged: the sale price when on sale, else the list price. */
-export function effectivePrice(product: Product): number {
+export function effectivePrice(product: Pick<Product, "price" | "salePrice">): number {
   return product.salePrice ?? product.price;
 }
 

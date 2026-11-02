@@ -3,13 +3,8 @@
 import Link from "next/link";
 import { useCart } from "@/app/context/CartContext";
 import { MAX_LINE_QUANTITY } from "@/lib/cart-rules";
-import {
-  effectivePrice,
-  formatPrice,
-  FREE_SHIPPING_THRESHOLD,
-  SHIPPING_FLAT,
-  type Product,
-} from "@/lib/products";
+import { summarizeCart } from "@/lib/cart-summary";
+import { effectivePrice, formatPrice, type Product } from "@/lib/products";
 import ProductImage from "./ProductImage";
 import L from "./L";
 import { useLang } from "@/app/context/LangContext";
@@ -18,12 +13,8 @@ import { tr } from "@/lib/i18n";
 export default function CartView({ products }: { products: Product[] }) {
   const { lines, setQuantity, removeItem, clear, hydrated } = useCart();
   const lang = useLang();
-  const getProduct = (id: string) => products.find((p) => p.id === id);
   // Lines for products no longer in the catalog are skipped, not charged.
-  const subtotal = lines.reduce((sum, l) => {
-    const product = getProduct(l.id);
-    return sum + (product ? effectivePrice(product) * l.quantity : 0);
-  }, 0);
+  const { items, subtotal, shipping, total, toFreeShipping } = summarizeCart(lines, products);
 
   // Avoid a hydration mismatch: render nothing until the client cart is read.
   if (!hydrated) {
@@ -56,15 +47,10 @@ export default function CartView({ products }: { products: Product[] }) {
     );
   }
 
-  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FLAT;
-  const total = subtotal + shipping;
-
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_20rem]">
       <ul className="flex flex-col border-t border-line">
-        {lines.map((line) => {
-          const product = getProduct(line.id);
-          if (!product) return null;
+        {items.map(({ line, product }) => {
           return (
             <li
               key={`${line.id}::${line.size}`}
@@ -170,8 +156,8 @@ export default function CartView({ products }: { products: Product[] }) {
         {shipping > 0 && (
           <p className="mt-3 font-mono text-[0.7rem] text-muted">
             <L
-              si={`නොමිලේ බෙදාහැරීමට තව ${formatPrice(FREE_SHIPPING_THRESHOLD - subtotal)} ක් එක් කරන්න.`}
-              en={`Add ${formatPrice(FREE_SHIPPING_THRESHOLD - subtotal)} more for free shipping.`}
+              si={`නොමිලේ බෙදාහැරීමට තව ${formatPrice(toFreeShipping)} ක් එක් කරන්න.`}
+              en={`Add ${formatPrice(toFreeShipping)} more for free shipping.`}
             />
           </p>
         )}
