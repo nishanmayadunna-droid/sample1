@@ -253,3 +253,12 @@ export function toPromotion(row: PromotionRow): Promotion {
       })),
   };
 }
+
+/** Products with their promotion pricing, for cards, pages and filters. */
+export function withPricing<T extends Product>(
+  products: T[],
+  promotions: Promotion[],
+  categories: Category[],
+): (T & { pricing: ItemPricing })[] {
+  return products.map((p) => ({ ...p, pricing: itemPricing(p, promotions, categories) }));
+}

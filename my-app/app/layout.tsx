@@ -109,6 +109,7 @@ export default async function RootLayout({
           bilingual={settings.bilingual}
           categories={categories}
           products={products}
+          promotions={promotions}
         />
         <main className="flex-1">{children}</main>
         <CartDrawer

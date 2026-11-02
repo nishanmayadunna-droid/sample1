@@ -8,6 +8,7 @@ import { initLangStore, useLang } from "@/app/context/LangContext";
 import { tr, type Lang } from "@/lib/i18n";
 import { cartBadgeCount } from "@/lib/cart-summary";
 import type { Category, ShellProduct } from "@/lib/products";
+import type { Promotion } from "@/lib/promotions";
 import AccountNav from "./AccountNav";
 import CartSync from "./CartSync";
 import CategoryMenu from "./CategoryMenu";
@@ -22,11 +23,13 @@ export default function Header({
   bilingual,
   categories,
   products,
+  promotions,
 }: {
   defaultLang: Lang;
   bilingual: boolean;
   categories: Category[];
   products: ShellProduct[];
+  promotions: Promotion[];
 }) {
   // Header renders before every other client component, so the language
   // store knows the server's language before anything hydrates.
@@ -47,7 +50,7 @@ export default function Header({
           North<span className="text-blaze">·</span>bound
         </Link>
         <div className="hidden flex-1 sm:block">
-          <SearchBox products={products} />
+          <SearchBox products={products} promotions={promotions} categories={categories} />
         </div>
         <div className="ml-auto flex items-center gap-4 font-mono text-[0.7rem] uppercase tracking-[0.16em] sm:ml-0">
           <LangToggle show={bilingual} />
@@ -107,7 +110,7 @@ export default function Header({
       </div>
 
       <div className="px-4 pb-3 sm:hidden">
-        <SearchBox products={products} />
+        <SearchBox products={products} promotions={promotions} categories={categories} />
       </div>
 
       <nav

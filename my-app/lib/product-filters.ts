@@ -1,7 +1,8 @@
 // Catalog filtering shared by /products and the header search. Pure and
 // client-safe, so the search dropdown and the results page always agree.
 import { productsInCategory } from "./category-form";
-import { discountPercent, type Category, type Product } from "./products";
+import { ruleMatches, type Promotion } from "./promotions";
+import type { Category, PricedProduct, Product } from "./products";
 
 export type ProductView = "deals" | "picks" | "new";
 
@@ -22,21 +23,30 @@ export function matchesQuery(
   return words.every((word) => haystack.includes(word));
 }
 
-export function filterProducts<T extends Product>(
+export function filterProducts<T extends PricedProduct>(
   products: T[],
-  opts: { q?: string; category?: Category | null; view?: ProductView | null },
+  opts: {
+    q?: string;
+    category?: Category | null;
+    view?: ProductView | null;
+    /** Keep only products this promotion's rules apply to. */
+    promo?: Promotion | null;
+  },
   categories: Category[],
 ): T[] {
   let result = opts.category
     ? productsInCategory(products, opts.category, categories)
     : [...products];
   if (opts.q) result = result.filter((p) => matchesQuery(p, opts.q!));
+  const promo = opts.promo;
+  if (promo) result = result.filter((p) => promo.rules.some((r) => ruleMatches(r, p, categories)));
 
   switch (opts.view) {
     case "deals":
       return result
-        .filter((p) => p.salePrice != null)
-        .sort((a, b) => (discountPercent(b) ?? 0) - (discountPercent(a) ?? 0));
+        // A sale price or a running promotion — whichever makes the price.
+        .filter((p) => p.pricing.compareAt != null)
+        .sort((a, b) => (b.pricing.discountPercent ?? 0) - (a.pricing.discountPercent ?? 0));
     case "picks":
       return result.filter((p) => p.featured);
     case "new":

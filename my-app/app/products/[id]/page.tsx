@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { discountPercent, formatPrice } from "@/lib/products";
+import { formatPrice } from "@/lib/products";
+import { withPricing } from "@/lib/promotions";
+import { getRunningPromotions } from "@/lib/storefront";
+import { ConditionalOfferText } from "../../components/ProductCard";
 import { getAllProducts, getCategories, getProduct, getProductsByCategory } from "@/lib/catalog";
 import { resolveCategoryParam } from "@/lib/category-form";
 import ProductImage from "../../components/ProductImage";
@@ -40,12 +43,21 @@ export default async function ProductPage({
   const product = await getProduct(id);
   if (!product) notFound();
 
-  // The stored value may be a slug or (until the FK migration) an old name.
-  const category = resolveCategoryParam(product.category, await getCategories());
+  const [categories, promotions] = await Promise.all([getCategories(), getRunningPromotions()]);
+  const [{ pricing }] = withPricing([product], promotions, categories);
+  // Accepts a slug or an old display name.
+  const category = resolveCategoryParam(product.category, categories);
   const categorySlug = category?.slug ?? product.category;
-  const related = (category ? await getProductsByCategory(category) : [])
-    .filter((p) => p.id !== product.id)
-    .slice(0, 4);
+  const related = withPricing(
+    (category ? await getProductsByCategory(category) : [])
+      .filter((p) => p.id !== product.id)
+      .slice(0, 4),
+    promotions,
+    categories,
+  );
+  const endsAt = pricing.promotion?.endsAt ? new Date(pricing.promotion.endsAt) : null;
+  const endDate = (locale: string) =>
+    endsAt?.toLocaleDateString(locale, { timeZone: "Asia/Colombo", day: "numeric", month: "long" }) ?? "";
 
   const specRows: { key: string; label: React.ReactNode; value: string }[] = [
     { key: "material", label: <L si="රෙදි වර්ගය" en="Material" />, value: product.spec.material },
@@ -85,19 +97,39 @@ export default async function ProductPage({
           <h1 className="display mt-3 text-[clamp(2.25rem,6vw,3.75rem)]">
             {product.name}
           </h1>
-          {product.salePrice != null ? (
-            <p className="mt-3 flex items-center gap-3 font-mono text-lg">
-              <span className="text-blaze">{formatPrice(product.salePrice)}</span>
+          {pricing.compareAt != null ? (
+            <p className="mt-3 flex flex-wrap items-center gap-3 font-mono text-lg">
+              <span className="text-blaze">{formatPrice(pricing.price)}</span>
               <span className="text-base text-muted line-through">
-                {formatPrice(product.price)}
+                {formatPrice(pricing.compareAt)}
               </span>
               <span className="rounded bg-blaze px-1.5 py-0.5 text-xs font-medium text-white">
-                −{discountPercent(product)}% <L si="අඩු මිල" en="flash sale" />
+                −{pricing.discountPercent}%{" "}
+                {pricing.promotion ? (
+                  <L si={pricing.promotion.nameSi} en={pricing.promotion.nameEn} />
+                ) : (
+                  <L si="අඩු මිල" en="flash sale" />
+                )}
               </span>
             </p>
           ) : (
-            <p className="mt-3 font-mono text-lg">{formatPrice(product.price)}</p>
+            <p className="mt-3 font-mono text-lg">{formatPrice(pricing.price)}</p>
           )}
+          {endsAt && (
+            <p className="mt-2 text-sm text-muted">
+              <L si={`${endDate("si-LK")} දක්වා`} en={`Until ${endDate("en-LK")}`} />
+            </p>
+          )}
+          {pricing.freeShipping && (
+            <p className="mt-2 text-sm text-blaze">
+              🚚 <L si="නොමිලේ බෙදාහැරීම" en="Free shipping" />
+            </p>
+          )}
+          {pricing.conditional.map((offer, i) => (
+            <p key={i} className="mt-1 text-sm text-muted">
+              <L si={offer.promotion.nameSi} en={offer.promotion.nameEn} />: <ConditionalOfferText offer={offer} />
+            </p>
+          ))}
 
           <p className="mt-6 max-w-prose leading-relaxed text-muted">
             {product.description}

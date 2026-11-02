@@ -103,3 +103,6 @@ export function toShellProduct(p: Product): ShellProduct {
     createdAt: p.createdAt,
   };
 }
+
+/** A product with its price under the running promotions (see lib/promotions.ts). */
+export type PricedProduct = Product & { pricing: import("./promotions").ItemPricing };

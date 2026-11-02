@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { useLang } from "@/app/context/LangContext";
 import { tr } from "@/lib/i18n";
 import { matchesQuery } from "@/lib/product-filters";
-import { formatPrice, type ShellProduct } from "@/lib/products";
+import { formatPrice, type Category, type ShellProduct } from "@/lib/products";
+import { itemPricing, type Promotion } from "@/lib/promotions";
 import L from "./L";
 import ProductImage from "./ProductImage";
 
@@ -14,7 +15,15 @@ const MIN_CHARS = 2;
 const MAX_RESULTS = 5;
 
 /** Header search: instant matches in a dropdown; Enter opens the full results. */
-export default function SearchBox({ products }: { products: ShellProduct[] }) {
+export default function SearchBox({
+  products,
+  promotions,
+  categories,
+}: {
+  products: ShellProduct[];
+  promotions: Promotion[];
+  categories: Category[];
+}) {
   const router = useRouter();
   const lang = useLang();
   const id = useId();
@@ -130,18 +139,7 @@ export default function SearchBox({ products }: { products: ShellProduct[] }) {
                     sizes="40px"
                   />
                   <span className="flex-1 text-sm">{product.name}</span>
-                  <span className="text-right font-mono text-xs">
-                    {product.salePrice != null ? (
-                      <>
-                        <span className="block text-blaze">{formatPrice(product.salePrice)}</span>
-                        <span className="block text-muted line-through">
-                          {formatPrice(product.price)}
-                        </span>
-                      </>
-                    ) : (
-                      formatPrice(product.price)
-                    )}
-                  </span>
+                  <SearchPrice pricing={itemPricing(product, promotions, categories)} />
                 </li>
               ))}
             </ul>
@@ -149,5 +147,20 @@ export default function SearchBox({ products }: { products: ShellProduct[] }) {
         </div>
       )}
     </form>
+  );
+}
+
+function SearchPrice({ pricing }: { pricing: ReturnType<typeof itemPricing> }) {
+  return (
+    <span className="text-right font-mono text-xs">
+      {pricing.compareAt != null ? (
+        <>
+          <span className="block text-blaze">{formatPrice(pricing.price)}</span>
+          <span className="block text-muted line-through">{formatPrice(pricing.compareAt)}</span>
+        </>
+      ) : (
+        formatPrice(pricing.price)
+      )}
+    </span>
   );
 }

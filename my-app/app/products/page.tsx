@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getAllProducts, getCategories } from "@/lib/catalog";
+import { withPricing } from "@/lib/promotions";
+import { getRunningPromotions } from "@/lib/storefront";
 import { resolveCategoryParam } from "@/lib/category-form";
 import { filterProducts, parseView, type ProductView } from "@/lib/product-filters";
 import ProductCard from "../components/ProductCard";
@@ -36,7 +38,12 @@ export default async function ProductsPage({
   searchParams: Promise<Params>;
 }) {
   const params = await searchParams;
-  const [allProducts, categories] = await Promise.all([getAllProducts(), getCategories()]);
+  const [catalog, categories, promotions] = await Promise.all([
+    getAllProducts(),
+    getCategories(),
+    getRunningPromotions(),
+  ]);
+  const allProducts = withPricing(catalog, promotions, categories);
   // Accepts the slug or the name in any case, so old ?category=Outerwear links work.
   const active = resolveCategoryParam(params.category, categories);
   const view = parseView(params.view);

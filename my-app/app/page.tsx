@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { formatPrice, formatPriceWhole } from "@/lib/products";
-import { freeShippingThreshold } from "@/lib/promotions";
+import { freeShippingThreshold, withPricing } from "@/lib/promotions";
 import { getRunningPromotions } from "@/lib/storefront";
 import { getAllProducts, getCategories } from "@/lib/catalog";
 import { productsInCategory } from "@/lib/category-form";
@@ -32,11 +32,12 @@ export const revalidate = 60;
 
 export default async function Home() {
   // One query; every section below is a slice of the full catalog.
-  const [products, categories, promotions] = await Promise.all([
+  const [catalog, categories, promotions] = await Promise.all([
     getAllProducts(),
     getCategories(),
     getRunningPromotions(),
   ]);
+  const products = withPricing(catalog, promotions, categories);
   const promises = [...freeShippingPromise(freeShippingThreshold(promotions)), ...PROMISES];
   // Shop-by-category tiles skip categories with no published products.
   const categoryTiles = categories
@@ -46,7 +47,8 @@ export default async function Home() {
     }))
     .filter((tile) => tile.count > 0);
   const featured = products.filter((p) => p.featured);
-  const sale = products.filter((p) => p.salePrice != null);
+  // Sale prices and promotion discounts alike.
+  const sale = products.filter((p) => p.pricing.compareAt != null);
   const hero = products.find((p) => p.id === "field-jacket") ?? featured[0];
 
   return (
@@ -124,7 +126,7 @@ export default async function Home() {
                       {hero.spec.material} · {hero.spec.origin}
                     </p>
                   </div>
-                  <span className="font-mono">{formatPrice(hero.price)}</span>
+                  <span className="font-mono">{formatPrice(hero.pricing.price)}</span>
                 </div>
               </div>
             </Link>

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { filterProducts, matchesQuery, parseView } from "./product-filters";
 import type { Category, Product } from "./products";
+import { withPricing, type Promotion } from "./promotions";
+import { promo, rule } from "./test-fixtures/promotions";
 
 const categories: Category[] = [
   { slug: "tops", name: "Tops", swatch: ["#000", "#111"], sortOrder: 1 },
@@ -46,7 +48,9 @@ const chino = product({
   createdAt: "2026-10-04T00:00:00Z",
 });
 const cap = product({ id: "cap", name: "Wool Cap", createdAt: "2026-10-02T00:00:00Z" });
-const all = [tee, shirt, chino, cap];
+const plain = [tee, shirt, chino, cap];
+const all = withPricing(plain, [], categories);
+const priced = (promotions: Promotion[]) => withPricing(plain, promotions, categories);
 
 describe("matchesQuery", () => {
   it("does not throw on regex characters and needs every word", () => {
@@ -109,5 +113,21 @@ describe("filterProducts", () => {
 
   it("keeps catalog order without a view", () => {
     expect(ids(filterProducts(all, {}, categories))).toEqual(["tee", "shirt", "chino", "cap"]);
+  });
+
+  it("deals: includes products a promotion discounts, by best discount", () => {
+    // cap gets 60% off from the promotion: ahead of chino (50%) and shirt (25%).
+    const capDeal = promo({ rules: [rule({ value: 60, scope: "products", productIds: ["cap"] })] });
+    expect(ids(filterProducts(priced([capDeal]), { view: "deals" }, categories))).toEqual([
+      "cap",
+      "chino",
+      "shirt",
+    ]);
+  });
+
+  it("promo: keeps only products the promotion's rules match", () => {
+    const bottoms = promo({ rules: [rule({ scope: "categories", categorySlugs: ["bottoms"] })] });
+    expect(ids(filterProducts(all, { promo: bottoms }, categories))).toEqual(["chino"]);
+    expect(ids(filterProducts(all, { promo: promo() }, categories))).toEqual(["tee", "shirt", "chino", "cap"]);
   });
 });
