@@ -164,3 +164,92 @@ export function freeShippingThreshold(promotions: Promotion[]): number | null {
   }
   return lowest;
 }
+
+type RuleRow = {
+  kind: RuleKind;
+  value: number;
+  scope: RuleScope;
+  category_slugs: string[];
+  product_ids: string[];
+  min_subtotal: number;
+  sort_order: number;
+};
+
+/** A `promotions` row with its `promotion_rules`, as Supabase returns it. */
+export type PromotionRow = {
+  id: string;
+  slug: string;
+  name_si: string;
+  name_en: string;
+  starts_at: string;
+  ends_at: string | null;
+  active: boolean;
+  sort_order: number;
+  banner_mode: "none" | "template" | "image";
+  headline_si: string;
+  headline_en: string;
+  subtext_si: string;
+  subtext_en: string;
+  button_si: string;
+  button_en: string;
+  color_from: string;
+  color_to: string;
+  text_color: string;
+  image_url: string | null;
+  image_alt_si: string;
+  image_alt_en: string;
+  promotion_rules: RuleRow[];
+};
+
+export const PROMOTION_COLUMNS =
+  "id, slug, name_si, name_en, starts_at, ends_at, active, sort_order, banner_mode, " +
+  "headline_si, headline_en, subtext_si, subtext_en, button_si, button_en, color_from, " +
+  "color_to, text_color, image_url, image_alt_si, image_alt_en, " +
+  "promotion_rules(kind, value, scope, category_slugs, product_ids, min_subtotal, sort_order)";
+
+function toBanner(row: PromotionRow): PromotionBanner {
+  if (row.banner_mode === "template") {
+    return {
+      mode: "template",
+      headlineSi: row.headline_si,
+      headlineEn: row.headline_en,
+      subtextSi: row.subtext_si,
+      subtextEn: row.subtext_en,
+      buttonSi: row.button_si,
+      buttonEn: row.button_en,
+      colorFrom: row.color_from,
+      colorTo: row.color_to,
+      textColor: row.text_color,
+      imageUrl: row.image_url,
+    };
+  }
+  // An image banner without its image has nothing to show.
+  if (row.banner_mode === "image" && row.image_url) {
+    return { mode: "image", imageUrl: row.image_url, altSi: row.image_alt_si, altEn: row.image_alt_en };
+  }
+  return { mode: "none" };
+}
+
+export function toPromotion(row: PromotionRow): Promotion {
+  return {
+    id: row.id,
+    slug: row.slug,
+    nameSi: row.name_si,
+    nameEn: row.name_en,
+    startsAt: row.starts_at,
+    endsAt: row.ends_at,
+    active: row.active,
+    sortOrder: row.sort_order,
+    banner: toBanner(row),
+    rules: [...(row.promotion_rules ?? [])]
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((r) => ({
+        kind: r.kind,
+        value: r.value,
+        scope: r.scope,
+        categorySlugs: r.category_slugs,
+        productIds: r.product_ids,
+        minSubtotal: r.min_subtotal,
+      })),
+  };
+}

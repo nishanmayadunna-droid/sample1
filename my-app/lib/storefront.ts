@@ -5,6 +5,13 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { DEFAULT_LANG_SETTINGS, isLang, type LangSettings } from "./i18n";
+import {
+  isRunning,
+  PROMOTION_COLUMNS,
+  toPromotion,
+  type Promotion,
+  type PromotionRow,
+} from "./promotions";
 import type { PromiseIcon, StorePromise } from "./storefront-form";
 
 const supabase = createClient(
@@ -13,7 +20,17 @@ const supabase = createClient(
   { auth: { persistSession: false } },
 );
 
-type SettingsRow = { default_lang: string; bilingual: boolean };
+type SettingsRow = { default_lang: string; bilingual: boolean; shipping_fee: number };
+
+/** Shipping fee (cents) charged when no free-shipping promotion applies. */
+export const DEFAULT_SHIPPING_FEE = 35000;
+
+export type StoreSettings = LangSettings & { shippingFee: number };
+
+const DEFAULT_STORE_SETTINGS: StoreSettings = {
+  ...DEFAULT_LANG_SETTINGS,
+  shippingFee: DEFAULT_SHIPPING_FEE,
+};
 
 type PromiseRow = {
   id: string;
@@ -39,19 +56,20 @@ export function toStorePromise(row: PromiseRow): StorePromise {
 
 export type { PromiseRow };
 
-/** The admin's language settings; the defaults when they can't be read. */
-export const getStoreSettings = cache(async (): Promise<LangSettings> => {
+/** The admin's language and shipping settings; the defaults when they can't be read. */
+export const getStoreSettings = cache(async (): Promise<StoreSettings> => {
   const { data, error } = await supabase
     .from("store_settings")
-    .select("default_lang, bilingual")
+    .select("default_lang, bilingual, shipping_fee")
     .maybeSingle<SettingsRow>();
   if (error || !data) {
     if (error) console.error("store settings query failed", error);
-    return DEFAULT_LANG_SETTINGS;
+    return DEFAULT_STORE_SETTINGS;
   }
   return {
     defaultLang: isLang(data.default_lang) ? data.default_lang : DEFAULT_LANG_SETTINGS.defaultLang,
     bilingual: data.bilingual,
+    shippingFee: data.shipping_fee,
   };
 });
 
@@ -69,4 +87,25 @@ export const getVisiblePromises = cache(async (): Promise<StorePromise[]> => {
     return [];
   }
   return data.map(toStorePromise);
+});
+
+/**
+ * Promotions running right now, with their rules, in display order; none when
+ * they can't be read. Decided here at render time — the client uses this list
+ * as is, so the page and the cart drawer always agree.
+ */
+export const getRunningPromotions = cache(async (): Promise<Promotion[]> => {
+  const { data, error } = await supabase
+    .from("promotions")
+    .select(PROMOTION_COLUMNS)
+    .eq("active", true)
+    .order("sort_order")
+    .order("starts_at")
+    .returns<PromotionRow[]>();
+  if (error) {
+    console.error("promotions query failed", error);
+    return [];
+  }
+  const now = new Date();
+  return data.map(toPromotion).filter((p) => isRunning(p, now));
 });

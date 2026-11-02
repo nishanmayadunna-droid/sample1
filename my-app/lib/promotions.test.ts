@@ -5,6 +5,8 @@ import {
   itemPricing,
   promotionStatus,
   ruleMatches,
+  toPromotion,
+  type PromotionRow,
   type PromotionRule,
 } from "./promotions";
 import { categories, chino, old, promo, rule, shirt, tee } from "./test-fixtures/promotions";
@@ -101,5 +103,73 @@ describe("freeShippingThreshold", () => {
   it("ignores category-scoped rules and is null without any", () => {
     expect(freeShippingThreshold([promo({ rules: [ship(100, { scope: "categories", categorySlugs: ["tops"] })] })])).toBeNull();
     expect(freeShippingThreshold([])).toBeNull();
+  });
+});
+
+describe("toPromotion", () => {
+  const base: PromotionRow = {
+    id: "p1",
+    slug: "halloween",
+    name_si: "හැලොවීන්",
+    name_en: "Halloween",
+    starts_at: "2026-10-25T00:00:00+00:00",
+    ends_at: null,
+    active: true,
+    sort_order: 2,
+    banner_mode: "none",
+    headline_si: "",
+    headline_en: "Spooky",
+    subtext_si: "",
+    subtext_en: "",
+    button_si: "",
+    button_en: "Shop",
+    color_from: "#cb4a1c",
+    color_to: "#15231d",
+    text_color: "#ffffff",
+    image_url: null,
+    image_alt_si: "",
+    image_alt_en: "",
+    promotion_rules: [
+      {
+        kind: "percent_off",
+        value: 20,
+        scope: "categories",
+        category_slugs: ["tops"],
+        product_ids: [],
+        min_subtotal: 0,
+        sort_order: 1,
+      },
+      {
+        kind: "free_shipping",
+        value: 0,
+        scope: "all",
+        category_slugs: [],
+        product_ids: [],
+        min_subtotal: 500000,
+        sort_order: 0,
+      },
+    ],
+  };
+
+  it("maps the row and orders rules", () => {
+    const p = toPromotion(base);
+    expect([p.slug, p.nameEn, p.endsAt, p.sortOrder, p.banner]).toEqual([
+      "halloween", "Halloween", null, 2, { mode: "none" },
+    ]);
+    expect(p.rules.map((r) => [r.kind, r.categorySlugs, r.minSubtotal])).toEqual([
+      ["free_shipping", [], 500000],
+      ["percent_off", ["tops"], 0],
+    ]);
+  });
+
+  it("maps a template banner", () => {
+    const p = toPromotion({ ...base, banner_mode: "template", image_url: "https://x/y.jpg" });
+    expect(p.banner).toMatchObject({ mode: "template", headlineEn: "Spooky", buttonEn: "Shop", imageUrl: "https://x/y.jpg" });
+  });
+
+  it("maps an image banner, and treats one without an image as none", () => {
+    const withImage = toPromotion({ ...base, banner_mode: "image", image_url: "https://x/y.jpg", image_alt_en: "Bats" });
+    expect(withImage.banner).toEqual({ mode: "image", imageUrl: "https://x/y.jpg", altSi: "", altEn: "Bats" });
+    expect(toPromotion({ ...base, banner_mode: "image" }).banner).toEqual({ mode: "none" });
   });
 });
