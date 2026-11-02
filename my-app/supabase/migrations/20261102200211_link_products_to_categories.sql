@@ -1,7 +1,6 @@
--- Categories, step 2 of 2 (contract). NOT YET APPLIED.
--- Apply only after the code that reads categories by slug-or-name
--- (feat/categories) is live in production; then rename this file to the
--- version apply_migration reports.
+-- Categories, step 2 of 2 (contract). Applied to production on 2026-11-03 (Colombo)
+-- by the owner in the Supabase SQL editor, after feat/categories was live, so
+-- it is not in the remote migration history; the file name uses that time.
 --
 -- Converts every product's category from the old display name ('Outerwear')
 -- to its slug ('outerwear') and adds the foreign key, so a category that
