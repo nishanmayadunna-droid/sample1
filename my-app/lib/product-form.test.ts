@@ -1,17 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
   imagePathFor,
+  isDeleteConfirmed,
   isValidImagePath,
   parsePriceToCents,
   parseProductForm,
 } from "./product-form";
+
+const SLUGS = ["tops", "bottoms", "outerwear", "accessories"];
 
 const valid: Record<string, string | undefined> = {
   id: "trail-cap",
   name: "Trail Cap",
   price: "28.00",
   salePrice: "",
-  category: "Accessories",
+  category: "accessories",
   description: "Cap.",
   sizes: "One Size",
   material: "x",
@@ -24,7 +27,7 @@ const valid: Record<string, string | undefined> = {
 };
 
 const errorsFor = (overrides: Record<string, string | undefined>, mode: "create" | "update" = "create") => {
-  const result = parseProductForm({ ...valid, ...overrides }, mode);
+  const result = parseProductForm({ ...valid, ...overrides }, mode, SLUGS);
   return result.ok ? {} : result.errors;
 };
 
@@ -44,14 +47,14 @@ describe("parsePriceToCents", () => {
 
 describe("parseProductForm", () => {
   it("parses a valid create form", () =>
-    expect(parseProductForm(valid, "create")).toEqual({
+    expect(parseProductForm(valid, "create", SLUGS)).toEqual({
       ok: true,
       id: "trail-cap",
       value: {
         name: "Trail Cap",
         price: 2800,
         sale_price: null,
-        category: "Accessories",
+        category: "accessories",
         description: "Cap.",
         sizes: ["One Size"],
         material: "x",
@@ -64,7 +67,7 @@ describe("parseProductForm", () => {
     }));
 
   it("ignores id in update mode", () => {
-    const result = parseProductForm({ ...valid, id: "Bad ID" }, "update");
+    const result = parseProductForm({ ...valid, id: "Bad ID" }, "update", SLUGS);
     expect(result.ok && result.id).toBeNull();
   });
 
@@ -78,15 +81,15 @@ describe("parseProductForm", () => {
     expect(errorsFor({ price: "abc" }).price).toBe("Enter a price like 850.00."));
 
   it("accepts a sale price below the price", () => {
-    const result = parseProductForm({ ...valid, salePrice: "20" }, "create");
+    const result = parseProductForm({ ...valid, salePrice: "20" }, "create", SLUGS);
     expect(result.ok && result.value.sale_price).toBe(2000);
   });
 
   it.each(["28.00", "30"])("rejects sale price %j not below 28.00", (salePrice) =>
     expect(errorsFor({ salePrice }).salePrice).toBe("Sale price must be lower than the price."));
 
-  it("rejects an unknown category", () =>
-    expect(errorsFor({ category: "Hats" }).category).toBe("Pick a category."));
+  it.each(["hats", "Outerwear", ""])("rejects category %j not in the allowed slugs", (category) =>
+    expect(errorsFor({ category }).category).toBe("Pick a category."));
 
   it.each(["", "d".repeat(2001)])("rejects description %j", (description) =>
     expect(errorsFor({ description }).description).toBe(
@@ -101,7 +104,7 @@ describe("parseProductForm", () => {
     expect(errorsFor({ sizes }).sizes).toBe("Enter 1–12 sizes separated by commas."));
 
   it("trims sizes and drops blanks and duplicates", () => {
-    const result = parseProductForm({ ...valid, sizes: " S, M ,S,, L " }, "create");
+    const result = parseProductForm({ ...valid, sizes: " S, M ,S,, L " }, "create", SLUGS);
     expect(result.ok && result.value.sizes).toEqual(["S", "M", "L"]);
   });
 
@@ -119,7 +122,7 @@ describe("parseProductForm", () => {
     expect(errorsFor({ sortOrder: "1.5" }).sortOrder).toBe("Enter a whole number."));
 
   it("reads featured and sort order", () => {
-    const result = parseProductForm({ ...valid, featured: undefined, sortOrder: "-3" }, "create");
+    const result = parseProductForm({ ...valid, featured: undefined, sortOrder: "-3" }, "create", SLUGS);
     expect(result.ok && result.value.featured).toBe(false);
     expect(result.ok && result.value.sort_order).toBe(-3);
   });
@@ -148,4 +151,12 @@ describe("isValidImagePath", () => {
     "tee-shirt-123.jpg",
     "tee-123.jpg.png",
   ])("rejects %s for tee", (path) => expect(isValidImagePath("tee", path)).toBe(false));
+});
+
+describe("isDeleteConfirmed", () => {
+  it("accepts the exact id", () => expect(isDeleteConfirmed("trail-cap", "trail-cap")).toBe(true));
+  it("ignores surrounding whitespace", () =>
+    expect(isDeleteConfirmed("trail-cap", "  trail-cap ")).toBe(true));
+  it.each(["", "trail", "Trail-Cap", "trail-cap-2", "other"])("rejects %j", (typed) =>
+    expect(isDeleteConfirmed("trail-cap", typed)).toBe(false));
 });

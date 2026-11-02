@@ -46,7 +46,7 @@ export default function ProductImage({
 
       {/* Category chip, top-left. */}
       <span className="absolute left-3 top-3 rounded bg-black/40 px-1.5 py-0.5 font-mono text-[0.6rem] uppercase tracking-widest text-white/90">
-        {product.category}
+        {product.categoryName}
       </span>
 
       {/* Measure ticks along the base — the recurring ruler motif. */}

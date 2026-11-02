@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { notFound, redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-guards";
+import { getCategories } from "@/lib/catalog";
 import {
   createImageUpload,
+  deleteProduct,
   getProductForAdmin,
   imageExists,
   insertProduct,
@@ -14,6 +16,7 @@ import {
 } from "@/lib/admin-products";
 import {
   imagePathFor,
+  isDeleteConfirmed,
   isValidImagePath,
   isValidProductId,
   MAX_IMAGE_BYTES,
@@ -39,6 +42,10 @@ function revalidateProduct(id: string) {
   revalidatePath("/admin");
 }
 
+async function categorySlugs(): Promise<string[]> {
+  return (await getCategories()).map((category) => category.slug);
+}
+
 function formFields(formData: FormData): Record<string, string | undefined> {
   const fields: Record<string, string | undefined> = {};
   for (const [key, value] of formData.entries()) {
@@ -62,7 +69,7 @@ export async function createProductAction(
 ): Promise<ProductFormState> {
   await requireAdmin("/admin");
   const fields = formFields(formData);
-  const parsed = parseProductForm(fields, "create");
+  const parsed = parseProductForm(fields, "create", await categorySlugs());
   if (!parsed.ok) return { errors: parsed.errors };
   const id = parsed.id!;
 
@@ -90,7 +97,7 @@ export async function updateProductAction(
   await requireAdmin(`/admin/products/${id}`);
   if (!(await getProductForAdmin(id))) notFound();
   const fields = formFields(formData);
-  const parsed = parseProductForm(fields, "update");
+  const parsed = parseProductForm(fields, "update", await categorySlugs());
   if (!parsed.ok) return { errors: parsed.errors };
 
   try {
@@ -128,4 +135,30 @@ export async function requestImageUpload(
   } catch {
     return { error: UPLOAD_FAILED };
   }
+}
+
+export type DeleteProductState = { error: string | null };
+
+/** Hard delete: removes the product and its photo. The admin must type the id to confirm. */
+export async function deleteProductAction(
+  id: string,
+  _prev: DeleteProductState,
+  formData: FormData,
+): Promise<DeleteProductState> {
+  await requireAdmin(`/admin/products/${id}`);
+  const typed = formData.get("confirmation");
+  if (typeof typed !== "string" || !isDeleteConfirmed(id, typed)) {
+    return { error: "Type the product ID to confirm." };
+  }
+
+  let deleted: boolean;
+  try {
+    deleted = await deleteProduct(id);
+  } catch {
+    return { error: SOMETHING_WRONG };
+  }
+  if (!deleted) notFound();
+
+  revalidateProduct(id);
+  redirect("/admin");
 }

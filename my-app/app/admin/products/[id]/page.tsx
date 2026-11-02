@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-guards";
+import { getCategories } from "@/lib/catalog";
 import { getProductForAdmin } from "@/lib/admin-products";
 import { updateProductAction } from "../actions";
 import ProductForm from "../ProductForm";
+import DeleteProduct from "../DeleteProduct";
 
 export const metadata: Metadata = { title: "Admin" };
 
@@ -35,7 +37,9 @@ export default async function EditProductPage({
         mode="update"
         action={updateProductAction.bind(null, product.id)}
         product={product}
+        categories={await getCategories()}
       />
+      <DeleteProduct id={product.id} name={product.name} />
     </div>
   );
 }
