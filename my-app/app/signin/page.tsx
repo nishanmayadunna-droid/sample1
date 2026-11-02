@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { safeCallbackUrl, signedInRedirect } from "@/lib/auth-rules";
 import { findUserById } from "@/lib/users";
 import SignInForm from "./SignInForm";
+import L from "../components/L";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -23,8 +24,12 @@ export default async function SignInPage({
 
   return (
     <div className="mx-auto w-full max-w-md px-4 py-12 sm:px-6">
-      <p className="eyebrow text-muted">Northbound account</p>
-      <h1 className="display mt-2 text-5xl">Sign in</h1>
+      <p className="eyebrow text-muted">
+        <L si="Northbound ගිණුම" en="Northbound account" />
+      </p>
+      <h1 className="display mt-2 text-5xl">
+        <L si="ඇතුළු වන්න" en="Sign in" />
+      </h1>
       <div className="measure mt-6 text-ink" />
       <SignInForm callbackUrl={destination} error={error ?? null} />
     </div>

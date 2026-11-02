@@ -3,20 +3,13 @@
 import { useActionState, useState } from "react";
 import { signIn } from "next-auth/react";
 import { signUpAction, type SignUpState } from "./actions";
+import { AUTH_MESSAGES, signInErrorMessage, type AuthMessage } from "@/lib/auth-messages";
+import L from "@/app/components/L";
 
 type Tab = "signin" | "signup";
 
-const ERROR_MESSAGES: Record<string, string> = {
-  OAuthAccountNotLinked: "This email uses a password. Sign in with your password.",
-  CredentialsSignin: "Invalid email or password.",
-};
-
-function messageForError(code: string | null): string | null {
-  if (!code) return null;
-  // hasOwn: `?error=constructor` must not resolve to Object.prototype members.
-  return Object.hasOwn(ERROR_MESSAGES, code)
-    ? ERROR_MESSAGES[code]
-    : "Sign-in failed. Please try again.";
+function Message({ code }: { code: AuthMessage }) {
+  return <L {...AUTH_MESSAGES[code]} />;
 }
 
 /**
@@ -28,10 +21,10 @@ async function passwordSignIn(
   email: string,
   password: string,
   callbackUrl: string,
-): Promise<string | null> {
+): Promise<AuthMessage | null> {
   const result = await signIn("credentials", { email, password, redirect: false });
-  if (result?.code === "google_account") return "This account uses Google sign-in.";
-  if (!result || result.error) return "Invalid email or password.";
+  if (result?.code === "google_account") return "googleAccount";
+  if (!result || result.error) return "invalidCredentials";
   window.location.assign(callbackUrl);
   return null;
 }
@@ -45,19 +38,23 @@ function Field({
   label,
   error,
   ...input
-}: { label: string; error?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+}: { label: React.ReactNode; error?: AuthMessage } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className="mt-5 block">
       <span className="eyebrow text-muted">{label}</span>
       <input className={inputClass} {...input} />
-      {error && <span className="mt-1 block text-sm text-blaze">{error}</span>}
+      {error && (
+        <span className="mt-1 block text-sm text-blaze">
+          <Message code={error} />
+        </span>
+      )}
     </label>
   );
 }
 
 function SignInPanel({ callbackUrl }: { callbackUrl: string }) {
   const [message, submit, pending] = useActionState(
-    async (_prev: string | null, formData: FormData) =>
+    async (_prev: AuthMessage | null, formData: FormData) =>
       passwordSignIn(
         String(formData.get("email") ?? ""),
         String(formData.get("password") ?? ""),
@@ -68,17 +65,21 @@ function SignInPanel({ callbackUrl }: { callbackUrl: string }) {
 
   return (
     <form action={submit}>
-      <Field label="Email" name="email" type="email" autoComplete="email" required />
+      <Field label={<L si="ඊමේල්" en="Email" />} name="email" type="email" autoComplete="email" required />
       <Field
-        label="Password"
+        label={<L si="මුරපදය" en="Password" />}
         name="password"
         type="password"
         autoComplete="current-password"
         required
       />
-      {message && <p className="mt-4 text-sm text-blaze">{message}</p>}
+      {message && (
+        <p className="mt-4 text-sm text-blaze">
+          <Message code={message} />
+        </p>
+      )}
       <button type="submit" disabled={pending} className={submitClass}>
-        {pending ? "Signing in…" : "Sign in"}
+        {pending ? <L si="ඇතුළු වෙමින්…" en="Signing in…" /> : <L si="ඇතුළු වන්න" en="Sign in" />}
       </button>
     </form>
   );
@@ -104,7 +105,7 @@ function SignUpPanel({ callbackUrl }: { callbackUrl: string }) {
   return (
     <form action={submit}>
       <Field
-        label="Name (optional)"
+        label={<L si="නම (අනිවාර්ය නැත)" en="Name (optional)" />}
         name="name"
         type="text"
         autoComplete="name"
@@ -112,7 +113,7 @@ function SignUpPanel({ callbackUrl }: { callbackUrl: string }) {
         error={state.errors.name}
       />
       <Field
-        label="Email"
+        label={<L si="ඊමේල්" en="Email" />}
         name="email"
         type="email"
         autoComplete="email"
@@ -120,7 +121,7 @@ function SignUpPanel({ callbackUrl }: { callbackUrl: string }) {
         error={state.errors.email}
       />
       <Field
-        label="Password"
+        label={<L si="මුරපදය" en="Password" />}
         name="password"
         type="password"
         autoComplete="new-password"
@@ -128,9 +129,17 @@ function SignUpPanel({ callbackUrl }: { callbackUrl: string }) {
         required
         error={state.errors.password}
       />
-      {state.formError && <p className="mt-4 text-sm text-blaze">{state.formError}</p>}
+      {state.formError && (
+        <p className="mt-4 text-sm text-blaze">
+          <Message code={state.formError} />
+        </p>
+      )}
       <button type="submit" disabled={pending} className={submitClass}>
-        {pending ? "Creating account…" : "Create account"}
+        {pending ? (
+          <L si="ගිණුම සාදමින්…" en="Creating account…" />
+        ) : (
+          <L si="ගිණුමක් සාදන්න" en="Create account" />
+        )}
       </button>
     </form>
   );
@@ -144,7 +153,7 @@ export default function SignInForm({
   error: string | null;
 }) {
   const [tab, setTab] = useState<Tab>("signin");
-  const errorMessage = messageForError(error);
+  const errorMessage = signInErrorMessage(error);
 
   const tabClass = (t: Tab) =>
     `flex-1 border-b-2 pb-3 font-mono text-[0.7rem] uppercase tracking-[0.16em] transition-colors ${
@@ -155,7 +164,7 @@ export default function SignInForm({
     <div className="mt-8">
       {errorMessage && (
         <p role="alert" className="mb-6 border border-blaze px-4 py-3 text-sm text-blaze">
-          {errorMessage}
+          <Message code={errorMessage} />
         </p>
       )}
 
@@ -164,7 +173,7 @@ export default function SignInForm({
         onClick={() => signIn("google", { redirectTo: callbackUrl })}
         className="w-full rounded-full border border-line py-4 font-medium transition-colors hover:border-ink"
       >
-        Continue with Google
+        <L si="Google හරහා ඉදිරියට" en="Continue with Google" />
       </button>
 
       <div className="mt-8 flex" role="tablist">
@@ -175,7 +184,7 @@ export default function SignInForm({
           onClick={() => setTab("signin")}
           className={tabClass("signin")}
         >
-          Sign in
+          <L si="ඇතුළු වන්න" en="Sign in" />
         </button>
         <button
           type="button"
@@ -184,7 +193,7 @@ export default function SignInForm({
           onClick={() => setTab("signup")}
           className={tabClass("signup")}
         >
-          Create account
+          <L si="ගිණුමක් සාදන්න" en="Create account" />
         </button>
       </div>
 

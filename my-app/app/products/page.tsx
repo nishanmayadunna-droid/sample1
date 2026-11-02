@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getAllProducts, getCategories, getProductsByCategory } from "@/lib/catalog";
 import { resolveCategoryParam } from "@/lib/category-form";
 import ProductCard from "../components/ProductCard";
+import L from "../components/L";
 
 export const metadata: Metadata = {
   title: "Shop all",
@@ -25,12 +26,14 @@ export default async function ProductsPage({
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
       <header>
-        <span className="eyebrow text-muted">The collection</span>
+        <span className="eyebrow text-muted">
+          <L si="එකතුව" en="The collection" />
+        </span>
         <h1 className="display mt-2 text-[clamp(2rem,5vw,3.25rem)]">
-          {active?.name ?? "All products"}
+          {active?.name ?? <L si="සියලු භාණ්ඩ" en="All products" />}
         </h1>
         <p className="mt-2 font-mono text-xs text-muted">
-          {String(products.length).padStart(2, "0")} items in stock
+          {String(products.length).padStart(2, "0")} <L si="භාණ්ඩ" en="items" />
         </p>
       </header>
 
@@ -38,7 +41,7 @@ export default async function ProductsPage({
 
       {/* Category filter */}
       <nav className="mb-10 flex flex-wrap gap-2">
-        <FilterPill href="/products" label="All" active={!active} />
+        <FilterPill href="/products" label={<L si="සියල්ල" en="All" />} active={!active} />
         {categories.map((c) => (
           <FilterPill
             key={c.slug}
@@ -64,7 +67,7 @@ function FilterPill({
   active,
 }: {
   href: string;
-  label: string;
+  label: React.ReactNode;
   active: boolean;
 }) {
   return (

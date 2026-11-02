@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { Product } from "@/lib/products";
 import { useCart } from "@/app/context/CartContext";
+import L from "./L";
 
 export default function ProductPurchase({ product }: { product: Product }) {
   const { addItem } = useCart();
@@ -25,7 +26,8 @@ export default function ProductPurchase({ product }: { product: Product }) {
       {!singleSize && (
         <div>
           <span className="eyebrow mb-3 text-muted">
-            Select size{size ? ` — ${size}` : ""}
+            <L si="ප්‍රමාණය තෝරන්න" en="Select size" />
+            {size ? ` — ${size}` : ""}
           </span>
           <div className="flex flex-wrap gap-2">
             {product.sizes.map((s) => (
@@ -53,11 +55,15 @@ export default function ProductPurchase({ product }: { product: Product }) {
           disabled={!size}
           className="rounded-full bg-blaze px-6 py-4 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
         >
-          {added ? "Added to cart" : "Add to cart"}
+          {added ? (
+            <L si="කරත්තයට එක් කළා" en="Added to cart" />
+          ) : (
+            <L si="කරත්තයට එක් කරන්න" en="Add to cart" />
+          )}
         </button>
         {!size && (
           <span className="font-mono text-xs text-muted">
-            Choose a size to continue.
+            <L si="ඉදිරියට යාමට ප්‍රමාණයක් තෝරන්න." en="Choose a size to continue." />
           </span>
         )}
         {added && (
@@ -65,7 +71,7 @@ export default function ProductPurchase({ product }: { product: Product }) {
             href="/cart"
             className="text-center font-mono text-xs uppercase tracking-[0.14em] underline underline-offset-4"
           >
-            View cart →
+            <L si="කරත්තය බලන්න →" en="View cart →" />
           </Link>
         )}
       </div>

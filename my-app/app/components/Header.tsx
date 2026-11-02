@@ -6,6 +6,7 @@ import { useCart } from "@/app/context/CartContext";
 import AccountNav from "./AccountNav";
 import CartSync from "./CartSync";
 import LangToggle from "./LangToggle";
+import L from "./L";
 import { initLangStore } from "@/app/context/LangContext";
 import type { Lang } from "@/lib/i18n";
 
@@ -36,7 +37,7 @@ export default function Header({
             href="/products"
             className="text-muted transition-colors hover:text-ink"
           >
-            Shop
+            <L si="සාප්පුව" en="Shop" />
           </Link>
           <LangToggle show={bilingual} />
           <SessionProvider>
@@ -47,7 +48,7 @@ export default function Header({
             href="/cart"
             className="text-muted transition-colors hover:text-ink"
           >
-            Cart
+            <L si="කරත්තය" en="Cart" />
             {hydrated && totalItems > 0 && (
               <span className="ml-1 text-blaze">[{totalItems}]</span>
             )}

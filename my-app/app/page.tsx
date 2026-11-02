@@ -6,12 +6,19 @@ import ProductCard from "./components/ProductCard";
 import ProductImage from "./components/ProductImage";
 import FlashCountdown from "./components/FlashCountdown";
 import Newsletter from "./components/Newsletter";
+import L from "./components/L";
 
-const PROMISES: [string, string][] = [
-  ["Free shipping", `On orders over ${formatPriceWhole(FREE_SHIPPING_THRESHOLD)}`],
-  ["30-day returns", "No restocking fees"],
-  ["Built to be repaired", "Free repairs for a year"],
-  ["Carbon-neutral", "Every order offset"],
+// [label si, label en, detail si, detail en]
+const PROMISES: [string, string, string, string][] = [
+  [
+    "නොමිලේ බෙදාහැරීම",
+    "Free shipping",
+    `${formatPriceWhole(FREE_SHIPPING_THRESHOLD)}ට වැඩි ඇණවුම්වලට`,
+    `On orders over ${formatPriceWhole(FREE_SHIPPING_THRESHOLD)}`,
+  ],
+  ["දින 30ක ආපසු භාරදීම", "30-day returns", "අමතර ගාස්තු නැහැ", "No restocking fees"],
+  ["අලුත්වැඩියාවට හදපු", "Built to be repaired", "වසරක් නොමිලේ අලුත්වැඩියා", "Free repairs for a year"],
+  ["කාබන්-උදාසීන", "Carbon-neutral", "සෑම ඇණවුමක්ම සමතුලිතයි", "Every order offset"],
 ];
 
 // Re-fetch catalog data from Supabase at most once a minute (ISR).
@@ -38,28 +45,30 @@ export default async function Home() {
         <div className="mx-auto grid w-full max-w-6xl gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
             <span className="eyebrow rise text-panelmuted">
-              Est. Northbound — 64°N
+              <L si="Northbound — 64°N සිට" en="Est. Northbound — 64°N" />
             </span>
             <h1 className="display mt-6 text-[clamp(2.75rem,8vw,5.5rem)]">
               <span className="rise block" style={{ animationDelay: "80ms" }}>
-                Made to be
+                <L si="ඉවත දමන්න නොව," en="Made to be" />
               </span>
               <span
                 className="rise block text-blaze"
                 style={{ animationDelay: "160ms" }}
               >
-                worn out,
+                <L si="දිගු කලක්" en="worn out," />
               </span>
               <span className="rise block" style={{ animationDelay: "240ms" }}>
-                not thrown out.
+                <L si="අඳින්නට." en="not thrown out." />
               </span>
             </h1>
             <p
               className="rise mt-7 max-w-md text-lg leading-relaxed text-panelmuted"
               style={{ animationDelay: "340ms" }}
             >
-              Honest materials, quiet design, and hardware built to outlast the
-              season. Layers and outerwear for the cold miles ahead.
+              <L
+                si="අවංක රෙදි, සරල නිර්මාණ, සහ සමයට වඩා කල් පවතින උපාංග. ඉදිරි ගමන් සඳහා ඇඳුම් සහ outerwear."
+                en="Honest materials, quiet design, and hardware built to outlast the season. Layers and outerwear for the cold miles ahead."
+              />
             </p>
             <div
               className="rise mt-8 flex flex-wrap items-center gap-5"
@@ -69,13 +78,13 @@ export default async function Home() {
                 href="/products"
                 className="rounded-full bg-blaze px-7 py-3.5 font-medium text-white transition-transform hover:-translate-y-0.5"
               >
-                Shop the collection
+                <L si="එකතුව බලන්න" en="Shop the collection" />
               </Link>
               <Link
                 href="/products?category=outerwear"
                 className="font-mono text-xs uppercase tracking-[0.16em] underline-offset-4 hover:underline"
               >
-                Shop outerwear →
+                <L si="Outerwear බලන්න →" en="Shop outerwear →" />
               </Link>
             </div>
           </div>
@@ -96,7 +105,9 @@ export default async function Home() {
                 />
                 <div className="flex items-end justify-between gap-4 bg-black/25 p-5">
                   <div>
-                    <span className="eyebrow text-panelmuted">Field tested</span>
+                    <span className="eyebrow text-panelmuted">
+                      <L si="අත්හදා බැලූ" en="Field tested" />
+                    </span>
                     <p className="mt-1.5 font-medium">{hero.name}</p>
                     <p className="mt-1 font-mono text-xs text-panelmuted">
                       {hero.spec.material} · {hero.spec.origin}
@@ -115,9 +126,11 @@ export default async function Home() {
       <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="mb-8 flex items-end justify-between gap-4">
           <div>
-            <span className="eyebrow text-muted">Find your kit</span>
+            <span className="eyebrow text-muted">
+              <L si="ඔබට ගැළපෙන දේ" en="Find your kit" />
+            </span>
             <h2 className="display mt-2 text-[clamp(1.75rem,4vw,2.75rem)]">
-              Shop by category
+              <L si="වර්ගය අනුව" en="Shop by category" />
             </h2>
           </div>
         </div>
@@ -133,13 +146,13 @@ export default async function Home() {
               >
                 <span className="pointer-events-none absolute inset-0 bg-black/15 transition-colors group-hover:bg-black/0" />
                 <span className="relative font-mono text-[0.6rem] uppercase tracking-widest text-white/80">
-                  {String(count).padStart(2, "0")} styles
+                  {String(count).padStart(2, "0")} <L si="මෝස්තර" en="styles" />
                 </span>
                 <span className="display relative mt-1 text-2xl leading-none">
                   {category.name}
                 </span>
                 <span className="relative mt-2 font-mono text-xs text-white/80">
-                  Shop →
+                  <L si="බලන්න →" en="Shop →" />
                 </span>
               </Link>
             );
@@ -152,17 +165,23 @@ export default async function Home() {
         <div className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
           <div className="flex flex-col gap-6 border-b border-line pb-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <span className="eyebrow text-blaze">Ends tonight</span>
+              <span className="eyebrow text-blaze">
+                <L si="අද රෑ අවසන්" en="Ends tonight" />
+              </span>
               <h2 className="display mt-2 text-[clamp(1.75rem,4vw,2.75rem)]">
-                Flash sale
+                <L si="Flash sale" en="Flash sale" />
               </h2>
               <p className="mt-1 max-w-md text-sm text-muted">
-                Limited stock on select field kit. When it&apos;s gone,
-                it&apos;s gone.
+                <L
+                  si="තෝරාගත් භාණ්ඩ සීමිත ප්‍රමාණයක් පමණයි. ඉවර වුණාම ඉවරයි."
+                  en="Limited stock on select field kit. When it's gone, it's gone."
+                />
               </p>
             </div>
             <div>
-              <span className="eyebrow mb-2 text-muted">Time left</span>
+              <span className="eyebrow mb-2 text-muted">
+                <L si="ඉතිරි කාලය" en="Time left" />
+              </span>
               <FlashCountdown />
             </div>
           </div>
@@ -178,16 +197,18 @@ export default async function Home() {
       <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="mb-10 flex items-end justify-between gap-4">
           <div>
-            <span className="eyebrow text-muted">Selected</span>
+            <span className="eyebrow text-muted">
+              <L si="තෝරාගත්" en="Selected" />
+            </span>
             <h2 className="display mt-2 text-[clamp(1.75rem,4vw,2.75rem)]">
-              Field favourites
+              <L si="ජනප්‍රිය භාණ්ඩ" en="Field favourites" />
             </h2>
           </div>
           <Link
             href="/products"
             className="font-mono text-xs uppercase tracking-[0.16em] text-muted underline-offset-4 hover:text-ink hover:underline"
           >
-            All products →
+            <L si="සියලු භාණ්ඩ →" en="All products →" />
           </Link>
         </div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
@@ -200,12 +221,14 @@ export default async function Home() {
       {/* THE PROMISE — value props in the spec voice, split by hairline rules. */}
       <section className="border-y border-line">
         <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-px bg-line md:grid-cols-4">
-          {PROMISES.map(([label, detail]) => (
-            <div key={label} className="bg-bg px-5 py-8 sm:px-6">
+          {PROMISES.map(([labelSi, labelEn, detailSi, detailEn]) => (
+            <div key={labelEn} className="bg-bg px-5 py-8 sm:px-6">
               <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em]">
-                {label}
+                <L si={labelSi} en={labelEn} />
               </p>
-              <p className="mt-2 text-sm text-muted">{detail}</p>
+              <p className="mt-2 text-sm text-muted">
+                <L si={detailSi} en={detailEn} />
+              </p>
             </div>
           ))}
         </div>

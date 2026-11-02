@@ -1,12 +1,13 @@
 "use server";
 
+import type { AuthMessage } from "@/lib/auth-messages";
 import { validateSignUp, type SignUpErrors } from "@/lib/auth-rules";
 import { createPasswordUser } from "@/lib/users";
 
 export type SignUpState = {
   ok: boolean;
   errors: SignUpErrors;
-  formError: string | null;
+  formError: AuthMessage | null;
 };
 
 // Creates the account only. The client signs in afterwards with
@@ -27,7 +28,7 @@ export async function signUpAction(
     if (created === "exists") {
       return {
         ok: false,
-        errors: { email: "This email already has an account." },
+        errors: { email: "emailTaken" },
         formError: null,
       };
     }
@@ -35,7 +36,7 @@ export async function signUpAction(
     return {
       ok: false,
       errors: {},
-      formError: "Something went wrong, please try again.",
+      formError: "somethingWrong",
     };
   }
   return { ok: true, errors: {}, formError: null };

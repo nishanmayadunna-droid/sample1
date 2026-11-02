@@ -5,6 +5,7 @@ import "./globals.css";
 import AnnouncementBar from "./components/AnnouncementBar";
 import Header from "./components/Header";
 import InlineScript from "./components/InlineScript";
+import L from "./components/L";
 import { getStoreSettings } from "@/lib/storefront";
 import { langBootScript } from "@/lib/i18n";
 
@@ -81,15 +82,18 @@ export default async function RootLayout({
                 North<span className="text-blaze">·</span>bound
               </p>
               <p className="mt-2 max-w-xs text-sm leading-relaxed">
-                A demo storefront. Built to be worn out, not thrown out.
+                <L
+                  si="Demo සාප්පුවකි. ඉවත දමන්න නොව, දිගු කලක් අඳින්නට."
+                  en="A demo storefront. Built to be worn out, not thrown out."
+                />
               </p>
             </div>
             <nav className="flex gap-6 font-mono text-[0.7rem] uppercase tracking-[0.16em]">
               <Link href="/products" className="hover:text-panelink">
-                Shop all
+                <L si="සියල්ල බලන්න" en="Shop all" />
               </Link>
               <Link href="/cart" className="hover:text-panelink">
-                Cart
+                <L si="කරත්තය" en="Cart" />
               </Link>
             </nav>
           </div>
