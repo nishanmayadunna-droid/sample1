@@ -6,35 +6,26 @@ import { useCart } from "@/app/context/CartContext";
 import { openCartDrawer } from "@/app/context/CartDrawerContext";
 import { initLangStore, useLang } from "@/app/context/LangContext";
 import { tr, type Lang } from "@/lib/i18n";
-import type { Category } from "@/lib/products";
+import type { Category, ShellProduct } from "@/lib/products";
 import AccountNav from "./AccountNav";
 import CartSync from "./CartSync";
 import CategoryMenu from "./CategoryMenu";
 import L from "./L";
 import LangToggle from "./LangToggle";
+import SearchBox from "./SearchBox";
 
 const navLinkClass = "whitespace-nowrap py-2 transition-colors hover:text-ink";
-
-/** Placeholder search slot; the search box replaces it. */
-function SearchSlot() {
-  return (
-    <Link
-      href="/products"
-      className="flex h-11 w-full items-center rounded-full border-2 border-ink px-5 text-sm text-muted"
-    >
-      <L si="භාණ්ඩ සොයන්න" en="Search products" />
-    </Link>
-  );
-}
 
 export default function Header({
   defaultLang,
   bilingual,
   categories,
+  products,
 }: {
   defaultLang: Lang;
   bilingual: boolean;
   categories: Category[];
+  products: ShellProduct[];
 }) {
   // Header renders before every other client component, so the language
   // store knows the server's language before anything hydrates.
@@ -53,7 +44,7 @@ export default function Header({
           North<span className="text-blaze">·</span>bound
         </Link>
         <div className="hidden flex-1 sm:block">
-          <SearchSlot />
+          <SearchBox products={products} />
         </div>
         <div className="ml-auto flex items-center gap-4 font-mono text-[0.7rem] uppercase tracking-[0.16em] sm:ml-0">
           <LangToggle show={bilingual} />
@@ -113,7 +104,7 @@ export default function Header({
       </div>
 
       <div className="px-4 pb-3 sm:hidden">
-        <SearchSlot />
+        <SearchBox products={products} />
       </div>
 
       <nav

@@ -105,6 +105,7 @@ export default async function RootLayout({
           defaultLang={settings.defaultLang}
           bilingual={settings.bilingual}
           categories={categories}
+          products={products}
         />
         <main className="flex-1">{children}</main>
         <CartDrawer products={products} />
