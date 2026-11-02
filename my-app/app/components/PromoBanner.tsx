@@ -29,6 +29,8 @@ export default function PromoBanner({
           fill
           sizes="(min-width: 1152px) 1152px, 100vw"
           preload={preload}
+          // The admin form previews a not-yet-uploaded file as a blob: URL.
+          unoptimized={banner.imageUrl.startsWith("blob:")}
           className="object-cover"
         />
         <span className="sr-only">
@@ -80,6 +82,7 @@ export default function PromoBanner({
             fill
             sizes="(min-width: 640px) 45vw, 100vw"
             preload={preload}
+            unoptimized={banner.imageUrl.startsWith("blob:")}
             className="object-cover"
           />
         </div>
