@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import type { Product } from "@/lib/products";
 import { useCart } from "@/app/context/CartContext";
+import { openCartDrawer } from "@/app/context/CartDrawerContext";
 import L from "./L";
 
 export default function ProductPurchase({ product }: { product: Product }) {
@@ -12,13 +12,10 @@ export default function ProductPurchase({ product }: { product: Product }) {
   const [size, setSize] = useState<string | null>(
     singleSize ? product.sizes[0] : null,
   );
-  const [added, setAdded] = useState(false);
-
   function handleAdd() {
     if (!size) return;
     addItem(product.id, size);
-    setAdded(true);
-    window.setTimeout(() => setAdded(false), 2000);
+    openCartDrawer();
   }
 
   return (
@@ -55,24 +52,12 @@ export default function ProductPurchase({ product }: { product: Product }) {
           disabled={!size}
           className="rounded-full bg-blaze px-6 py-4 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
         >
-          {added ? (
-            <L si="කරත්තයට එක් කළා" en="Added to cart" />
-          ) : (
-            <L si="කරත්තයට එක් කරන්න" en="Add to cart" />
-          )}
+          <L si="කරත්තයට එක් කරන්න" en="Add to cart" />
         </button>
         {!size && (
           <span className="font-mono text-xs text-muted">
             <L si="ඉදිරියට යාමට ප්‍රමාණයක් තෝරන්න." en="Choose a size to continue." />
           </span>
-        )}
-        {added && (
-          <Link
-            href="/cart"
-            className="text-center font-mono text-xs uppercase tracking-[0.14em] underline underline-offset-4"
-          >
-            <L si="කරත්තය බලන්න →" en="View cart →" />
-          </Link>
         )}
       </div>
     </div>

@@ -73,3 +73,37 @@ export function discountPercent(product: Product): number | null {
   if (product.salePrice == null) return null;
   return Math.round((1 - product.salePrice / product.price) * 100);
 }
+
+/** The product fields the shell (search, cart drawer) needs in the browser. */
+export type ShellProduct = Pick<
+  Product,
+  | "id"
+  | "name"
+  | "price"
+  | "salePrice"
+  | "imageUrl"
+  | "swatch"
+  | "category"
+  | "categoryName"
+  | "sizes"
+  | "description"
+  | "featured"
+  | "createdAt"
+>;
+
+export function toShellProduct(p: Product): ShellProduct {
+  return {
+    id: p.id,
+    name: p.name,
+    price: p.price,
+    salePrice: p.salePrice,
+    imageUrl: p.imageUrl,
+    swatch: p.swatch,
+    category: p.category,
+    categoryName: p.categoryName,
+    sizes: p.sizes,
+    description: p.description,
+    featured: p.featured,
+    createdAt: p.createdAt,
+  };
+}

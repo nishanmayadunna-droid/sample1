@@ -137,3 +137,18 @@ html[data-lang="en"] .l-si {
 html[data-lang="si"] .display {
   line-height: 1.15;
 }
+
+/* Cart drawer slides in from the right. */
+@keyframes drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+.drawer-in {
+  animation: drawer-in 220ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .drawer-in {
+    animation: none;
+  }
+}

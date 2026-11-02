@@ -6,7 +6,10 @@ import AnnouncementBar from "./components/AnnouncementBar";
 import Header from "./components/Header";
 import InlineScript from "./components/InlineScript";
 import L from "./components/L";
+import CartDrawer from "./components/CartDrawer";
 import { getStoreSettings } from "@/lib/storefront";
+import { getAllProducts } from "@/lib/catalog";
+import { toShellProduct, type ShellProduct } from "@/lib/products";
 import { langBootScript } from "@/lib/i18n";
 
 const geistSans = Geist({
@@ -52,12 +55,22 @@ export const metadata: Metadata = {
     "Honest materials, quiet design, and hardware built to outlast the season. Field apparel for the cold miles.",
 };
 
+/** Products for the search box and cart drawer; none if the catalog can't be read. */
+async function getShellProducts(): Promise<ShellProduct[]> {
+  try {
+    return (await getAllProducts()).map(toShellProduct);
+  } catch (error) {
+    console.error("shell products query failed", error);
+    return [];
+  }
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const settings = await getStoreSettings();
+  const [settings, products] = await Promise.all([getStoreSettings(), getShellProducts()]);
 
   // Every visitor gets the same HTML in the default language; the boot script
   // switches html[data-lang] to their saved choice before first paint.
@@ -75,6 +88,7 @@ export default async function RootLayout({
         <AnnouncementBar />
         <Header defaultLang={settings.defaultLang} bilingual={settings.bilingual} />
         <main className="flex-1">{children}</main>
+        <CartDrawer products={products} />
         <footer className="mt-8 bg-panel text-panelmuted">
           <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-12 sm:flex-row sm:items-end sm:justify-between sm:px-6">
             <div>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { SessionProvider } from "next-auth/react";
 import { useCart } from "@/app/context/CartContext";
+import { openCartDrawer } from "@/app/context/CartDrawerContext";
 import AccountNav from "./AccountNav";
 import CartSync from "./CartSync";
 import LangToggle from "./LangToggle";
@@ -44,15 +45,16 @@ export default function Header({
             <AccountNav />
             <CartSync />
           </SessionProvider>
-          <Link
-            href="/cart"
-            className="text-muted transition-colors hover:text-ink"
+          <button
+            type="button"
+            onClick={openCartDrawer}
+            className="font-mono uppercase text-muted transition-colors hover:text-ink"
           >
             <L si="කරත්තය" en="Cart" />
             {hydrated && totalItems > 0 && (
               <span className="ml-1 text-blaze">[{totalItems}]</span>
             )}
-          </Link>
+          </button>
         </nav>
       </div>
       <div className="measure text-ink" />
