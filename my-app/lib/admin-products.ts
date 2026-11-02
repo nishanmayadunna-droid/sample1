@@ -3,9 +3,9 @@
 // check requireAdmin() first (app/admin/products/actions.ts does).
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { COLUMNS, toProduct, type ProductRow } from "@/lib/catalog";
+import { COLUMNS, getCategories, toProduct, type ProductRow } from "@/lib/catalog";
 import type { ProductInput } from "@/lib/product-form";
-import type { Product } from "@/lib/products";
+import type { Category, Product } from "@/lib/products";
 
 export type AdminProduct = Product & { published: boolean; sortOrder: number };
 
@@ -16,8 +16,12 @@ const UNIQUE_VIOLATION = "23505";
 
 type AdminRow = ProductRow & { published: boolean; sort_order: number };
 
-function toAdminProduct(row: AdminRow): AdminProduct {
-  return { ...toProduct(row), published: row.published, sortOrder: row.sort_order };
+function toAdminProduct(row: AdminRow, categories: Category[]): AdminProduct {
+  return {
+    ...toProduct(row, categories),
+    published: row.published,
+    sortOrder: row.sort_order,
+  };
 }
 
 function fail(error: unknown): never {
@@ -33,7 +37,8 @@ export async function listProductsForAdmin(): Promise<AdminProduct[]> {
     .order("name")
     .returns<AdminRow[]>();
   if (error) fail(error);
-  return data.map(toAdminProduct);
+  const categories = await getCategories();
+  return data.map((row) => toAdminProduct(row, categories));
 }
 
 export async function getProductForAdmin(id: string): Promise<AdminProduct | null> {
@@ -43,7 +48,7 @@ export async function getProductForAdmin(id: string): Promise<AdminProduct | nul
     .eq("id", id)
     .maybeSingle<AdminRow>();
   if (error) fail(error);
-  return data ? toAdminProduct(data) : null;
+  return data ? toAdminProduct(data, await getCategories()) : null;
 }
 
 export async function insertProduct(
@@ -93,7 +98,35 @@ function bucketPathOf(url: string | null | undefined): string | null {
   if (!url) return null;
   const marker = `/storage/v1/object/public/${BUCKET}/`;
   const index = url.indexOf(marker);
-  return index === -1 ? null : decodeURIComponent(url.slice(index + marker.length));
+  if (index === -1) return null;
+  try {
+    return decodeURIComponent(url.slice(index + marker.length));
+  } catch {
+    return null; // a hand-edited URL with a broken %-escape: leave the file alone
+  }
+}
+
+/**
+ * Permanently deletes the product row, then best-effort deletes its photo.
+ * Returns false when no product had this id. Cart lines that still point at
+ * it are harmless: the shop skips ids it can't find.
+ */
+export async function deleteProduct(id: string): Promise<boolean> {
+  const { data, error } = await supabaseAdmin
+    .from("products")
+    .delete()
+    .eq("id", id)
+    .select("image_url")
+    .returns<{ image_url: string | null }[]>();
+  if (error) fail(error);
+  if (data.length === 0) return false;
+
+  const photoPath = bucketPathOf(data[0].image_url);
+  if (photoPath) {
+    const { error: removeError } = await supabaseAdmin.storage.from(BUCKET).remove([photoPath]);
+    if (removeError) console.error("deleted product's image not removed", photoPath, removeError);
+  }
+  return true;
 }
 
 /** Points the product at `path`, then best-effort deletes its previous photo. */

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-guards";
+import { getCategories } from "@/lib/catalog";
 import { createProductAction } from "../actions";
 import ProductForm from "../ProductForm";
 
@@ -16,7 +17,7 @@ export default async function NewProductPage() {
       </Link>
       <h1 className="display mt-2 text-5xl">New product</h1>
       <div className="measure mt-6 text-ink" />
-      <ProductForm mode="create" action={createProductAction} />
+      <ProductForm mode="create" action={createProductAction} categories={await getCategories()} />
     </div>
   );
 }

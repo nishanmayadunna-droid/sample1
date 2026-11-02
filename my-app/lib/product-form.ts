@@ -1,6 +1,5 @@
 // Pure validation for the admin product form and photo paths. No I/O, so it is
 // shared by the Server Actions, the form and the unit tests.
-import { CATEGORIES, type Category } from "@/lib/products";
 
 export type FieldName =
   | "id"
@@ -22,7 +21,7 @@ export type ProductInput = {
   name: string;
   price: number;
   sale_price: number | null;
-  category: Category;
+  category: string; // a category slug
   description: string;
   sizes: string[];
   material: string;
@@ -72,6 +71,8 @@ function parseSizes(raw: string | undefined): string[] | null {
 export function parseProductForm(
   fields: Record<string, string | undefined>,
   mode: "create" | "update",
+  /** Slugs of the existing categories (from getCategories()). */
+  categorySlugs: string[],
 ):
   | { ok: true; id: string | null; value: ProductInput }
   | { ok: false; errors: Partial<Record<FieldName, string>> } {
@@ -98,7 +99,7 @@ export function parseProductForm(
     }
   }
 
-  const category = CATEGORIES.find((c) => c === fields.category);
+  const category = categorySlugs.find((slug) => slug === fields.category);
   if (!category) errors.category = "Pick a category.";
 
   const description = text(fields.description, 2000);
@@ -171,4 +172,9 @@ export function isValidImagePath(id: string, path: string): boolean {
   if (!isValidProductId(id)) return false;
   // id is a validated slug, so it has no regex metacharacters.
   return new RegExp(`^${id}-\\d+\\.(jpg|png|webp)$`).test(path);
+}
+
+/** Hard delete needs the admin to type the product id exactly (surrounding spaces ignored). */
+export function isDeleteConfirmed(id: string, typed: string): boolean {
+  return id !== "" && typed.trim() === id;
 }

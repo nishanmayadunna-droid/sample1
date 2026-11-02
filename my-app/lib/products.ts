@@ -1,7 +1,14 @@
 // Product types and pure helpers. Safe to import from client components —
 // the data itself lives in Supabase and is fetched via `@/lib/catalog`.
 
-export type Category = "Tops" | "Bottoms" | "Outerwear" | "Accessories";
+/** A product category, managed by admins in the `categories` table. */
+export type Category = {
+  slug: string;
+  name: string;
+  /** Two hex colors for the home-page tile gradient. */
+  swatch: [string, string];
+  sortOrder: number;
+};
 
 /** Garment spec, shown as the monospace label that runs through the whole UI. */
 export type Spec = {
@@ -17,7 +24,10 @@ export type Product = {
   price: number;
   /** Discounted price in cents when the item is in the flash sale. */
   salePrice?: number;
-  category: Category;
+  /** Category slug (or, until the FK migration, the old display name). */
+  category: string;
+  /** The category's display name. */
+  categoryName: string;
   description: string;
   sizes: string[];
   spec: Spec;
@@ -28,12 +38,6 @@ export type Product = {
   featured?: boolean;
 };
 
-export const CATEGORIES: Category[] = [
-  "Tops",
-  "Bottoms",
-  "Outerwear",
-  "Accessories",
-];
 
 // Prices are Sri Lankan rupees stored in cents. Intl's LKR format prints
 // "LKR 850.00", so the "Rs" prefix is added by hand around a plain number.

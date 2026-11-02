@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CATEGORIES, type Category } from "@/lib/products";
-import { getAllProducts, getProductsByCategory } from "@/lib/catalog";
+import { getAllProducts, getCategories, getProductsByCategory } from "@/lib/catalog";
+import { resolveCategoryParam } from "@/lib/category-form";
 import ProductCard from "../components/ProductCard";
 
 export const metadata: Metadata = {
@@ -9,17 +9,15 @@ export const metadata: Metadata = {
   description: "Browse the full Northbound collection.",
 };
 
-function isCategory(value: string | undefined): value is Category {
-  return !!value && (CATEGORIES as string[]).includes(value);
-}
-
 export default async function ProductsPage({
   searchParams,
 }: {
   searchParams: Promise<{ category?: string }>;
 }) {
   const { category } = await searchParams;
-  const active = isCategory(category) ? category : null;
+  const categories = await getCategories();
+  // Accepts the slug or the name in any case, so old ?category=Outerwear links work.
+  const active = resolveCategoryParam(category, categories);
   const products = active
     ? await getProductsByCategory(active)
     : await getAllProducts();
@@ -29,7 +27,7 @@ export default async function ProductsPage({
       <header>
         <span className="eyebrow text-muted">The collection</span>
         <h1 className="display mt-2 text-[clamp(2rem,5vw,3.25rem)]">
-          {active ?? "All products"}
+          {active?.name ?? "All products"}
         </h1>
         <p className="mt-2 font-mono text-xs text-muted">
           {String(products.length).padStart(2, "0")} items in stock
@@ -41,12 +39,12 @@ export default async function ProductsPage({
       {/* Category filter */}
       <nav className="mb-10 flex flex-wrap gap-2">
         <FilterPill href="/products" label="All" active={!active} />
-        {CATEGORIES.map((c) => (
+        {categories.map((c) => (
           <FilterPill
-            key={c}
-            href={`/products?category=${encodeURIComponent(c)}`}
-            label={c}
-            active={active === c}
+            key={c.slug}
+            href={`/products?category=${encodeURIComponent(c.slug)}`}
+            label={c.name}
+            active={active?.slug === c.slug}
           />
         ))}
       </nav>

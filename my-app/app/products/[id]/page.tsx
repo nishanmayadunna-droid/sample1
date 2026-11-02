@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { discountPercent, formatPrice } from "@/lib/products";
-import { getAllProducts, getProduct, getProductsByCategory } from "@/lib/catalog";
+import { getAllProducts, getCategories, getProduct, getProductsByCategory } from "@/lib/catalog";
+import { resolveCategoryParam } from "@/lib/category-form";
 import ProductImage from "../../components/ProductImage";
 import ProductCard from "../../components/ProductCard";
 import ProductPurchase from "../../components/ProductPurchase";
@@ -38,7 +39,10 @@ export default async function ProductPage({
   const product = await getProduct(id);
   if (!product) notFound();
 
-  const related = (await getProductsByCategory(product.category))
+  // The stored value may be a slug or (until the FK migration) an old name.
+  const category = resolveCategoryParam(product.category, await getCategories());
+  const categorySlug = category?.slug ?? product.category;
+  const related = (category ? await getProductsByCategory(category) : [])
     .filter((p) => p.id !== product.id)
     .slice(0, 4);
 
@@ -56,10 +60,10 @@ export default async function ProductPage({
         </Link>{" "}
         <span className="text-blaze">/</span>{" "}
         <Link
-          href={`/products?category=${encodeURIComponent(product.category)}`}
+          href={`/products?category=${encodeURIComponent(categorySlug)}`}
           className="hover:text-ink"
         >
-          {product.category}
+          {product.categoryName}
         </Link>{" "}
         <span className="text-blaze">/</span>{" "}
         <span className="text-ink">{product.name}</span>
@@ -76,7 +80,7 @@ export default async function ProductPage({
         </div>
 
         <div>
-          <span className="eyebrow text-muted">{product.category}</span>
+          <span className="eyebrow text-muted">{product.categoryName}</span>
           <h1 className="display mt-3 text-[clamp(2.25rem,6vw,3.75rem)]">
             {product.name}
           </h1>
@@ -123,7 +127,7 @@ export default async function ProductPage({
         <section className="mt-24">
           <div className="measure text-ink mb-8" />
           <h2 className="display text-[clamp(1.5rem,3vw,2rem)]">
-            More in {product.category}
+            More in {product.categoryName}
           </h2>
           <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
             {related.map((p) => (
