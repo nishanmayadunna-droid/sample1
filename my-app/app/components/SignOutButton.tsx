@@ -2,6 +2,7 @@
 
 import { signOut } from "next-auth/react";
 import { prepareCartForSignOut } from "./CartSync";
+import L from "./L";
 
 // Client-side sign-out does a full navigation, so the Header's session state
 // is fresh afterwards. A pending cart save is flushed first so a change made
@@ -19,7 +20,7 @@ export default function SignOutButton() {
       onClick={() => void handleSignOut()}
       className="rounded-full border border-line px-6 py-3 font-medium transition-colors hover:border-ink"
     >
-      Sign out
+      <L si="පිටවන්න" en="Sign out" />
     </button>
   );
 }

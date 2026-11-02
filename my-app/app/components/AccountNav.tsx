@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import L from "./L";
 
 const linkClass = "text-muted transition-colors hover:text-ink";
 
@@ -16,7 +17,7 @@ export default function AccountNav() {
   if (!session?.user) {
     return (
       <Link href="/signin" className={linkClass}>
-        Sign in
+        <L si="ඇතුළු වන්න" en="Sign in" />
       </Link>
     );
   }

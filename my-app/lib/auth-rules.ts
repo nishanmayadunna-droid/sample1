@@ -1,6 +1,8 @@
 // Pure auth decisions: no I/O, no Next or Supabase imports, so they're safe
 // anywhere and covered by unit tests (lib/auth-rules.test.ts).
 
+import type { AuthMessage } from "./auth-messages";
+
 export type Role = "user" | "admin";
 
 export function normalizeEmail(email: string): string {
@@ -13,7 +15,7 @@ export type SignUpInput = {
   name: string | null;
 };
 
-export type SignUpErrors = Partial<Record<"email" | "password" | "name", string>>;
+export type SignUpErrors = Partial<Record<"email" | "password" | "name", AuthMessage>>;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // bcrypt ignores everything past 72 bytes, so cap by bytes, not characters.
@@ -32,18 +34,18 @@ export function validateSignUp(raw: {
 
   const email = typeof raw.email === "string" ? normalizeEmail(raw.email) : "";
   if (!EMAIL_PATTERN.test(email)) {
-    errors.email = "Enter a valid email address.";
+    errors.email = "invalidEmail";
   }
 
   const password = typeof raw.password === "string" ? raw.password : "";
   const passwordBytes = new TextEncoder().encode(password).length;
   if (passwordBytes < PASSWORD_MIN_BYTES || passwordBytes > PASSWORD_MAX_BYTES) {
-    errors.password = "Password must be 8–72 characters.";
+    errors.password = "passwordLength";
   }
 
   const trimmedName = typeof raw.name === "string" ? raw.name.trim() : "";
   if (trimmedName.length > NAME_MAX_LENGTH) {
-    errors.name = "Name must be 100 characters or fewer.";
+    errors.name = "nameTooLong";
   }
 
   if (Object.keys(errors).length > 0) return { ok: false, errors };

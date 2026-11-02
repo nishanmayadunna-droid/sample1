@@ -1,8 +1,10 @@
 import Link from "next/link";
 
-/** "Products · Categories" switcher shown at the top of the admin pages. */
-export default function AdminTabs({ active }: { active: "products" | "categories" }) {
-  const tab = (key: "products" | "categories", href: string, label: string) => (
+type AdminTab = "products" | "categories" | "promises" | "settings";
+
+/** Section switcher shown at the top of the admin pages. */
+export default function AdminTabs({ active }: { active: AdminTab }) {
+  const tab = (key: AdminTab, href: string, label: string) => (
     <Link
       href={href}
       aria-current={active === key ? "page" : undefined}
@@ -18,6 +20,8 @@ export default function AdminTabs({ active }: { active: "products" | "categories
     <nav className="mb-8 flex gap-6">
       {tab("products", "/admin", "Products")}
       {tab("categories", "/admin/categories", "Categories")}
+      {tab("promises", "/admin/promises", "Promises")}
+      {tab("settings", "/admin/settings", "Settings")}
     </nav>
   );
 }

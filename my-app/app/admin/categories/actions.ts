@@ -24,6 +24,8 @@ const SOMETHING_WRONG = "Something went wrong, please try again.";
 const NAME_TAKEN = "Another category already uses this name.";
 
 function revalidateCategories() {
+  // The root layout passes categories to the menu and footer, and products to the shell.
+  revalidatePath("/", "layout");
   revalidatePath("/");
   revalidatePath("/products");
   // Category names appear on every product page.

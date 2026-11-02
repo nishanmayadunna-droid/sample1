@@ -13,7 +13,7 @@ export default function ProductImage({
   sizes = "(min-width: 1024px) 25vw, 50vw",
   preload = false,
 }: {
-  product: Product;
+  product: Pick<Product, "swatch" | "imageUrl" | "name" | "categoryName">;
   className?: string;
   /** Rendered width hint for the srcset; match it to the layout slot. */
   sizes?: string;

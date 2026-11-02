@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import L from "./L";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -21,23 +22,30 @@ export default function Newsletter() {
     <section className="bg-panel text-panelink">
       <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-2 lg:items-center">
         <div>
-          <span className="eyebrow text-panelmuted">The dispatch</span>
+          <span className="eyebrow text-panelmuted">
+            <L si="පුවත් ලිපිය" en="The dispatch" />
+          </span>
           <h2 className="display mt-3 text-[clamp(1.75rem,4vw,2.75rem)]">
-            Field notes, restocks,
-            <br />
-            and first look at drops.
+            <L
+              si="අලුත් එකතු, නැවත ආ තොග සහ නව නිකුතු මුලින්ම."
+              en="Field notes, restocks, and first look at drops."
+            />
           </h2>
           <p className="mt-4 max-w-md text-panelmuted">
-            One email a month. No noise — just new kit and the occasional repair
-            tip. Unsubscribe any time.
+            <L
+              si="මසකට එක ඊමේල් එකක්. අනවශ්‍ය දේ නැහැ — අලුත් භාණ්ඩ සහ ඉඳහිට උපදෙස්. ඕනෑම වෙලාවක ඉවත් විය හැක."
+              en="One email a month. No noise — just new kit and the occasional repair tip. Unsubscribe any time."
+            />
           </p>
         </div>
 
         {status === "done" ? (
           <div className="rounded-xl border border-white/15 p-6">
-            <p className="display text-xl text-blaze">You&apos;re on the list</p>
+            <p className="display text-xl text-blaze">
+              <L si="ඔබ ලැයිස්තුවට එක් වුණා" en="You're on the list" />
+            </p>
             <p className="mt-2 text-panelmuted">
-              Watch your inbox for the next dispatch.
+              <L si="ඊළඟ ලිපිය ඔබේ inbox එකට එනවා." en="Watch your inbox for the next dispatch." />
             </p>
           </div>
         ) : (
@@ -46,7 +54,7 @@ export default function Newsletter() {
               htmlFor="newsletter-email"
               className="eyebrow text-panelmuted"
             >
-              Email address
+              <L si="ඊමේල් ලිපිනය" en="Email address" />
             </label>
             <div className="mt-3 flex flex-col gap-3 sm:flex-row">
               <input
@@ -65,12 +73,12 @@ export default function Newsletter() {
                 type="submit"
                 className="shrink-0 rounded-full bg-blaze px-6 py-3 font-medium text-white transition-transform hover:-translate-y-0.5"
               >
-                Subscribe
+                <L si="ලියාපදිංචි වන්න" en="Subscribe" />
               </button>
             </div>
             {status === "error" && (
               <p className="mt-2 font-mono text-xs text-blaze">
-                Enter a valid email address to continue.
+                <L si="ඉදිරියට යාමට වලංගු ඊමේල් ලිපිනයක් දෙන්න." en="Enter a valid email address to continue." />
               </p>
             )}
           </form>

@@ -5,6 +5,7 @@ import { discountPercent, formatPrice } from "@/lib/products";
 import { getAllProducts, getCategories, getProduct, getProductsByCategory } from "@/lib/catalog";
 import { resolveCategoryParam } from "@/lib/category-form";
 import ProductImage from "../../components/ProductImage";
+import L from "../../components/L";
 import ProductCard from "../../components/ProductCard";
 import ProductPurchase from "../../components/ProductPurchase";
 
@@ -46,17 +47,17 @@ export default async function ProductPage({
     .filter((p) => p.id !== product.id)
     .slice(0, 4);
 
-  const specRows: [string, string][] = [
-    ["Material", product.spec.material],
-    ["Construction", product.spec.construction],
-    ["Origin", product.spec.origin],
+  const specRows: { key: string; label: React.ReactNode; value: string }[] = [
+    { key: "material", label: <L si="රෙදි වර්ගය" en="Material" />, value: product.spec.material },
+    { key: "construction", label: <L si="නිර්මාණය" en="Construction" />, value: product.spec.construction },
+    { key: "origin", label: <L si="නිෂ්පාදිත රට" en="Origin" />, value: product.spec.origin },
   ];
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       <nav className="mb-8 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted">
         <Link href="/products" className="hover:text-ink">
-          Shop
+          <L si="සාප්පුව" en="Shop" />
         </Link>{" "}
         <span className="text-blaze">/</span>{" "}
         <Link
@@ -91,7 +92,7 @@ export default async function ProductPage({
                 {formatPrice(product.price)}
               </span>
               <span className="rounded bg-blaze px-1.5 py-0.5 text-xs font-medium text-white">
-                −{discountPercent(product)}% flash sale
+                −{discountPercent(product)}% <L si="අඩු මිල" en="flash sale" />
               </span>
             </p>
           ) : (
@@ -104,9 +105,9 @@ export default async function ProductPage({
 
           {/* Spec sheet */}
           <dl className="mt-8 border-t border-line">
-            {specRows.map(([label, value]) => (
+            {specRows.map(({ key, label, value }) => (
               <div
-                key={label}
+                key={key}
                 className="flex justify-between gap-4 border-b border-line py-3"
               >
                 <dt className="font-mono text-[0.7rem] uppercase tracking-[0.16em] text-muted">
@@ -127,7 +128,7 @@ export default async function ProductPage({
         <section className="mt-24">
           <div className="measure text-ink mb-8" />
           <h2 className="display text-[clamp(1.5rem,3vw,2rem)]">
-            More in {product.categoryName}
+            <L si={`${product.categoryName} තවත්`} en={`More in ${product.categoryName}`} />
           </h2>
           <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
             {related.map((p) => (

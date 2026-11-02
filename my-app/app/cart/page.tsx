@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getAllProducts } from "@/lib/catalog";
 import CartView from "../components/CartView";
+import L from "../components/L";
 
 // Re-fetch catalog data from Supabase at most once a minute (ISR).
 export const revalidate = 60;
@@ -16,7 +17,9 @@ export default async function CartPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
-      <h1 className="mb-8 text-3xl font-semibold tracking-tight">Your cart</h1>
+      <h1 className="mb-8 text-3xl font-semibold tracking-tight">
+        <L si="ඔබේ කරත්තය" en="Your cart" />
+      </h1>
       <CartView products={products} />
     </div>
   );
