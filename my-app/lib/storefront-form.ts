@@ -104,3 +104,20 @@ export function parsePromiseForm(
   if (!icon || Object.keys(errors).length > 0) return { ok: false, errors };
   return { ok: true, value: { icon, text_si: textSi, text_en: textEn, visible } };
 }
+
+/** Highest shipping fee the settings form accepts: Rs 100,000, in cents. */
+export const MAX_SHIPPING_FEE = 10_000_000;
+
+/** The /admin/settings shipping form: the fee in rupees (0 = free). */
+export function parseShippingSettings(
+  fields: Fields,
+):
+  | { ok: true; value: { shipping_fee: number } }
+  | { ok: false; errors: { shippingFee?: string } } {
+  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec((fields.shippingFee ?? "").trim());
+  const cents = match ? Number(match[1]) * 100 + Number((match[2] ?? "").padEnd(2, "0")) : NaN;
+  if (!Number.isFinite(cents) || cents > MAX_SHIPPING_FEE) {
+    return { ok: false, errors: { shippingFee: "Enter a fee like 350 (Rs 0 – 100,000)." } };
+  }
+  return { ok: true, value: { shipping_fee: cents } };
+}

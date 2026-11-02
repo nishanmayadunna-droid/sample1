@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth-guards";
-import { saveLanguageSettings } from "@/lib/admin-storefront";
-import { parseLanguageSettings } from "@/lib/storefront-form";
+import { saveLanguageSettings, saveShippingSettings } from "@/lib/admin-storefront";
+import { parseLanguageSettings, parseShippingSettings } from "@/lib/storefront-form";
 
 // Every action re-checks admin access first: Server Actions are endpoints of
 // their own and can be called without going through the /admin pages.
@@ -36,6 +36,30 @@ export async function saveLanguageSettingsAction(
   }
 
   // The language settings are read by the root layout, i.e. every page.
+  revalidatePath("/", "layout");
+  return { errors: {}, saved: true };
+}
+
+export type ShippingSettingsState = {
+  errors: { shippingFee?: string; form?: string };
+  saved: boolean;
+};
+
+export async function saveShippingSettingsAction(
+  _prev: ShippingSettingsState,
+  formData: FormData,
+): Promise<ShippingSettingsState> {
+  await requireAdmin("/admin/settings");
+  const parsed = parseShippingSettings(formFields(formData));
+  if (!parsed.ok) return { errors: parsed.errors, saved: false };
+
+  try {
+    await saveShippingSettings(parsed.value);
+  } catch {
+    return { errors: { form: "Something went wrong, please try again." }, saved: false };
+  }
+
+  // The fee is read by the root layout (cart drawer) and /cart.
   revalidatePath("/", "layout");
   return { errors: {}, saved: true };
 }

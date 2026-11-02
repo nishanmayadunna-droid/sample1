@@ -4,6 +4,7 @@ import {
   MAX_VISIBLE_PROMISES,
   parseLanguageSettings,
   parsePromiseForm,
+  parseShippingSettings,
   promiseItems,
 } from "./storefront-form";
 
@@ -91,5 +92,19 @@ describe("promiseItems", () => {
     const items = promiseItems(promises, 300000);
     expect(items[0]).toMatchObject({ key: "free-shipping", en: "Free shipping over Rs 3,000" });
     expect(items).toHaveLength(2);
+  });
+});
+
+describe("parseShippingSettings", () => {
+  it("reads rupees as cents", () => {
+    expect(parseShippingSettings({ shippingFee: "350" })).toEqual({ ok: true, value: { shipping_fee: 35000 } });
+    expect(parseShippingSettings({ shippingFee: "0" })).toEqual({ ok: true, value: { shipping_fee: 0 } });
+  });
+
+  it("rejects negative, non-numeric and too-large fees", () => {
+    for (const shippingFee of ["-1", "abc", "100001", ""]) {
+      const r = parseShippingSettings({ shippingFee });
+      expect(!r.ok && r.errors.shippingFee, shippingFee).toBeTruthy();
+    }
   });
 });
