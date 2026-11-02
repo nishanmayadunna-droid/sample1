@@ -57,3 +57,43 @@ export function promiseItems(promises: StorePromise[]): PromiseItem[] {
     })),
   ];
 }
+
+export const PROMISE_ICONS: readonly PromiseIcon[] = ["truck", "box", "return", "shield", "tag"];
+export const PROMISE_TEXT_MAX = 60;
+
+export type PromiseInput = { icon: PromiseIcon; text_si: string; text_en: string; visible: boolean };
+export type PromiseFieldName = "icon" | "textSi" | "textEn" | "form";
+
+/** True when another promise may be made visible. */
+export function canShowPromise(otherVisibleCount: number): boolean {
+  return otherVisibleCount < MAX_VISIBLE_PROMISES;
+}
+
+/**
+ * The /admin/promises form. `otherVisibleCount` counts visible promises other
+ * than the one being edited, so re-saving a visible one is always allowed.
+ */
+export function parsePromiseForm(
+  fields: Fields,
+  otherVisibleCount: number,
+):
+  | { ok: true; value: PromiseInput }
+  | { ok: false; errors: Partial<Record<PromiseFieldName, string>> } {
+  const errors: Partial<Record<PromiseFieldName, string>> = {};
+  const icon = PROMISE_ICONS.find((i) => i === fields.icon);
+  if (!icon) errors.icon = "Choose an icon.";
+
+  const textSi = (fields.textSi ?? "").trim();
+  const textEn = (fields.textEn ?? "").trim();
+  if (textSi.length > PROMISE_TEXT_MAX) errors.textSi = `At most ${PROMISE_TEXT_MAX} characters.`;
+  if (textEn.length > PROMISE_TEXT_MAX) errors.textEn = `At most ${PROMISE_TEXT_MAX} characters.`;
+  if (!textSi && !textEn) errors.form = "Write the promise in Sinhala, English or both.";
+
+  const visible = fields.visible === "on";
+  if (visible && !canShowPromise(otherVisibleCount)) {
+    errors.form = `Only ${MAX_VISIBLE_PROMISES} promises can be shown at once. Hide one first, or save this one hidden.`;
+  }
+
+  if (!icon || Object.keys(errors).length > 0) return { ok: false, errors };
+  return { ok: true, value: { icon, text_si: textSi, text_en: textEn, visible } };
+}
