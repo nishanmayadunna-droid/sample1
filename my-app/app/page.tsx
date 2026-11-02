@@ -9,6 +9,7 @@ import ProductImage from "./components/ProductImage";
 import FlashCountdown from "./components/FlashCountdown";
 import Newsletter from "./components/Newsletter";
 import L from "./components/L";
+import PromoBanners from "./components/PromoBanners";
 
 // [label si, label en, detail si, detail en]
 type PromiseRow = [string, string, string, string];
@@ -53,6 +54,8 @@ export default async function Home() {
 
   return (
     <div>
+      <PromoBanners promotions={promotions} />
+
       {/* HERO — the durability thesis, set on a spruce field panel. */}
       <section className="bg-panel text-panelink">
         <div className="mx-auto grid w-full max-w-6xl gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
