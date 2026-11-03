@@ -12,6 +12,8 @@ export type Review = {
   rating: number;
   body: string;
   createdAt: string;
+  /** The author has received this product (a delivered order). */
+  verified: boolean;
 };
 
 /** Codes the review Server Action returns; the UI turns them into text. */
