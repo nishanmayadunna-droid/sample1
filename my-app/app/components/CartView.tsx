@@ -148,21 +148,12 @@ export default function CartView({
         <div className="mt-4">
           <CartProgress summary={summary} />
         </div>
-        <button
-          type="button"
-          onClick={() =>
-            alert(
-              tr(
-                lang,
-                "මෙය demo සාප්පුවකි — checkout තවම සක්‍රිය නැත.",
-                "This is a demo store — checkout isn't wired up yet.",
-              ),
-            )
-          }
-          className="mt-6 w-full rounded-full bg-blaze py-4 font-medium text-white transition-transform hover:-translate-y-0.5"
+        <Link
+          href="/checkout"
+          className="mt-6 block w-full rounded-full bg-blaze py-4 text-center font-medium text-white transition-transform hover:-translate-y-0.5"
         >
           <L si="Checkout" en="Checkout" />
-        </button>
+        </Link>
         <button
           type="button"
           onClick={clear}

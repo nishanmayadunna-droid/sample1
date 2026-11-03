@@ -23,6 +23,14 @@ export const config = {
       missing: [{ type: "header", key: "next-action" }],
     },
     {
+      source: "/checkout/:path*",
+      missing: [{ type: "header", key: "next-action" }],
+    },
+    {
+      source: "/orders/:path*",
+      missing: [{ type: "header", key: "next-action" }],
+    },
+    {
       source: "/admin/:path*",
       missing: [{ type: "header", key: "next-action" }],
     },
