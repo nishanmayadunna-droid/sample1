@@ -57,6 +57,12 @@ function fail(error: unknown): never {
   throw new Error("users query failed");
 }
 
+/** Phone queries: the error details can contain the phone number, so log only the code. */
+function failPhone(error: { code?: string }): never {
+  console.error("users phone query failed", error.code ?? "unknown");
+  throw new Error("users query failed");
+}
+
 export function toExistingAccount(user: AppUser | null): ExistingAccount {
   return user ? { googleId: user.googleId, hasPassword: user.passwordHash !== null } : null;
 }
@@ -67,7 +73,7 @@ async function findOne(column: "id" | "email" | "google_id" | "phone", value: st
     .select(COLUMNS)
     .eq(column, value)
     .maybeSingle<UserRow>();
-  if (error) fail(error);
+  if (error) return column === "phone" ? failPhone(error) : fail(error);
   return data ? toAppUser(data) : null;
 }
 
@@ -136,7 +142,7 @@ export async function createPhoneUser(phone: string): Promise<AppUser> {
     const existing = await findUserByPhone(phone);
     if (existing) return existing;
   }
-  if (error) fail(error);
+  if (error) failPhone(error);
   return toAppUser(data);
 }
 

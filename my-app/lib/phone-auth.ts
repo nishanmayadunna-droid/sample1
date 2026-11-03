@@ -3,7 +3,7 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { normalizePhone } from "@/lib/orders";
 import { generateCode, hashCode, isValidCodeInput, otpMessage } from "@/lib/otp";
-import { sendSmsDetailed } from "@/lib/sms";
+import { sendSms } from "@/lib/sms";
 import { getSmsSettings, smsAvailable } from "@/lib/sms-data";
 import { createPhoneUser, findUserByPhone, type AppUser } from "@/lib/users";
 
@@ -41,19 +41,9 @@ export async function requestPhoneCode(rawPhone: string): Promise<RequestResult>
   if (data !== "ok") return "unavailable";
 
   const { senderId } = await getSmsSettings();
-  const outcome = await sendSmsDetailed(phone, otpMessage(code), senderId);
-  if (!outcome.sent) {
-    // Only a definite provider failure gives the code back. After a timeout the
-    // SMS may have been delivered, so the code stays valid.
-    if (outcome.definite) {
-      const { error: cancelError } = await supabaseAdmin.rpc("cancel_phone_code", {
-        p_phone: phone,
-        p_code_hash: codeHash,
-      });
-      if (cancelError) console.error("cancel_phone_code failed", cancelError.code ?? "unknown");
-    }
-    return "send_failed";
-  }
+  // A failed send keeps its row on purpose: the SMS may still have been
+  // delivered and billed, so it must keep counting toward the caps.
+  if (!(await sendSms(phone, otpMessage(code), senderId))) return "send_failed";
   return "sent";
 }
 

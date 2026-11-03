@@ -8,19 +8,14 @@ export function smsTokenSet(): boolean {
   return (process.env.TEXTLK_API_TOKEN ?? "") !== "";
 }
 
-/**
- * `sent`: Text.lk accepted the message. When not sent, `definite` says whether
- * the failure is certain (HTTP error / provider refusal / nothing was sent) or
- * unknown (timeout or network error: the SMS may still have been delivered).
- * Never logs the token or the message.
- */
-export async function sendSmsDetailed(
+/** True when Text.lk accepted the message. Never logs the token or the message. */
+export async function sendSms(
   phone: string,
   message: string,
   senderId: string,
-): Promise<{ sent: boolean; definite: boolean }> {
+): Promise<boolean> {
   const recipient = toTextlkRecipient(phone);
-  if (!recipient || !smsTokenSet()) return { sent: false, definite: true };
+  if (!recipient || !smsTokenSet()) return false;
   try {
     const res = await fetch(ENDPOINT, {
       method: "POST",
@@ -42,17 +37,9 @@ export async function sendSmsDetailed(
     if (!ok) {
       console.error("sms send rejected", { httpStatus: res.status, status: body?.status });
     }
-    return { sent: ok, definite: true };
+    return ok;
   } catch (e) {
     console.error("sms send error", e instanceof Error ? e.name : "unknown");
-    return { sent: false, definite: false };
+    return false;
   }
-}
-
-export async function sendSms(
-  phone: string,
-  message: string,
-  senderId: string,
-): Promise<boolean> {
-  return (await sendSmsDetailed(phone, message, senderId)).sent;
 }

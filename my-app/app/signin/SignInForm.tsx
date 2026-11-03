@@ -165,8 +165,13 @@ function PhonePanel({ callbackUrl }: { callbackUrl: string }) {
   const [, verify, verifying] = useActionState(
     async (_prev: null, formData: FormData) => {
       const code = String(formData.get("code") ?? "");
-      const result = await signIn("phone", { phone, code, redirect: false });
-      if (!result || result.error) {
+      try {
+        const result = await signIn("phone", { phone, code, redirect: false });
+        if (!result || result.error) {
+          setMessage("codeInvalid");
+          return null;
+        }
+      } catch {
         setMessage("codeInvalid");
         return null;
       }
