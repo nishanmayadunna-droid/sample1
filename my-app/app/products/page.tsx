@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getAllProducts, getCategories } from "@/lib/catalog";
+import { withPricing } from "@/lib/promotions";
+import { getRunningPromotions } from "@/lib/storefront";
 import { resolveCategoryParam } from "@/lib/category-form";
 import { filterProducts, parseView, type ProductView } from "@/lib/product-filters";
 import ProductCard from "../components/ProductCard";
 import L from "../components/L";
+import PromoBanner from "../components/PromoBanner";
 
 export const metadata: Metadata = {
   title: "Shop all",
@@ -17,12 +20,12 @@ const VIEW_TITLES: Record<ProductView, { si: string; en: string }> = {
   new: { si: "🆕 අලුතින් ආ", en: "🆕 New In" },
 };
 
-type Params = { q?: string; category?: string; view?: string };
+type Params = { q?: string; category?: string; view?: string; promo?: string };
 
 /** /products with the current filters minus one, for a chip's ✕ link. */
 function hrefWithout(params: Params, drop: keyof Params): string {
   const next = new URLSearchParams();
-  for (const key of ["view", "category", "q"] as const) {
+  for (const key of ["promo", "view", "category", "q"] as const) {
     const value = params[key];
     if (key !== drop && value) next.set(key, value);
   }
@@ -36,21 +39,30 @@ export default async function ProductsPage({
   searchParams: Promise<Params>;
 }) {
   const params = await searchParams;
-  const [allProducts, categories] = await Promise.all([getAllProducts(), getCategories()]);
+  const [catalog, categories, promotions] = await Promise.all([
+    getAllProducts(),
+    getCategories(),
+    getRunningPromotions(),
+  ]);
+  const allProducts = withPricing(catalog, promotions, categories);
   // Accepts the slug or the name in any case, so old ?category=Outerwear links work.
   const active = resolveCategoryParam(params.category, categories);
   const view = parseView(params.view);
   const q = params.q?.trim() ?? "";
-  const products = filterProducts(allProducts, { q, category: active, view }, categories);
+  // Only a running promotion counts; an unknown or finished one shows everything.
+  const promo = promotions.find((p) => p.slug === params.promo) ?? null;
+  const products = filterProducts(allProducts, { q, category: active, view, promo }, categories);
 
   // Only the filters that actually apply get a chip.
   const chips: { key: keyof Params; label: React.ReactNode }[] = [];
+  if (promo) chips.push({ key: "promo", label: <L si={promo.nameSi} en={promo.nameEn} /> });
   if (view) chips.push({ key: "view", label: <L {...VIEW_TITLES[view]} /> });
   if (active) chips.push({ key: "category", label: active.name });
   if (q) chips.push({ key: "q", label: `“${q}”` });
   // Category pills keep the other filters.
   const categoryHref = (slug: string | null) => {
     const next = new URLSearchParams();
+    if (promo) next.set("promo", promo.slug);
     if (view) next.set("view", view);
     if (slug) next.set("category", slug);
     if (q) next.set("q", q);
@@ -60,6 +72,11 @@ export default async function ProductsPage({
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+      {promo && promo.banner.mode !== "none" && (
+        <div className="mb-10">
+          <PromoBanner promotion={promo} preload />
+        </div>
+      )}
       <header>
         <span className="eyebrow text-muted">
           <L si="එකතුව" en="The collection" />
@@ -67,6 +84,8 @@ export default async function ProductsPage({
         <h1 className="display mt-2 text-[clamp(2rem,5vw,3.25rem)]">
           {view ? (
             <L {...VIEW_TITLES[view]} />
+          ) : promo ? (
+            <L si={promo.nameSi} en={promo.nameEn} />
           ) : (
             (active?.name ?? <L si="සියලු භාණ්ඩ" en="All products" />)
           )}

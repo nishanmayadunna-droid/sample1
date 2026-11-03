@@ -1,7 +1,7 @@
 // Storefront settings and promises: shared types and pure form rules.
 // Safe to import from client components.
 import { isLang, type Lang } from "./i18n";
-import { formatPriceWhole, FREE_SHIPPING_THRESHOLD } from "./products";
+import { formatPriceWhole } from "./products";
 
 export type PromiseIcon = "truck" | "box" | "return" | "shield" | "tag";
 
@@ -37,25 +37,32 @@ export const MAX_VISIBLE_PROMISES = 3;
 export type PromiseItem = { key: string; icon: PromiseIcon; si: string; en: string };
 
 /**
- * What the promise strip and footer show: the free-shipping line first (from
- * the code constants until promotions take it over), then the admin's promises.
+ * What the promise strip and footer show: the free-shipping line first, when a
+ * running promotion offers shop-wide free shipping over some amount (see
+ * freeShippingThreshold in lib/promotions.ts), then the admin's promises.
  */
-export function promiseItems(promises: StorePromise[]): PromiseItem[] {
-  const amount = formatPriceWhole(FREE_SHIPPING_THRESHOLD);
-  return [
-    {
-      key: "free-shipping",
-      icon: "truck",
-      si: `${amount}ට වැඩි ඇණවුම්වලට නොමිලේ බෙදාහැරීම`,
-      en: `Free shipping over ${amount}`,
-    },
-    ...promises.slice(0, MAX_VISIBLE_PROMISES).map((p) => ({
-      key: p.id,
-      icon: p.icon,
-      si: p.textSi,
-      en: p.textEn,
-    })),
-  ];
+export function promiseItems(
+  promises: StorePromise[],
+  freeShippingThreshold: number | null,
+): PromiseItem[] {
+  const items: PromiseItem[] = promises.slice(0, MAX_VISIBLE_PROMISES).map((p) => ({
+    key: p.id,
+    icon: p.icon,
+    si: p.textSi,
+    en: p.textEn,
+  }));
+  if (freeShippingThreshold === null) return items;
+  const amount = formatPriceWhole(freeShippingThreshold);
+  const freeShipping: PromiseItem =
+    freeShippingThreshold === 0
+      ? { key: "free-shipping", icon: "truck", si: "නොමිලේ බෙදාහැරීම", en: "Free shipping" }
+      : {
+          key: "free-shipping",
+          icon: "truck",
+          si: `${amount}ට වැඩි ඇණවුම්වලට නොමිලේ බෙදාහැරීම`,
+          en: `Free shipping over ${amount}`,
+        };
+  return [freeShipping, ...items];
 }
 
 export const PROMISE_ICONS: readonly PromiseIcon[] = ["truck", "box", "return", "shield", "tag"];
@@ -96,4 +103,21 @@ export function parsePromiseForm(
 
   if (!icon || Object.keys(errors).length > 0) return { ok: false, errors };
   return { ok: true, value: { icon, text_si: textSi, text_en: textEn, visible } };
+}
+
+/** Highest shipping fee the settings form accepts: Rs 100,000, in cents. */
+export const MAX_SHIPPING_FEE = 10_000_000;
+
+/** The /admin/settings shipping form: the fee in rupees (0 = free). */
+export function parseShippingSettings(
+  fields: Fields,
+):
+  | { ok: true; value: { shipping_fee: number } }
+  | { ok: false; errors: { shippingFee?: string } } {
+  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec((fields.shippingFee ?? "").trim());
+  const cents = match ? Number(match[1]) * 100 + Number((match[2] ?? "").padEnd(2, "0")) : NaN;
+  if (!Number.isFinite(cents) || cents > MAX_SHIPPING_FEE) {
+    return { ok: false, errors: { shippingFee: "Enter a fee like 350 (Rs 0 – 100,000)." } };
+  }
+  return { ok: true, value: { shipping_fee: cents } };
 }

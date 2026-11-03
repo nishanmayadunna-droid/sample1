@@ -106,3 +106,11 @@ export async function deletePromise(id: string): Promise<void> {
   const { error } = await supabaseAdmin.from("store_promises").delete().eq("id", id);
   if (error) fail(error);
 }
+
+export async function saveShippingSettings(value: { shipping_fee: number }): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("store_settings")
+    .update({ ...value, updated_at: new Date().toISOString() })
+    .eq("id", true);
+  if (error) fail(error);
+}

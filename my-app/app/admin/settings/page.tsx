@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/auth-guards";
 import { getStoreSettings } from "@/lib/storefront";
 import AdminTabs from "../AdminTabs";
-import { saveLanguageSettingsAction } from "./actions";
+import { saveLanguageSettingsAction, saveShippingSettingsAction } from "./actions";
+import ShippingForm from "./ShippingForm";
 import LanguageForm from "./LanguageForm";
 
 export const metadata: Metadata = { title: "Admin" };
@@ -21,6 +22,11 @@ export default async function AdminSettingsPage() {
       <section className="mt-8">
         <h2 className="display text-2xl">Language</h2>
         <LanguageForm action={saveLanguageSettingsAction} settings={settings} />
+      </section>
+
+      <section className="mt-12">
+        <h2 className="display text-2xl">Shipping</h2>
+        <ShippingForm action={saveShippingSettingsAction} shippingFee={settings.shippingFee} />
       </section>
     </div>
   );

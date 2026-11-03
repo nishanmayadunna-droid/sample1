@@ -4,17 +4,30 @@ import Link from "next/link";
 import { useCart } from "@/app/context/CartContext";
 import { MAX_LINE_QUANTITY } from "@/lib/cart-rules";
 import { summarizeCart } from "@/lib/cart-summary";
-import { effectivePrice, formatPrice, type Product } from "@/lib/products";
+import type { Promotion } from "@/lib/promotions";
+import { formatPrice, type Category, type Product } from "@/lib/products";
+import { CartProgress, CartTotals, LinePrice } from "./CartTotals";
 import ProductImage from "./ProductImage";
 import L from "./L";
 import { useLang } from "@/app/context/LangContext";
 import { tr } from "@/lib/i18n";
 
-export default function CartView({ products }: { products: Product[] }) {
+export default function CartView({
+  products,
+  promotions,
+  shippingFee,
+  categories,
+}: {
+  products: Product[];
+  promotions: Promotion[];
+  shippingFee: number;
+  categories: Category[];
+}) {
   const { lines, setQuantity, removeItem, clear, hydrated } = useCart();
   const lang = useLang();
   // Lines for products no longer in the catalog are skipped, not charged.
-  const { items, subtotal, shipping, total, toFreeShipping } = summarizeCart(lines, products);
+  const summary = summarizeCart(lines, products, promotions, shippingFee, categories);
+  const { items } = summary;
 
   // Avoid a hydration mismatch: render nothing until the client cart is read.
   if (!hydrated) {
@@ -51,7 +64,7 @@ export default function CartView({ products }: { products: Product[] }) {
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_20rem]">
       <ul className="flex flex-col border-t border-line">
-        {items.map(({ line, product }) => {
+        {items.map(({ line, product, unitPrice, compareAt, promotion }) => {
           return (
             <li
               key={`${line.id}::${line.size}`}
@@ -77,18 +90,13 @@ export default function CartView({ products }: { products: Product[] }) {
                     {product.name}
                   </Link>
                   <span className="font-mono text-sm">
-                    {formatPrice(effectivePrice(product) * line.quantity)}
+                    {formatPrice(unitPrice * line.quantity)}
                   </span>
                 </div>
                 <span className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted">
-                  <L si="ප්‍රමාණය" en="Size" /> {line.size} · {formatPrice(effectivePrice(product))}{" "}
-                  <L si="එකක්" en="ea" />
-                  {product.salePrice != null && (
-                    <span className="ml-1 text-blaze">
-                      · <L si="අඩු මිල" en="sale" />
-                    </span>
-                  )}
+                  <L si="ප්‍රමාණය" en="Size" /> {line.size} · <L si="එකක්" en="each" />
                 </span>
+                <LinePrice unitPrice={unitPrice} compareAt={compareAt} promotion={promotion} />
                 <div className="mt-auto flex items-center gap-3 pt-3">
                   <div className="flex items-center rounded-md border border-line">
                     <button
@@ -134,34 +142,10 @@ export default function CartView({ products }: { products: Product[] }) {
         <h2 className="eyebrow text-muted">
           <L si="ඇණවුම් සාරාංශය" en="Order summary" />
         </h2>
-        <dl className="mt-5 flex flex-col gap-2.5 font-mono text-sm">
-          <div className="flex justify-between">
-            <dt className="text-muted">
-              <L si="උප එකතුව" en="Subtotal" />
-            </dt>
-            <dd>{formatPrice(subtotal)}</dd>
-          </div>
-          <div className="flex justify-between">
-            <dt className="text-muted">
-              <L si="බෙදාහැරීම" en="Shipping" />
-            </dt>
-            <dd>{shipping === 0 ? <L si="නොමිලේ" en="Free" /> : formatPrice(shipping)}</dd>
-          </div>
-          <div className="mt-2 flex justify-between border-t border-line pt-3 text-base">
-            <dt>
-              <L si="මුළු එකතුව" en="Total" />
-            </dt>
-            <dd>{formatPrice(total)}</dd>
-          </div>
-        </dl>
-        {shipping > 0 && (
-          <p className="mt-3 font-mono text-[0.7rem] text-muted">
-            <L
-              si={`නොමිලේ බෙදාහැරීමට තව ${formatPrice(toFreeShipping)} ක් එක් කරන්න.`}
-              en={`Add ${formatPrice(toFreeShipping)} more for free shipping.`}
-            />
-          </p>
-        )}
+        <CartTotals summary={summary} className="mt-5" />
+        <div className="mt-4">
+          <CartProgress summary={summary} />
+        </div>
         <button
           type="button"
           onClick={() =>

@@ -9,19 +9,26 @@ import { useLang } from "@/app/context/LangContext";
 import { MAX_LINE_QUANTITY } from "@/lib/cart-rules";
 import { summarizeCart } from "@/lib/cart-summary";
 import { tr } from "@/lib/i18n";
-import {
-  effectivePrice,
-  formatPrice,
-  FREE_SHIPPING_THRESHOLD,
-  type ShellProduct,
-} from "@/lib/products";
+import type { Promotion } from "@/lib/promotions";
+import { formatPrice, type Category, type ShellProduct } from "@/lib/products";
+import { CartProgress, CartTotals, LinePrice } from "./CartTotals";
 import L from "./L";
 import ProductImage from "./ProductImage";
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 /** Slide-out cart, mounted once in the root layout. */
-export default function CartDrawer({ products }: { products: ShellProduct[] }) {
+export default function CartDrawer({
+  products,
+  promotions,
+  shippingFee,
+  categories,
+}: {
+  products: ShellProduct[];
+  promotions: Promotion[];
+  shippingFee: number;
+  categories: Category[];
+}) {
   const open = useCartDrawer();
   const { lines, setQuantity, removeItem } = useCart();
   const lang = useLang();
@@ -50,8 +57,8 @@ export default function CartDrawer({ products }: { products: ShellProduct[] }) {
 
   if (!open) return null;
 
-  const { items, itemCount, subtotal, toFreeShipping } = summarizeCart(lines, products);
-  const progress = Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD) * 100));
+  const summary = summarizeCart(lines, products, promotions, shippingFee, categories);
+  const { items, itemCount } = summary;
 
   // Keep Tab inside the drawer.
   function trapTab(event: React.KeyboardEvent) {
@@ -114,26 +121,12 @@ export default function CartDrawer({ products }: { products: ShellProduct[] }) {
           </div>
         ) : (
           <>
-            <div className="border-b border-line px-5 py-4">
-              <p className="text-sm">
-                {toFreeShipping > 0 ? (
-                  <L
-                    si={`නොමිලේ බෙදාහැරීමට තව ${formatPrice(toFreeShipping)} ක් එක් කරන්න`}
-                    en={`Add ${formatPrice(toFreeShipping)} more for free shipping`}
-                  />
-                ) : (
-                  <span className="text-blaze">
-                    <L si="✓ ඔබට නොමිලේ බෙදාහැරීම ලැබේ" en="✓ You've got free shipping" />
-                  </span>
-                )}
-              </p>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line">
-                <div className="h-full bg-blaze" style={{ width: `${progress}%` }} />
-              </div>
+            <div className="border-b border-line px-5 py-4 empty:hidden">
+              <CartProgress summary={summary} />
             </div>
 
             <ul className="flex-1 divide-y divide-line overflow-y-auto px-5">
-              {items.map(({ line, product }) => (
+              {items.map(({ line, product, unitPrice, compareAt, promotion }) => (
                 <li key={`${line.id}::${line.size}`} className="flex gap-3 py-4">
                   <Link
                     href={`/products/${product.id}`}
@@ -147,12 +140,13 @@ export default function CartDrawer({ products }: { products: ShellProduct[] }) {
                     <div className="flex justify-between gap-3">
                       <span className="text-sm font-medium">{product.name}</span>
                       <span className="font-mono text-sm">
-                        {formatPrice(effectivePrice(product) * line.quantity)}
+                        {formatPrice(unitPrice * line.quantity)}
                       </span>
                     </div>
                     <span className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted">
                       <L si="ප්‍රමාණය" en="Size" /> {line.size}
                     </span>
+                    <LinePrice unitPrice={unitPrice} compareAt={compareAt} promotion={promotion} />
                     <div className="mt-auto flex items-center gap-3 pt-1">
                       <div className="flex items-center rounded-md border border-line">
                         <button
@@ -190,12 +184,7 @@ export default function CartDrawer({ products }: { products: ShellProduct[] }) {
             </ul>
 
             <div className="border-t border-line px-5 py-4">
-              <div className="flex justify-between font-mono">
-                <span className="text-muted">
-                  <L si="උප එකතුව" en="Subtotal" />
-                </span>
-                <span>{formatPrice(subtotal)}</span>
-              </div>
+              <CartTotals summary={summary} />
               <Link
                 href="/cart"
                 onClick={closeCartDrawer}

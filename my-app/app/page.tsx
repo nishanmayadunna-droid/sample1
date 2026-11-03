@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { formatPrice, formatPriceWhole, FREE_SHIPPING_THRESHOLD } from "@/lib/products";
+import { formatPrice, formatPriceWhole } from "@/lib/products";
+import { freeShippingThreshold, withPricing } from "@/lib/promotions";
+import { getRunningPromotions } from "@/lib/storefront";
 import { getAllProducts, getCategories } from "@/lib/catalog";
 import { productsInCategory } from "@/lib/category-form";
 import ProductCard from "./components/ProductCard";
@@ -7,15 +9,20 @@ import ProductImage from "./components/ProductImage";
 import FlashCountdown from "./components/FlashCountdown";
 import Newsletter from "./components/Newsletter";
 import L from "./components/L";
+import PromoBanners from "./components/PromoBanners";
 
 // [label si, label en, detail si, detail en]
-const PROMISES: [string, string, string, string][] = [
-  [
-    "නොමිලේ බෙදාහැරීම",
-    "Free shipping",
-    `${formatPriceWhole(FREE_SHIPPING_THRESHOLD)}ට වැඩි ඇණවුම්වලට`,
-    `On orders over ${formatPriceWhole(FREE_SHIPPING_THRESHOLD)}`,
-  ],
+type PromiseRow = [string, string, string, string];
+
+/** The free-shipping promise, while a running promotion offers it shop-wide. */
+function freeShippingPromise(threshold: number | null): PromiseRow[] {
+  if (threshold === null) return [];
+  if (threshold === 0) return [["නොමිලේ බෙදාහැරීම", "Free shipping", "සියලු ඇණවුම්වලට", "On every order"]];
+  const amount = formatPriceWhole(threshold);
+  return [["නොමිලේ බෙදාහැරීම", "Free shipping", `${amount}ට වැඩි ඇණවුම්වලට`, `On orders over ${amount}`]];
+}
+
+const PROMISES: PromiseRow[] = [
   ["දින 30ක ආපසු භාරදීම", "30-day returns", "අමතර ගාස්තු නැහැ", "No restocking fees"],
   ["අලුත්වැඩියාවට හදපු", "Built to be repaired", "වසරක් නොමිලේ අලුත්වැඩියා", "Free repairs for a year"],
   ["කාබන්-උදාසීන", "Carbon-neutral", "සෑම ඇණවුමක්ම සමතුලිතයි", "Every order offset"],
@@ -26,7 +33,13 @@ export const revalidate = 60;
 
 export default async function Home() {
   // One query; every section below is a slice of the full catalog.
-  const [products, categories] = await Promise.all([getAllProducts(), getCategories()]);
+  const [catalog, categories, promotions] = await Promise.all([
+    getAllProducts(),
+    getCategories(),
+    getRunningPromotions(),
+  ]);
+  const products = withPricing(catalog, promotions, categories);
+  const promises = [...freeShippingPromise(freeShippingThreshold(promotions)), ...PROMISES];
   // Shop-by-category tiles skip categories with no published products.
   const categoryTiles = categories
     .map((category) => ({
@@ -35,11 +48,14 @@ export default async function Home() {
     }))
     .filter((tile) => tile.count > 0);
   const featured = products.filter((p) => p.featured);
-  const sale = products.filter((p) => p.salePrice != null);
+  // Sale prices and promotion discounts alike.
+  const sale = products.filter((p) => p.pricing.compareAt != null);
   const hero = products.find((p) => p.id === "field-jacket") ?? featured[0];
 
   return (
     <div>
+      <PromoBanners promotions={promotions} />
+
       {/* HERO — the durability thesis, set on a spruce field panel. */}
       <section className="bg-panel text-panelink">
         <div className="mx-auto grid w-full max-w-6xl gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
@@ -113,7 +129,7 @@ export default async function Home() {
                       {hero.spec.material} · {hero.spec.origin}
                     </p>
                   </div>
-                  <span className="font-mono">{formatPrice(hero.price)}</span>
+                  <span className="font-mono">{formatPrice(hero.pricing.price)}</span>
                 </div>
               </div>
             </Link>
@@ -221,7 +237,7 @@ export default async function Home() {
       {/* THE PROMISE — value props in the spec voice, split by hairline rules. */}
       <section className="border-y border-line">
         <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-px bg-line md:grid-cols-4">
-          {PROMISES.map(([labelSi, labelEn, detailSi, detailEn]) => (
+          {promises.map(([labelSi, labelEn, detailSi, detailEn]) => (
             <div key={labelEn} className="bg-bg px-5 py-8 sm:px-6">
               <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em]">
                 <L si={labelSi} en={labelEn} />

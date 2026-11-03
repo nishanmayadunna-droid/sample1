@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { getAllProducts } from "@/lib/catalog";
+import { getAllProducts, getCategories } from "@/lib/catalog";
+import { getRunningPromotions, getStoreSettings } from "@/lib/storefront";
 import CartView from "../components/CartView";
 import L from "../components/L";
 
@@ -13,14 +14,24 @@ export const metadata: Metadata = {
 
 export default async function CartPage() {
   // The cart itself lives in localStorage; the server supplies current prices.
-  const products = await getAllProducts();
+  const [products, categories, promotions, settings] = await Promise.all([
+    getAllProducts(),
+    getCategories(),
+    getRunningPromotions(),
+    getStoreSettings(),
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
       <h1 className="mb-8 text-3xl font-semibold tracking-tight">
         <L si="ඔබේ කරත්තය" en="Your cart" />
       </h1>
-      <CartView products={products} />
+      <CartView
+        products={products}
+        promotions={promotions}
+        shippingFee={settings.shippingFee}
+        categories={categories}
+      />
     </div>
   );
 }
