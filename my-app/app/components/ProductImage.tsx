@@ -12,6 +12,7 @@ export default function ProductImage({
   className = "",
   sizes = "(min-width: 1024px) 25vw, 50vw",
   preload = false,
+  showCategory = true,
 }: {
   product: Pick<Product, "swatch" | "imageUrl" | "name" | "categoryName">;
   className?: string;
@@ -19,6 +20,8 @@ export default function ProductImage({
   sizes?: string;
   /** Preload above-the-fold images (replaces the deprecated `priority`). */
   preload?: boolean;
+  /** The category chip, top-left; off for small or badge-carrying slots. */
+  showCategory?: boolean;
 }) {
   const [from, to] = product.swatch;
 
@@ -45,9 +48,11 @@ export default function ProductImage({
       )}
 
       {/* Category chip, top-left. */}
-      <span className="absolute left-3 top-3 rounded bg-black/40 px-1.5 py-0.5 font-mono text-[0.6rem] uppercase tracking-widest text-white/90">
-        {product.categoryName}
-      </span>
+      {showCategory && (
+        <span className="absolute left-3 top-3 rounded bg-black/40 px-1.5 py-0.5 font-mono text-[0.6rem] uppercase tracking-widest text-white/90">
+          {product.categoryName}
+        </span>
+      )}
 
       {/* Measure ticks along the base — the recurring ruler motif. */}
       <span

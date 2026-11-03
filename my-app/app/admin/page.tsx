@@ -34,7 +34,7 @@ export default async function AdminPage() {
         {products.map((product) => (
           <li key={product.id} className="flex flex-wrap items-center gap-4 py-4">
             <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-line">
-              <ProductImage product={product} sizes="64px" className="h-full w-full" />
+              <ProductImage showCategory={false} product={product} sizes="64px" className="h-full w-full" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-medium">{product.name}</p>

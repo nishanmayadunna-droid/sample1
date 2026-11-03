@@ -134,6 +134,7 @@ export default function SearchBox({
                   }`}
                 >
                   <ProductImage
+                    showCategory={false}
                     product={product}
                     className="h-12 w-10 shrink-0 rounded"
                     sizes="40px"

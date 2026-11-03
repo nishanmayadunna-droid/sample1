@@ -134,7 +134,7 @@ export default function CartDrawer({
                     className="shrink-0 overflow-hidden rounded-md border border-line"
                     aria-label={product.name}
                   >
-                    <ProductImage product={product} className="h-20 w-16" sizes="64px" />
+                    <ProductImage showCategory={false} product={product} className="h-20 w-16" sizes="64px" />
                   </Link>
                   <div className="flex flex-1 flex-col gap-1">
                     <div className="flex justify-between gap-3">

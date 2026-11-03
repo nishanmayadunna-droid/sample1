@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { savedAmount } from "@/lib/home-sections";
 import { formatPrice, formatPriceWhole, type PricedProduct } from "@/lib/products";
 import type { ConditionalOffer } from "@/lib/promotions";
 import L from "./L";
 import ProductImage from "./ProductImage";
+import QuickAdd from "./QuickAdd";
 
 /** "Rs 10,000+ orders: 20% off" for a promotion rule with a minimum. */
 export function ConditionalOfferText({ offer }: { offer: ConditionalOffer }) {
@@ -17,49 +19,68 @@ export function ConditionalOfferText({ offer }: { offer: ConditionalOffer }) {
   );
 }
 
-export default function ProductCard({ product }: { product: PricedProduct }) {
+/**
+ * A product in a grid or row. An <article> rather than one big link, so the
+ * quick-add button isn't nested inside a link.
+ */
+export default function ProductCard({
+  product,
+  sizes = "(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw",
+}: {
+  product: PricedProduct;
+  /** Rendered width hint for the photo; match it to the slot. */
+  sizes?: string;
+}) {
   const { pricing } = product;
+  const saved = savedAmount(pricing);
   const offer = pricing.conditional[0];
+  const href = `/products/${product.id}`;
 
   return (
-    <Link href={`/products/${product.id}`} className="group flex flex-col">
+    <article className="group flex flex-col">
       <div className="relative overflow-hidden rounded-[10px] border border-line bg-surface">
-        <ProductImage
-          product={product}
-          className="aspect-[4/5] w-full transition-transform duration-500 ease-out group-hover:scale-[1.04]"
-        />
+        <Link href={href} tabIndex={-1} aria-hidden="true">
+          <ProductImage
+            showCategory={false}
+            product={product}
+            className="aspect-[4/5] w-full transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+            sizes={sizes}
+          />
+        </Link>
         {pricing.discountPercent != null && (
-          <span className="absolute right-3 top-3 flex flex-col items-end gap-1">
-            <span className="rounded bg-blaze px-1.5 py-0.5 font-mono text-[0.6rem] font-medium uppercase tracking-widest text-white">
+          <span className="pointer-events-none absolute left-2 top-2 flex flex-col items-start gap-1">
+            <span className="rounded bg-blaze px-1.5 py-0.5 font-mono text-[0.65rem] font-semibold text-white">
               −{pricing.discountPercent}%
             </span>
             {pricing.promotion && (
-              <span className="max-w-32 truncate rounded bg-panel px-1.5 py-0.5 text-[0.65rem] text-panelink">
+              <span className="max-w-28 truncate rounded bg-panel px-1.5 py-0.5 text-[0.65rem] text-panelink">
                 <L si={pricing.promotion.nameSi} en={pricing.promotion.nameEn} />
               </span>
             )}
           </span>
         )}
+        <QuickAdd productId={product.id} name={product.name} sizes={product.sizes} />
       </div>
-      <div className="flex flex-1 flex-col gap-1.5 pt-3">
-        <span className="font-mono text-[0.62rem] uppercase tracking-[0.16em] text-muted">
-          {product.spec.construction} · {product.spec.origin}
-        </span>
-        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-          <h3 className="font-medium leading-snug decoration-blaze decoration-2 underline-offset-4 group-hover:underline">
-            {product.name}
-          </h3>
-          {pricing.compareAt != null ? (
-            <span className="flex flex-wrap items-baseline gap-x-2">
-              <span className="font-mono text-sm text-blaze">{formatPrice(pricing.price)}</span>
-              <span className="font-mono text-xs text-muted line-through">
-                {formatPrice(pricing.compareAt)}
-              </span>
-            </span>
-          ) : (
-            <span className="shrink-0 font-mono text-sm">{formatPrice(pricing.price)}</span>
+      <div className="flex flex-1 flex-col gap-0.5 pt-2">
+        <Link
+          href={href}
+          className="line-clamp-2 text-sm leading-snug decoration-blaze decoration-2 underline-offset-4 hover:underline"
+        >
+          {product.name}
+        </Link>
+        <p className="flex flex-wrap items-baseline gap-x-2">
+          <span className={`font-mono text-base font-semibold ${saved ? "text-blaze" : ""}`}>
+            {formatPrice(pricing.price)}
+          </span>
+          {pricing.compareAt != null && (
+            <span className="font-mono text-xs text-muted line-through">{formatPrice(pricing.compareAt)}</span>
           )}
-        </div>
+        </p>
+        {saved != null && (
+          <span className="text-xs text-blaze">
+            <L si={`${formatPrice(saved)} ඉතුරුයි`} en={`Save ${formatPrice(saved)}`} />
+          </span>
+        )}
         {pricing.freeShipping && (
           <span className="text-xs text-blaze">
             🚚 <L si="නොමිලේ බෙදාහැරීම" en="Free shipping" />
@@ -71,6 +92,6 @@ export default function ProductCard({ product }: { product: PricedProduct }) {
           </span>
         )}
       </div>
-    </Link>
+    </article>
   );
 }
