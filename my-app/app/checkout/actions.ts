@@ -19,6 +19,8 @@ export type PlaceOrderResult = {
   left?: number;
   /** For price_changed: the total the shop would charge now, in cents. */
   total?: number;
+  /** For advance_changed: the advance the shop would charge now, in cents (0 = none). */
+  advance?: number;
   /** For details: the fields to fix. */
   fields?: DetailsField[];
 };
@@ -36,12 +38,15 @@ export async function placeOrder(
   fields: Record<string, string | undefined>,
   expectedTotal: number,
   key: string,
+  /** The advance the form showed, in cents (0 when it showed plain COD). */
+  expectedAdvance: number,
 ): Promise<PlaceOrderResult> {
   const user = await requireUser("/checkout");
   if (
     typeof key !== "string" ||
     !UUID.test(key) ||
     !Number.isInteger(expectedTotal) ||
+    !Number.isInteger(expectedAdvance) ||
     typeof fields !== "object" ||
     fields === null
   ) {
@@ -85,6 +90,9 @@ export async function placeOrder(
     const required = advanceRequired(trusted, payment);
     if (required && !bankDetailsComplete(payment)) return { message: "advance_setup" };
     const advance = required ? advanceFor(plan.totals.total, payment) : 0;
+
+    // The shopper must not agree to cash on delivery and end up owing a bank transfer.
+    if (advance !== expectedAdvance) return { message: "advance_changed", advance };
 
     const result = await createOrder(user.id, key, details.value, plan.totals, plan.items, advance);
     if (!result.ok) {

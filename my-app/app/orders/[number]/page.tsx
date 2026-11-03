@@ -155,10 +155,18 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
         />
       )}
 
-      {canCustomerCancel(order.status) && (
+      {canCustomerCancel(order.status, order.paymentStatus) && (
         <div className="mt-8">
           <CancelOrderButton orderNumber={order.orderNumber} />
         </div>
+      )}
+      {order.status === "pending" && !canCustomerCancel(order.status, order.paymentStatus) && (
+        <p className="mt-8 text-sm text-muted">
+          <L
+            si="ඔබේ advance එක ලැබී ඇති නිසා මෙම ඇණවුම අවලංගු කිරීමට අප අමතන්න."
+            en="Your advance is already in, so please contact us if you want to cancel this order."
+          />
+        </p>
       )}
     </div>
   );

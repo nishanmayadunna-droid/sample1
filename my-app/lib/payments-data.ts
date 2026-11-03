@@ -27,6 +27,8 @@ const SETTINGS_COLUMNS =
 const QR_BUCKET = "payment-qr";
 const SLIP_BUCKET = "payment-slips";
 const SIGNED_URL_SECONDS = 60;
+// An admin may take a while to open a slip after the page loads.
+const SLIP_VIEW_SECONDS = 300;
 // Postgres unique_violation.
 const UNIQUE_VIOLATION = "23505";
 export const MAX_QR_CODES = 4;
@@ -242,11 +244,11 @@ export async function reviewSlip(
   fail(error);
 }
 
-/** A 60-second link to view a slip; null when it can't be made. */
+/** A 5-minute link to view a slip; null when it can't be made. */
 export async function slipSignedUrl(path: string): Promise<string | null> {
   const { data, error } = await supabaseAdmin.storage
     .from(SLIP_BUCKET)
-    .createSignedUrl(path, SIGNED_URL_SECONDS);
+    .createSignedUrl(path, SLIP_VIEW_SECONDS);
   if (error || !data) {
     console.error("slip signed url failed", path, error);
     return null;

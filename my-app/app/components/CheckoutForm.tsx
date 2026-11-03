@@ -96,7 +96,7 @@ export default function CheckoutForm({
       // pressing the button again returns the same order if it was created.
       let outcome: PlaceOrderResult;
       try {
-        outcome = await placeOrder(lines, fields, summary.total, key);
+        outcome = await placeOrder(lines, fields, summary.total, key, advance);
       } catch {
         setResult({ message: "error" });
         return;
@@ -107,6 +107,7 @@ export default function CheckoutForm({
         router.push(`/orders/${outcome.orderNumber}`);
       } else if (
         outcome.message === "price_changed" ||
+        outcome.message === "advance_changed" ||
         outcome.message === "out_of_stock" ||
         outcome.message === "unknown_product"
       ) {
@@ -208,6 +209,14 @@ export default function CheckoutForm({
             <Link href="/cart" className="underline">
               <L si="කරත්තය වෙනස් කරන්න" en="Change your cart" />
             </Link>
+          </p>
+        )}
+        {result?.message === "advance_changed" && (
+          <p role="alert" className="text-sm text-blaze">
+            <L
+              si="ගෙවීමේ විස්තර වෙනස් වී ඇත. ඉහත විස්තර පරීක්ෂා කර නැවත ඇණවුම් කරන්න."
+              en="The payment terms changed. Please review the details above and place the order again."
+            />
           </p>
         )}
         {result?.message === "advance_setup" && (

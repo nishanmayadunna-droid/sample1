@@ -28,7 +28,15 @@ describe("nextStatuses", () => {
 
 describe("canCustomerCancel", () => {
   it("is true only while pending", () => {
-    expect(ORDER_STATUSES.filter(canCustomerCancel)).toEqual(["pending"]);
+    expect(ORDER_STATUSES.filter((status) => canCustomerCancel(status))).toEqual(["pending"]);
+  });
+
+  it("is false once a slip is uploaded or the advance is paid, so the money isn't lost track of", () => {
+    expect(canCustomerCancel("pending", "unpaid")).toBe(true);
+    expect(canCustomerCancel("pending", "advance_due")).toBe(true);
+    expect(canCustomerCancel("pending", "slip_uploaded")).toBe(false);
+    expect(canCustomerCancel("pending", "advance_paid")).toBe(false);
+    expect(canCustomerCancel("confirmed", "unpaid")).toBe(false);
   });
 });
 
