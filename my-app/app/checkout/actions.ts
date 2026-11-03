@@ -5,6 +5,8 @@ import { requireUser } from "@/lib/auth-guards";
 import { getAllProducts, getCategories } from "@/lib/catalog";
 import { advanceFor, advanceRequired } from "@/lib/advance";
 import { createOrder } from "@/lib/orders-data";
+import type { PointsSettings } from "@/lib/points";
+import { getPointsBalance, getPointsSettings } from "@/lib/points-data";
 import { bankDetailsComplete, getPaymentSettings, isUserTrusted } from "@/lib/payments-data";
 import { planOrder } from "@/lib/order-plan";
 import { parseCheckoutDetails, type DetailsField, type OrderMessage } from "@/lib/orders";
@@ -40,6 +42,8 @@ export async function placeOrder(
   key: string,
   /** The advance the form showed, in cents (0 when it showed plain COD). */
   expectedAdvance: number,
+  /** How many points the shopper chose to use (the server clamps it). */
+  pointsRequested: number,
 ): Promise<PlaceOrderResult> {
   const user = await requireUser("/checkout");
   if (
@@ -47,6 +51,8 @@ export async function placeOrder(
     !UUID.test(key) ||
     !Number.isInteger(expectedTotal) ||
     !Number.isInteger(expectedAdvance) ||
+    typeof pointsRequested !== "number" ||
+    !Number.isFinite(pointsRequested) ||
     typeof fields !== "object" ||
     fields === null
   ) {
@@ -65,6 +71,19 @@ export async function placeOrder(
       getRunningPromotions(),
       getStoreSettings(),
     ]);
+    // Points are read on the server. If they can't be read they count as off: the
+    // form's total then differs and the shopper is asked to review it (price_changed).
+    const pointsOff: PointsSettings = { enabled: false, earnPer: 10000, pointValue: 100, maxPercent: 50 };
+    const [pointsSettings, pointsBalance] = await Promise.all([
+      getPointsSettings().catch((error) => {
+        console.error("points settings failed", error);
+        return pointsOff;
+      }),
+      getPointsBalance(user.id).catch((error) => {
+        console.error("points balance failed", error);
+        return 0;
+      }),
+    ]);
     const plan = planOrder({
       lines,
       products,
@@ -72,10 +91,9 @@ export async function placeOrder(
       shippingFee: settings.shippingFee,
       categories,
       expectedTotal,
-      // Wired to the real balance and settings in the checkout step of Part 7.
-      pointsRequested: 0,
-      pointsBalance: 0,
-      pointsSettings: { enabled: false, earnPer: 10000, pointValue: 100, maxPercent: 50 },
+      pointsRequested,
+      pointsBalance,
+      pointsSettings,
     });
     if (!plan.ok) {
       if (plan.error === "empty") return { message: "empty" };
@@ -108,6 +126,7 @@ export async function placeOrder(
         return { message: "out_of_stock", productId: result.productId, size: result.size, left: result.left };
       }
       if (result.error === "too_many_pending") return { message: "too_many_pending" };
+      if (result.error === "not_enough_points") return { message: "points_changed" };
       return { message: "error" };
     }
 
