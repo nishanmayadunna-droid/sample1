@@ -3,10 +3,10 @@
 import { useActionState, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isValidProductId, MAX_IMAGE_BYTES, type FieldName } from "@/lib/product-form";
+import { MAX_PHOTOS, moveItem, publicPhotoUrl } from "@/lib/product-photos";
 import { categorySelectDefault } from "@/lib/category-form";
 import type { Category } from "@/lib/products";
 import type { AdminProduct } from "@/lib/admin-products";
-import ProductImage from "@/app/components/ProductImage";
 import { requestImageUpload, type ProductFormState } from "./actions";
 
 const UPLOAD_FAILED = "Photo upload failed. Try again.";
@@ -53,8 +53,8 @@ export default function ProductForm({
   const [state, submit, pending] = useActionState(action, initialState);
   const [, startTransition] = useTransition();
   const [id, setId] = useState(product?.id ?? "");
-  const [imagePath, setImagePath] = useState("");
-  const [preview, setPreview] = useState<string | null>(null);
+  // Storage paths of the gallery photos, main photo first.
+  const [photos, setPhotos] = useState<string[]>(product?.photoPaths ?? []);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const errors: Partial<Record<FieldName | "form", string>> = state.errors;
@@ -64,8 +64,11 @@ export default function ProductForm({
   // the photo never passes through a size-limited Server Action body.
   async function handleFile(file: File | undefined) {
     setUploadError(null);
-    setImagePath("");
     if (!file) return;
+    if (photos.length >= MAX_PHOTOS) {
+      setUploadError(`A product can have up to ${MAX_PHOTOS} photos.`);
+      return;
+    }
     if (!IMAGE_TYPES.includes(file.type) || file.size > MAX_IMAGE_BYTES) {
       setUploadError(UPLOAD_FAILED);
       return;
@@ -74,7 +77,6 @@ export default function ProductForm({
       setUploadError("Enter a valid ID before adding a photo.");
       return;
     }
-    setPreview(URL.createObjectURL(file));
     setUploading(true);
     try {
       const signed = await requestImageUpload(id, file.type, file.size);
@@ -83,10 +85,9 @@ export default function ProductForm({
         .storage.from("product-images")
         .uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });
       if (error) throw error;
-      setImagePath(signed.path);
+      setPhotos((current) => [...current, signed.path]);
     } catch (error) {
       console.error("photo upload failed", error);
-      setPreview(null);
       setUploadError(UPLOAD_FAILED);
     } finally {
       setUploading(false);
@@ -202,27 +203,65 @@ export default function ProductForm({
       </div>
 
       <div className="mt-5">
-        <span className="eyebrow text-muted">Photo</span>
-        <div className="mt-2 flex items-center gap-4">
-          <div className="relative h-24 w-24 overflow-hidden rounded-lg border border-line">
-            {preview ? (
-              // A local blob: URL, which next/image can't optimise.
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={preview} alt="New photo preview" className="h-full w-full object-cover" />
-            ) : product ? (
-              <ProductImage showCategory={false} product={product} sizes="96px" className="h-full w-full" />
-            ) : null}
-          </div>
+        <span className="eyebrow text-muted">
+          Photos (up to {MAX_PHOTOS}, the first is the main photo)
+        </span>
+        <ul className="mt-2 flex flex-wrap gap-3">
+          {photos.map((path, index) => (
+            <li key={path} className="w-28">
+              <div className="h-28 w-28 overflow-hidden rounded-lg border border-line">
+                {/* A plain img: admin thumbnails need no optimisation. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={publicPhotoUrl(process.env.NEXT_PUBLIC_SUPABASE_URL!, path)}
+                  alt={`Photo ${index + 1}`}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="mt-1 flex justify-between text-sm">
+                <button
+                  type="button"
+                  disabled={index === 0}
+                  onClick={() => setPhotos((current) => moveItem(current, index, index - 1))}
+                  aria-label={`Move photo ${index + 1} earlier`}
+                  className="rounded border border-line px-2 disabled:opacity-30"
+                >
+                  ←
+                </button>
+                <button
+                  type="button"
+                  disabled={index === photos.length - 1}
+                  onClick={() => setPhotos((current) => moveItem(current, index, index + 1))}
+                  aria-label={`Move photo ${index + 1} later`}
+                  className="rounded border border-line px-2 disabled:opacity-30"
+                >
+                  →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPhotos((current) => current.filter((p) => p !== path))}
+                  aria-label={`Remove photo ${index + 1}`}
+                  className="rounded border border-line px-2 text-blaze"
+                >
+                  ✕
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {photos.length < MAX_PHOTOS && (
           <input
             type="file"
             accept={IMAGE_TYPES.join(",")}
+            // Re-selecting the same file must fire onChange again.
+            key={photos.length}
             onChange={(event) => void handleFile(event.target.files?.[0])}
-            className="text-sm"
+            className="mt-3 text-sm"
           />
-        </div>
+        )}
         {uploading && <p className="mt-2 text-sm text-muted">Uploading…</p>}
         {uploadError && <p className="mt-2 text-sm text-blaze">{uploadError}</p>}
-        <input type="hidden" name="imagePath" value={imagePath} />
+        <input type="hidden" name="photos" value={JSON.stringify(photos)} />
       </div>
 
       <div className="grid gap-x-4 sm:grid-cols-2">
