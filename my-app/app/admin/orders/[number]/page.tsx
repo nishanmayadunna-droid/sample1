@@ -132,10 +132,22 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
             <dd>− {formatPrice(order.discount)}</dd>
           </div>
         )}
+        {order.pointsUsed > 0 && (
+          <div className="flex justify-between">
+            <dt className="text-muted">Points used ({order.pointsUsed})</dt>
+            <dd>− {formatPrice(order.pointsDiscount)}</dd>
+          </div>
+        )}
         <div className="flex justify-between">
           <dt className="text-muted">Shipping</dt>
           <dd>{order.shipping === 0 ? "Free" : formatPrice(order.shipping)}</dd>
         </div>
+        {order.pointsToEarn > 0 && (
+          <div className="flex justify-between text-muted">
+            <dt>Points the customer earns on delivery</dt>
+            <dd>{order.pointsToEarn}</dd>
+          </div>
+        )}
         <div className="flex justify-between border-t border-line pt-3 text-base">
           <dt>To collect</dt>
           <dd>{formatPrice(order.total)}</dd>

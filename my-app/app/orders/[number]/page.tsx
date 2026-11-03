@@ -43,6 +43,15 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
     ...(order.discount > 0
       ? [{ key: "discount", label: <L si="වට්ටම" en="Discount" />, value: `− ${formatPrice(order.discount)}` }]
       : []),
+    ...(order.pointsUsed > 0
+      ? [
+          {
+            key: "points",
+            label: <L si={`Points ${order.pointsUsed}ක්`} en={`${order.pointsUsed} points`} />,
+            value: `− ${formatPrice(order.pointsDiscount)}`,
+          },
+        ]
+      : []),
     {
       key: "shipping",
       label: <L si="බෙදාහැරීම" en="Shipping" />,
@@ -102,6 +111,24 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
           </div>
         ))}
       </dl>
+
+      {order.pointsToEarn > 0 && order.status !== "cancelled" && (
+        <p className="mt-4 text-sm text-muted">
+          {order.status === "delivered" ? (
+            <L si={`Points ${order.pointsToEarn}ක් ලැබුණා.`} en={`${order.pointsToEarn} points earned.`} />
+          ) : (
+            <L
+              si={`බඩු ලැබුණාම ඔබට points ${order.pointsToEarn}ක් ලැබේ.`}
+              en={`You'll earn ${order.pointsToEarn} points when it's delivered.`}
+            />
+          )}
+        </p>
+      )}
+      {order.status === "cancelled" && order.pointsUsed > 0 && (
+        <p className="mt-4 text-sm text-muted">
+          <L si={`භාවිතා කළ points ${order.pointsUsed}ක් ආපහු ලැබුණා.`} en={`${order.pointsUsed} points returned.`} />
+        </p>
+      )}
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2">
         <div>

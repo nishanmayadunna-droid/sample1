@@ -4,6 +4,7 @@
 import { sanitizeCartLines } from "./cart-rules";
 import { summarizeCart } from "./cart-summary";
 import { orderTotals, type OrderTotals } from "./orders";
+import { pointsToEarn, pointsToUse, type PointsSettings } from "./points";
 import type { Category, Product } from "./products";
 import type { Promotion } from "./promotions";
 import { sizeStock } from "./stock";
@@ -20,7 +21,7 @@ export type PlannedItem = {
 };
 
 export type OrderPlan =
-  | { ok: true; items: PlannedItem[]; totals: OrderTotals }
+  | { ok: true; items: PlannedItem[]; totals: OrderTotals; points: { used: number; toEarn: number } }
   | {
       ok: false;
       error: "empty" | "unknown_product" | "out_of_stock" | "price_changed";
@@ -40,6 +41,11 @@ export function planOrder(input: {
   categories: Category[];
   /** The total the shopper saw, in cents. */
   expectedTotal: number;
+  /** How many points the shopper asked to use (untrusted; clamped here). */
+  pointsRequested: number;
+  /** The shopper's points balance, read on the server. */
+  pointsBalance: number;
+  pointsSettings: PointsSettings;
 }): OrderPlan {
   const lines = sanitizeCartLines(input.lines);
   if (lines.length === 0) return { ok: false, error: "empty" };
@@ -57,8 +63,12 @@ export function planOrder(input: {
   }
 
   const summary = summarizeCart(lines, input.products, input.promotions, input.shippingFee, input.categories);
-  if (summary.total !== input.expectedTotal) {
-    return { ok: false, error: "price_changed", total: summary.total };
+  // Points pay for goods only (after promotions, before shipping).
+  const goods = summary.subtotal - (summary.orderDiscount?.amount ?? 0);
+  const used = pointsToUse(input.pointsRequested, input.pointsBalance, goods, input.pointsSettings);
+  const totals = orderTotals(summary, used.discount);
+  if (totals.total !== input.expectedTotal) {
+    return { ok: false, error: "price_changed", total: totals.total };
   }
 
   return {
@@ -71,6 +81,10 @@ export function planOrder(input: {
       unitPrice,
       compareAt,
     })),
-    totals: orderTotals(summary),
+    totals,
+    points: {
+      used: used.points,
+      toEarn: pointsToEarn(goods - used.discount, input.pointsSettings),
+    },
   };
 }

@@ -7,6 +7,7 @@ import { clear, useCart } from "@/app/context/CartContext";
 import { useLang } from "@/app/context/LangContext";
 import { placeOrder, type PlaceOrderResult } from "@/app/checkout/actions";
 import { advanceFor, type AdvanceSettings } from "@/lib/advance";
+import { pointsToUse, type PointsSettings } from "@/lib/points";
 import { summarizeCart } from "@/lib/cart-summary";
 import { tr } from "@/lib/i18n";
 import type { DetailsField } from "@/lib/orders";
@@ -28,6 +29,7 @@ export default function CheckoutForm({
   initialAddress,
   initialCity,
   advanceInfo,
+  pointsInfo,
 }: {
   products: Product[];
   promotions: Promotion[];
@@ -39,6 +41,8 @@ export default function CheckoutForm({
   initialCity: string;
   /** Set when this customer must pay an advance (the server decides again on submit). */
   advanceInfo: AdvanceSettings | null;
+  /** Set when the customer has points to spend (the server recomputes on submit). */
+  pointsInfo: { settings: PointsSettings; balance: number } | null;
 }) {
   const router = useRouter();
   const lang = useLang();
@@ -49,7 +53,18 @@ export default function CheckoutForm({
   const keyRef = useRef<string | null>(null);
 
   const summary = summarizeCart(lines, products, promotions, shippingFee, categories);
-  const advance = advanceInfo ? advanceFor(summary.total, advanceInfo) : 0;
+  // Points pay for goods after promotions, before shipping; they are only used when ticked.
+  const [usePoints, setUsePoints] = useState(false);
+  const [pointsText, setPointsText] = useState("");
+  const goods = summary.subtotal - (summary.orderDiscount?.amount ?? 0);
+  const maxPoints = pointsInfo ? pointsToUse(pointsInfo.balance, pointsInfo.balance, goods, pointsInfo.settings).points : 0;
+  const wantedPoints = pointsText === "" ? maxPoints : Number(pointsText);
+  const applied =
+    pointsInfo && usePoints
+      ? pointsToUse(wantedPoints, pointsInfo.balance, goods, pointsInfo.settings)
+      : { points: 0, discount: 0 };
+  const total = summary.total - applied.discount;
+  const advance = advanceInfo ? advanceFor(total, advanceInfo) : 0;
 
   // Between clearing the cart and arriving at the order page.
   if (result?.message === "placed") {
@@ -96,7 +111,7 @@ export default function CheckoutForm({
       // pressing the button again returns the same order if it was created.
       let outcome: PlaceOrderResult;
       try {
-        outcome = await placeOrder(lines, fields, summary.total, key, advance);
+        outcome = await placeOrder(lines, fields, total, key, advance, applied.points);
       } catch {
         setResult({ message: "error" });
         return;
@@ -108,6 +123,7 @@ export default function CheckoutForm({
       } else if (
         outcome.message === "price_changed" ||
         outcome.message === "advance_changed" ||
+        outcome.message === "points_changed" ||
         outcome.message === "out_of_stock" ||
         outcome.message === "unknown_product"
       ) {
@@ -173,14 +189,55 @@ export default function CheckoutForm({
           </p>
         )}
 
+        {pointsInfo && maxPoints > 0 && (
+          <div className="rounded-md border border-line px-4 py-3 text-sm">
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={usePoints}
+                onChange={(event) => {
+                  setUsePoints(event.target.checked);
+                  setPointsText("");
+                }}
+              />
+              <span>
+                <L
+                  si={`මගේ points භාවිතා කරන්න (ඇත්තේ ${pointsInfo.balance})`}
+                  en={`Use my points (you have ${pointsInfo.balance})`}
+                />
+              </span>
+            </label>
+            {usePoints && (
+              <label className="mt-3 flex flex-wrap items-center gap-3">
+                <input
+                  type="number"
+                  min={0}
+                  max={maxPoints}
+                  step={1}
+                  value={pointsText === "" ? String(applied.points) : pointsText}
+                  onChange={(event) => setPointsText(event.target.value)}
+                  aria-label={tr(lang, "භාවිතා කරන points ගණන", "Points to use")}
+                  className="w-28 rounded-md border border-line bg-bg px-3 py-2 font-mono outline-none focus:border-ink"
+                />
+                <span className="text-muted">
+                  <L
+                    si={`උපරිමය ${maxPoints} = ${formatPrice(maxPoints * pointsInfo.settings.pointValue)} වට්ටමක්`}
+                    en={`Up to ${maxPoints} points = ${formatPrice(maxPoints * pointsInfo.settings.pointValue)} off`}
+                  />
+                </span>
+              </label>
+            )}
+          </div>
+        )}
+
         <h2 className="eyebrow mt-2 text-muted">
           <L si="ගෙවීම" en="Payment" />
         </h2>
         {advance > 0 ? (
           <p className="rounded-md border border-line px-4 py-3 text-sm leading-relaxed">
             <L
-              si={`අලුත් ගනුදෙනුකරුවන් ඇණවුම සඳහා කුඩා advance එකක් බැංකු මාරුවකින් ගෙවිය යුතුයි: ${formatPrice(advance)}. ඇණවුම ස්ථාපනය කළ පසු ඊළඟ පිටුවේ බැංකු විස්තර සහ slip එක upload කිරීම පෙන්වයි. ඉතිරි ${formatPrice(Math.max(summary.total - advance, 0))} බඩු ලැබෙන විට ගෙවන්න.`}
-              en={`New customers pay a small advance by bank transfer: ${formatPrice(advance)}. After you place the order, the next page shows the bank details and lets you upload your slip. The remaining ${formatPrice(Math.max(summary.total - advance, 0))} is paid when it arrives.`}
+              si={`අලුත් ගනුදෙනුකරුවන් ඇණවුම සඳහා කුඩා advance එකක් බැංකු මාරුවකින් ගෙවිය යුතුයි: ${formatPrice(advance)}. ඇණවුම ස්ථාපනය කළ පසු ඊළඟ පිටුවේ බැංකු විස්තර සහ slip එක upload කිරීම පෙන්වයි. ඉතිරි ${formatPrice(Math.max(total - advance, 0))} බඩු ලැබෙන විට ගෙවන්න.`}
+              en={`New customers pay a small advance by bank transfer: ${formatPrice(advance)}. After you place the order, the next page shows the bank details and lets you upload your slip. The remaining ${formatPrice(Math.max(total - advance, 0))} is paid when it arrives.`}
             />
           </p>
         ) : (
@@ -209,6 +266,14 @@ export default function CheckoutForm({
             <Link href="/cart" className="underline">
               <L si="කරත්තය වෙනස් කරන්න" en="Change your cart" />
             </Link>
+          </p>
+        )}
+        {result?.message === "points_changed" && (
+          <p role="alert" className="text-sm text-blaze">
+            <L
+              si="ඔබේ points ශේෂය වෙනස් වී ඇත. නැවත පරීක්ෂා කර ඇණවුම් කරන්න."
+              en="Your points balance changed. Please review the total and place the order again."
+            />
           </p>
         )}
         {result?.message === "advance_changed" && (
@@ -264,7 +329,7 @@ export default function CheckoutForm({
           aria-label={tr(lang, "ඇණවුම ස්ථාපනය කරන්න", "Place order")}
           className="rounded-full bg-blaze py-4 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:opacity-40 disabled:hover:translate-y-0"
         >
-          <L si="ඇණවුම ස්ථාපනය කරන්න" en="Place order" /> · {formatPrice(summary.total)}
+          <L si="ඇණවුම ස්ථාපනය කරන්න" en="Place order" /> · {formatPrice(total)}
         </button>
       </form>
 
@@ -285,7 +350,15 @@ export default function CheckoutForm({
             </li>
           ))}
         </ul>
-        <CartTotals summary={summary} className="mt-4" />
+        {applied.points > 0 && (
+          <p className="mt-4 flex justify-between gap-4 font-mono text-sm">
+            <span className="text-muted">
+              <L si={`Points ${applied.points}ක්`} en={`${applied.points} points`} />
+            </span>
+            <span className="text-blaze">− {formatPrice(applied.discount)}</span>
+          </p>
+        )}
+        <CartTotals summary={{ ...summary, total }} className="mt-4" />
       </aside>
     </div>
   );
