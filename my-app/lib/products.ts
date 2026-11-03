@@ -35,6 +35,8 @@ export type Product = {
   swatch: [string, string];
   /** Public URL of the product photo in the `product-images` bucket. */
   imageUrl?: string;
+  /** Public URLs of the product photos, main photo first (empty = swatch only). */
+  gallery: string[];
   featured?: boolean;
   /** When the product was added (ISO timestamp); drives "New In". */
   createdAt: string;

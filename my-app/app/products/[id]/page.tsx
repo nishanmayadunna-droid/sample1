@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatPrice } from "@/lib/products";
+import { deliveryChips } from "@/lib/product-page";
 import { withPricing } from "@/lib/promotions";
-import { getRunningPromotions } from "@/lib/storefront";
-import { ConditionalOfferText } from "../../components/ProductCard";
+import { getRunningPromotions, getStoreSettings } from "@/lib/storefront";
 import { getAllProducts, getCategories, getProduct, getProductsByCategory } from "@/lib/catalog";
 import { resolveCategoryParam } from "@/lib/category-form";
-import ProductImage from "../../components/ProductImage";
+import ProductGallery from "../../components/ProductGallery";
 import L from "../../components/L";
 import ProductGrid from "../../components/ProductGrid";
 import ProductPurchase from "../../components/ProductPurchase";
@@ -43,7 +43,11 @@ export default async function ProductPage({
   const product = await getProduct(id);
   if (!product) notFound();
 
-  const [categories, promotions] = await Promise.all([getCategories(), getRunningPromotions()]);
+  const [categories, promotions, settings] = await Promise.all([
+    getCategories(),
+    getRunningPromotions(),
+    getStoreSettings(),
+  ]);
   const [{ pricing }] = withPricing([product], promotions, categories);
   // Accepts a slug or an old display name.
   const category = resolveCategoryParam(product.category, categories);
@@ -56,8 +60,7 @@ export default async function ProductPage({
     categories,
   );
   const endsAt = pricing.promotion?.endsAt ? new Date(pricing.promotion.endsAt) : null;
-  const endDate = (locale: string) =>
-    endsAt?.toLocaleDateString(locale, { timeZone: "Asia/Colombo", day: "numeric", month: "long" }) ?? "";
+  const chips = deliveryChips(pricing, settings.shippingFee, endsAt);
 
   const specRows: { key: string; label: React.ReactNode; value: string }[] = [
     { key: "material", label: <L si="රෙදි වර්ගය" en="Material" />, value: product.spec.material },
@@ -66,7 +69,7 @@ export default async function ProductPage({
   ];
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 pb-28 sm:px-6 sm:py-12">
       <nav className="mb-8 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted">
         <Link href="/products" className="hover:text-ink">
           <L si="සාප්පුව" en="Shop" />
@@ -83,13 +86,8 @@ export default async function ProductPage({
       </nav>
 
       <div className="grid gap-10 md:grid-cols-2 md:gap-12">
-        <div className="overflow-hidden rounded-2xl border border-line md:sticky md:top-24 md:self-start">
-          <ProductImage
-            product={product}
-            className="aspect-[4/5] w-full"
-            sizes="(min-width: 768px) 50vw, 100vw"
-            preload
-          />
+        <div className="md:sticky md:top-24 md:self-start">
+          <ProductGallery product={product} />
         </div>
 
         <div>
@@ -115,21 +113,6 @@ export default async function ProductPage({
           ) : (
             <p className="mt-3 font-mono text-lg">{formatPrice(pricing.price)}</p>
           )}
-          {endsAt && (
-            <p className="mt-2 text-sm text-muted">
-              <L si={`${endDate("si-LK")} දක්වා`} en={`Until ${endDate("en-LK")}`} />
-            </p>
-          )}
-          {pricing.freeShipping && (
-            <p className="mt-2 text-sm text-blaze">
-              🚚 <L si="නොමිලේ බෙදාහැරීම" en="Free shipping" />
-            </p>
-          )}
-          {pricing.conditional.map((offer, i) => (
-            <p key={i} className="mt-1 text-sm text-muted">
-              <L si={offer.promotion.nameSi} en={offer.promotion.nameEn} />: <ConditionalOfferText offer={offer} />
-            </p>
-          ))}
 
           <p className="mt-6 max-w-prose leading-relaxed text-muted">
             {product.description}
@@ -151,7 +134,7 @@ export default async function ProductPage({
           </dl>
 
           <div className="mt-8">
-            <ProductPurchase product={product} />
+            <ProductPurchase product={product} price={pricing.price} chips={chips} />
           </div>
         </div>
       </div>

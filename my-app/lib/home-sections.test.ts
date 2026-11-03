@@ -15,6 +15,7 @@ function product(id: string, over: Partial<Product> = {}): Product {
     sizes: ["M"],
     spec: { material: "", construction: "", origin: "" },
     swatch: ["#000", "#111"],
+    gallery: [],
     createdAt: "2026-10-01T00:00:00Z",
     ...over,
   };

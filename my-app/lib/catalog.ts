@@ -3,6 +3,7 @@
 import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { categoryNameFor, productsInCategory } from "./category-form";
+import { galleryUrls, sortedPhotoPaths } from "./product-photos";
 import type { Category, Product } from "./products";
 
 // The catalog is public and per-user state isn't involved, so a cookie-less
@@ -29,10 +30,12 @@ export type ProductRow = {
   image_url: string | null;
   featured: boolean;
   created_at: string;
+  /** Embedded photo rows; null when the table is empty for this product. */
+  product_images: { path: string; sort_order: number }[] | null;
 };
 
 export const COLUMNS =
-  "id, name, price, sale_price, category, description, sizes, material, construction, origin, swatch, image_url, featured, created_at";
+  "id, name, price, sale_price, category, description, sizes, material, construction, origin, swatch, image_url, featured, created_at, product_images(path, sort_order)";
 
 export function toProduct(row: ProductRow, categories: Category[]): Product {
   return {
@@ -51,6 +54,11 @@ export function toProduct(row: ProductRow, categories: Category[]): Product {
     },
     swatch: [row.swatch[0], row.swatch[1]],
     imageUrl: row.image_url ?? undefined,
+    gallery: galleryUrls(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      sortedPhotoPaths(row.product_images),
+      row.image_url,
+    ),
     featured: row.featured,
     createdAt: row.created_at,
   };
