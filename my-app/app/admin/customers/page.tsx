@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/auth-guards";
 import { listCustomersForAdmin } from "@/lib/payments-data";
+import { balancesForUsers } from "@/lib/points-data";
 import AdminTabs from "../AdminTabs";
+import AdjustPoints from "./AdjustPoints";
 import TrustToggle from "./TrustToggle";
 
 export const metadata: Metadata = { title: "Admin" };
@@ -9,6 +11,11 @@ export const metadata: Metadata = { title: "Admin" };
 export default async function AdminCustomersPage() {
   await requireAdmin("/admin/customers");
   const customers = await listCustomersForAdmin();
+  // A failed points read just shows 0; it never hides the customers.
+  const balances = await balancesForUsers(customers.map((customer) => customer.id)).catch((error) => {
+    console.error("points balances failed", error);
+    return new Map<string, number>();
+  });
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
@@ -43,7 +50,9 @@ export default async function AdminCustomersPage() {
                   ? `Trusted (${customer.trustedSource === "advance" ? "paid advance" : "by you"})`
                   : "Not trusted"}
               </span>
+              <span className="font-mono text-xs text-muted">{balances.get(customer.id) ?? 0} pts</span>
               <TrustToggle userId={customer.id} trusted={customer.trusted} />
+              <AdjustPoints userId={customer.id} />
             </li>
           ))}
         </ul>
