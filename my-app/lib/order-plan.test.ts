@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { planOrder } from "./order-plan";
 import { summarizeCart } from "./cart-summary";
 import type { Product } from "./products";
+import type { Promotion } from "./promotions";
 import { categories, promo, rule } from "./test-fixtures/promotions";
 
 function product(over: Partial<Product> = {}): Product {
@@ -24,7 +25,7 @@ function product(over: Partial<Product> = {}): Product {
 }
 
 const FEE = 35000;
-const base = { products: [product()], promotions: [], shippingFee: FEE, categories };
+const base = { products: [product()], promotions: [] as Promotion[], shippingFee: FEE, categories };
 
 function totalFor(lines: { id: string; size: string; quantity: number }[], promotions = base.promotions) {
   return summarizeCart(lines, base.products, promotions, FEE, categories).total;
