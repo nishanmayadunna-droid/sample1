@@ -33,10 +33,18 @@ export default function CategoryShelf({
   const { items, more } = shelfProducts(products, active, categories);
 
   function onKeyDown(event: React.KeyboardEvent) {
-    const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
-    if (!step) return;
+    const next =
+      event.key === "ArrowRight"
+        ? (index + 1) % tabs.length
+        : event.key === "ArrowLeft"
+          ? (index - 1 + tabs.length) % tabs.length
+          : event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? tabs.length - 1
+              : null;
+    if (next === null) return;
     event.preventDefault();
-    const next = (index + step + tabs.length) % tabs.length;
     setIndex(next);
     tabRefs.current[next]?.focus();
   }

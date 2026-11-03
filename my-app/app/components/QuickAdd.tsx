@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useId, useRef, useSyncExternalStore } from "react";
 import { addItem } from "@/app/context/CartContext";
 import { openCartDrawer } from "@/app/context/CartDrawerContext";
 import { useLang } from "@/app/context/LangContext";
 import { quickAddMode } from "@/lib/home-sections";
 import { tr } from "@/lib/i18n";
 
-// Only one size picker is open at a time across every card on the page.
+// Only one size picker is open at a time across every card on the page. Keyed
+// per card instance (not per product): one product can appear twice on a page.
 let openId: string | null = null;
 const listeners = new Set<() => void>();
 function setOpenId(next: string | null) {
@@ -37,7 +38,8 @@ export default function QuickAdd({
 }) {
   const lang = useLang();
   const mode = quickAddMode(sizes);
-  const open = useOpenId() === productId;
+  const instanceId = useId();
+  const open = useOpenId() === instanceId;
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -68,6 +70,9 @@ export default function QuickAdd({
   function add(size: string) {
     addItem(productId, size);
     setOpenId(null);
+    // The size pill is about to unmount; hand focus back to 🛒 first so the
+    // drawer remembers a button that is still there when it closes.
+    buttonRef.current?.focus();
     openCartDrawer();
   }
 
@@ -95,8 +100,12 @@ export default function QuickAdd({
       <button
         ref={buttonRef}
         type="button"
-        onClick={() => (mode === "single" ? add(sizes[0]) : setOpenId(open ? null : productId))}
-        aria-label={tr(lang, `${name} කරත්තයට එක් කරන්න`, `Add ${name} to cart`)}
+        onClick={() => (mode === "single" ? add(sizes[0]) : setOpenId(open ? null : instanceId))}
+        aria-label={
+          mode === "pick"
+            ? tr(lang, `${name} — ප්‍රමාණය තෝරන්න`, `Choose a size for ${name}`)
+            : tr(lang, `${name} කරත්තයට එක් කරන්න`, `Add ${name} to cart`)
+        }
         aria-expanded={mode === "pick" ? open : undefined}
         className="absolute bottom-2 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-line bg-bg text-ink shadow transition-colors hover:border-blaze hover:bg-blaze hover:text-white"
       >

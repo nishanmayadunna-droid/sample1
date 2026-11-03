@@ -16,14 +16,7 @@ export default function DealsRow({ deals, endsAt }: { deals: PricedProduct[]; en
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-wrap items-center gap-4">
           <h2 className="display text-[clamp(1.5rem,4vw,2.25rem)] text-blaze">⚡ Flash Deals</h2>
-          {endsAt && (
-            <div className="flex items-center gap-2">
-              <span className="eyebrow text-muted">
-                <L si="අවසන් වීමට" en="Ends in" />
-              </span>
-              <FlashCountdown endsAt={endsAt} />
-            </div>
-          )}
+          {endsAt && <FlashCountdown endsAt={endsAt} />}
         </div>
         <Link
           href="/products?view=deals"

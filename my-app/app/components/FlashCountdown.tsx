@@ -39,6 +39,9 @@ export default function FlashCountdown({ endsAt }: { endsAt: string }) {
 
   return (
     <div className="flex items-center gap-2">
+      <span className="eyebrow text-muted">
+        <L si="අවසන් වීමට" en="Ends in" />
+      </span>
       {cells.map(([value, si, en], i) => (
         <div key={en} className="flex items-center gap-2">
           <div className="flex w-14 flex-col items-center rounded-md bg-panel px-2 py-2 text-panelink">
