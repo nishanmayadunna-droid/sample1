@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useId, useRef, useSyncExternalStore } from "react";
-import { addItem } from "@/app/context/CartContext";
+import { addItem, getCartLines } from "@/app/context/CartContext";
 import { openCartDrawer } from "@/app/context/CartDrawerContext";
 import { useLang } from "@/app/context/LangContext";
 import { quickAddMode } from "@/lib/home-sections";
 import { tr } from "@/lib/i18n";
+import { allSoldOut, isSoldOut, maxQuantity, type StockMap } from "@/lib/stock";
 
 // Only one size picker is open at a time across every card on the page. Keyed
 // per card instance (not per product): one product can appear twice on a page.
@@ -31,10 +32,12 @@ export default function QuickAdd({
   productId,
   name,
   sizes,
+  stock,
 }: {
   productId: string;
   name: string;
   sizes: string[];
+  stock: StockMap;
 }) {
   const lang = useLang();
   const mode = quickAddMode(sizes);
@@ -65,9 +68,16 @@ export default function QuickAdd({
     };
   }, [open]);
 
-  if (mode === "none") return null;
+  if (mode === "none" || allSoldOut({ sizes, stock })) return null;
 
   function add(size: string) {
+    // Don't pile more into the cart than the shop has.
+    const inCart = getCartLines().find((l) => l.id === productId && l.size === size)?.quantity ?? 0;
+    if (inCart >= maxQuantity({ stock }, size)) {
+      setOpenId(null);
+      openCartDrawer();
+      return;
+    }
     addItem(productId, size);
     setOpenId(null);
     // The size pill is about to unmount; hand focus back to 🛒 first so the
@@ -90,7 +100,8 @@ export default function QuickAdd({
               key={size}
               type="button"
               onClick={() => add(size)}
-              className="min-w-10 rounded-md border border-line px-2 py-1.5 font-mono text-xs hover:border-blaze hover:text-blaze focus-visible:border-blaze"
+              disabled={isSoldOut({ stock }, size)}
+              className="min-w-10 rounded-md border border-line px-2 py-1.5 font-mono text-xs hover:border-blaze hover:text-blaze focus-visible:border-blaze disabled:cursor-not-allowed disabled:text-muted disabled:line-through disabled:opacity-50 disabled:hover:border-line disabled:hover:text-muted"
             >
               {size}
             </button>

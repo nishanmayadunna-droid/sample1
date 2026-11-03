@@ -144,6 +144,11 @@ export function setQuantity(id: string, size: string, quantity: number) {
   );
 }
 
+/** Replaces the cart with a local edit (saved to the account like any other). */
+export function setCartLines(lines: CartLine[]) {
+  setCart(lines.length === 0 ? EMPTY : lines);
+}
+
 export function clear() {
   setCart(EMPTY);
 }
