@@ -4,6 +4,9 @@
 export const ORDER_STATUSES = ["pending", "confirmed", "shipped", "delivered", "cancelled"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
+export type PaymentMethod = "cod" | "cod_advance";
+export type PaymentStatus = "unpaid" | "advance_due" | "slip_uploaded" | "advance_paid";
+
 /** Codes the checkout Server Action returns; the UI turns them into text. */
 export type OrderMessage =
   | "placed"
@@ -13,6 +16,7 @@ export type OrderMessage =
   | "price_changed"
   | "unknown_product"
   | "too_many_pending"
+  | "advance_setup"
   | "error";
 
 // Keep in step with public.set_order_status in the orders migration.
