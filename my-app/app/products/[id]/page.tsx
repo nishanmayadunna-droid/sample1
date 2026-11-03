@@ -5,12 +5,19 @@ import { formatPrice } from "@/lib/products";
 import { deliveryChips } from "@/lib/product-page";
 import { withPricing } from "@/lib/promotions";
 import { getRunningPromotions, getStoreSettings } from "@/lib/storefront";
-import { getAllProducts, getCategories, getProduct, getProductsByCategory } from "@/lib/catalog";
+import {
+  getAllProducts,
+  getCategories,
+  getProduct,
+  getProductReviews,
+  getProductsByCategory,
+} from "@/lib/catalog";
 import { resolveCategoryParam } from "@/lib/category-form";
 import ProductGallery from "../../components/ProductGallery";
 import L from "../../components/L";
 import ProductGrid from "../../components/ProductGrid";
 import ProductPurchase from "../../components/ProductPurchase";
+import ReviewSection from "../../components/ReviewSection";
 
 // Re-fetch catalog data from Supabase at most once a minute (ISR).
 export const revalidate = 60;
@@ -43,10 +50,15 @@ export default async function ProductPage({
   const product = await getProduct(id);
   if (!product) notFound();
 
-  const [categories, promotions, settings] = await Promise.all([
+  const [categories, promotions, settings, reviews] = await Promise.all([
     getCategories(),
     getRunningPromotions(),
     getStoreSettings(),
+    // A failed read hides the list; it never breaks the page.
+    getProductReviews(product.id).catch((error) => {
+      console.error("reviews query failed", error);
+      return [];
+    }),
   ]);
   const [{ pricing }] = withPricing([product], promotions, categories);
   // Accepts a slug or an old display name.
@@ -138,6 +150,8 @@ export default async function ProductPage({
           </div>
         </div>
       </div>
+
+      <ReviewSection productId={product.id} rating={product.rating} reviews={reviews} />
 
       {related.length > 0 && (
         <section className="mt-24">
