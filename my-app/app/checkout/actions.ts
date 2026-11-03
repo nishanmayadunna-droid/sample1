@@ -76,7 +76,7 @@ export async function placeOrder(
       return { message: "unknown_product", productId: plan.productId };
     }
 
-    const result = await createOrder(user.id, key, details.value, plan.totals, plan.items);
+    const result = await createOrder(user.id, key, details.value, plan.totals, plan.items, 0);
     if (!result.ok) {
       if (result.error === "out_of_stock") {
         return { message: "out_of_stock", productId: result.productId, size: result.size, left: result.left };
