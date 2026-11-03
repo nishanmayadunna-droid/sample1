@@ -3,13 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-guards";
 import { paymentStatusLabel } from "@/lib/advance";
-import { statusLabel } from "@/lib/orders";
+import { cancelReasonLabel, statusLabel } from "@/lib/orders";
 import { getOrderForAdmin } from "@/lib/orders-data";
-import { listSlipsForOrder, slipSignedUrl } from "@/lib/payments-data";
+import { isUserTrusted, listSlipsForOrder, slipSignedUrl } from "@/lib/payments-data";
 import { formatPrice } from "@/lib/products";
 import AdminTabs from "../../AdminTabs";
 import PaymentReview from "../PaymentReview";
 import StatusButtons from "../StatusButtons";
+import WaiveAdvanceButton from "../WaiveAdvanceButton";
 
 export const metadata: Metadata = { title: "Admin" };
 
@@ -18,6 +19,18 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
   await requireAdmin(`/admin/orders/${number}`);
   const order = await getOrderForAdmin(number);
   if (!order) notFound();
+
+  // A trusted customer who still owes an advance: the admin may want to waive it.
+  const canWaive =
+    (order.status === "pending" || order.status === "confirmed") &&
+    order.advanceAmount > 0 &&
+    (order.paymentStatus === "advance_due" || order.paymentStatus === "slip_uploaded");
+  const trusted = canWaive
+    ? await isUserTrusted(order.userId).catch((error) => {
+        console.error("trusted lookup failed", error);
+        return false;
+      })
+    : false;
 
   // Slips are private: each gets a 60-second link, made now for this admin view.
   const slips =
@@ -40,6 +53,8 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
         {order.advanceAmount > 0
           ? `Advance ${formatPrice(order.advanceAmount)} (${paymentStatusLabel(order.paymentStatus).en})`
           : "Cash on delivery (unpaid)"}
+        {order.advanceWaivedAt ? " · Advance waived" : ""}
+        {order.cancelReason ? ` · ${cancelReasonLabel(order.cancelReason).en}` : ""}
       </p>
       <div className="measure mt-6 text-ink" />
 
@@ -59,6 +74,14 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
             {formatPrice(order.advanceAmount)} by bank transfer; the customer pays {formatPrice(Math.max(order.total - order.advanceAmount, 0))}{" "}
             on delivery.
           </p>
+          {canWaive && (
+            <div className="mt-3">
+              {trusted && (
+                <p className="mb-2 text-sm text-blaze">This customer is trusted: consider waiving the advance.</p>
+              )}
+              <WaiveAdvanceButton orderId={order.id} />
+            </div>
+          )}
           {slips.length === 0 ? (
             <p className="mt-2 text-sm text-muted">No slip uploaded yet.</p>
           ) : (

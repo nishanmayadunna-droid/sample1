@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth-guards";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/orders";
 import { changeOrderStatus } from "@/lib/orders-data";
+import { cancelStaleOrders, waiveAdvance } from "@/lib/orders-data";
 import { reviewSlip } from "@/lib/payments-data";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -81,6 +82,43 @@ export async function reviewSlipAction(
     revalidatePath("/checkout");
   } catch (error) {
     console.error("reviewSlipAction failed", error);
+    return { error: SOMETHING_WRONG };
+  }
+  return { error: null };
+}
+
+/** Cancels every advance order that has gone stale, the same as the schedule does. */
+export async function cancelStaleOrdersAction(): Promise<{ error: string | null; cancelled: number }> {
+  await requireAdmin("/admin/orders");
+  try {
+    const cancelled = await cancelStaleOrders();
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin/orders/[number]", "page");
+    revalidatePath("/orders/[number]", "page");
+    revalidatePath("/account");
+    // Cancelling gives stock back, which shows on cards and the shell.
+    revalidatePath("/", "layout");
+    revalidatePath("/products");
+    return { error: null, cancelled };
+  } catch (error) {
+    console.error("cancelStaleOrdersAction failed", error);
+    return { error: SOMETHING_WRONG, cancelled: 0 };
+  }
+}
+
+/** The customer no longer owes an advance on this order; they pay the whole total on delivery. */
+export async function waiveAdvanceAction(orderId: string): Promise<OrderRowState> {
+  await requireAdmin("/admin/orders");
+  if (typeof orderId !== "string" || !UUID.test(orderId)) return { error: SOMETHING_WRONG };
+  try {
+    const outcome = await waiveAdvance(orderId);
+    if (outcome === "not_found") return { error: "That order no longer exists." };
+    if (outcome === "bad_state") return { error: "The advance can't be waived for this order." };
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin/orders/[number]", "page");
+    revalidatePath("/orders/[number]", "page");
+  } catch (error) {
+    console.error("waiveAdvanceAction failed", error);
     return { error: SOMETHING_WRONG };
   }
   return { error: null };
