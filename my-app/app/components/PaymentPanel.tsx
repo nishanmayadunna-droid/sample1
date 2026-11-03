@@ -28,6 +28,7 @@ export default function PaymentPanel({
   qr,
   slips,
   canUpload,
+  deadline,
 }: {
   orderNumber: string;
   advanceAmount: number;
@@ -36,6 +37,8 @@ export default function PaymentPanel({
   qr: { id: string; label: string; url: string }[];
   slips: SlipView[];
   canUpload: boolean;
+  /** When the order is cancelled if the advance hasn't arrived (ISO), or null when that is off or a slip is being checked. */
+  deadline: string | null;
 }) {
   const router = useRouter();
   const lang = useLang();
@@ -86,6 +89,15 @@ export default function PaymentPanel({
           en={`Pay now: ${formatPrice(advanceAmount)}. The remaining ${formatPrice(Math.max(total - advanceAmount, 0))} is paid when it arrives. We confirm your order once your advance is checked.`}
         />
       </p>
+
+      {deadline && (
+        <p className="mt-3 text-sm text-blaze">
+          <L
+            si={`කරුණාකර ${new Date(deadline).toLocaleString("en-LK", { timeZone: "Asia/Colombo" })} ට පෙර ගෙවන්න, නැත්නම් ඇණවුම අවලංගු වේ.`}
+            en={`Please pay before ${new Date(deadline).toLocaleString("en-LK", { timeZone: "Asia/Colombo" })}, or the order is cancelled.`}
+          />
+        </p>
+      )}
 
       <dl className="mt-4 grid gap-1 font-mono text-sm">
         {rows.map(({ key, label, value }) => (

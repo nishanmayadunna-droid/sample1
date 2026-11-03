@@ -176,12 +176,14 @@ export type Slip = {
   status: "pending" | "approved" | "rejected";
   rejectReason: string | null;
   createdAt: string;
+  /** When an admin last reviewed it (approved, rejected or waived); null while pending. */
+  reviewedAt: string | null;
 };
 
 export async function listSlipsForOrder(orderId: string): Promise<Slip[]> {
   const { data, error } = await supabaseAdmin
     .from("payment_slips")
-    .select("id, order_id, path, status, reject_reason, created_at")
+    .select("id, order_id, path, status, reject_reason, created_at, reviewed_at")
     .eq("order_id", orderId)
     .order("created_at")
     .returns<
@@ -192,6 +194,7 @@ export async function listSlipsForOrder(orderId: string): Promise<Slip[]> {
         status: Slip["status"];
         reject_reason: string | null;
         created_at: string;
+        reviewed_at: string | null;
       }[]
     >();
   if (error) fail(error);
@@ -202,6 +205,7 @@ export async function listSlipsForOrder(orderId: string): Promise<Slip[]> {
     status: row.status,
     rejectReason: row.reject_reason,
     createdAt: row.created_at,
+    reviewedAt: row.reviewed_at,
   }));
 }
 
