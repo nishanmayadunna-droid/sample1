@@ -29,12 +29,20 @@ export function galleryUrls(
   return imageUrl ? [imageUrl] : [];
 }
 
+/**
+ * `existing` are the paths the product already stores: they were accepted
+ * before (seed photos are named `<id>.jpg`, not `<id>-<epoch>.<ext>`), so only
+ * new paths must match the upload naming rule.
+ */
 export function validatePhotoList(
   id: string,
   paths: string[],
+  existing: string[] = [],
 ): "ok" | "too-many" | "duplicate" | "invalid-path" {
   if (paths.length > MAX_PHOTOS) return "too-many";
-  if (!paths.every((path) => isValidImagePath(id, path))) return "invalid-path";
+  if (!paths.every((path) => existing.includes(path) || isValidImagePath(id, path))) {
+    return "invalid-path";
+  }
   if (new Set(paths).size !== paths.length) return "duplicate";
   return "ok";
 }

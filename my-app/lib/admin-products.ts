@@ -152,9 +152,10 @@ export async function deleteProduct(id: string): Promise<boolean> {
 export async function setProductPhotos(id: string, paths: string[]): Promise<void> {
   const { data: current, error: readError } = await supabaseAdmin
     .from("product_images")
-    .select("path")
+    .select("path, sort_order")
     .eq("product_id", id)
-    .returns<{ path: string }[]>();
+    .order("sort_order")
+    .returns<{ path: string; sort_order: number }[]>();
   if (readError) fail(readError);
   const { data: product, error: productError } = await supabaseAdmin
     .from("products")
@@ -172,7 +173,14 @@ export async function setProductPhotos(id: string, paths: string[]): Promise<voi
     const { error: insertError } = await supabaseAdmin
       .from("product_images")
       .insert(paths.map((path, index) => ({ product_id: id, path, sort_order: index })));
-    if (insertError) fail(insertError);
+    if (insertError) {
+      // Put the old photos back so a failed save never leaves the product with none.
+      const { error: restoreError } = await supabaseAdmin.from("product_images").insert(
+        current.map((row) => ({ product_id: id, path: row.path, sort_order: row.sort_order })),
+      );
+      if (restoreError) console.error("product photos not restored", id, restoreError);
+      fail(insertError);
+    }
   }
 
   const imageUrl =

@@ -24,6 +24,13 @@ describe("validatePhotoList", () => {
   it("rejects the same path twice", () => {
     expect(validatePhotoList("trail-cap", [p(0), p(0)])).toBe("duplicate");
   });
+  it("accepts a photo the product already has even if its name is a legacy one", () => {
+    expect(validatePhotoList("trail-cap", ["trail-cap.jpg", p(1)], ["trail-cap.jpg"])).toBe("ok");
+  });
+  it("still rejects a legacy-looking path the product does not already have", () => {
+    expect(validatePhotoList("trail-cap", ["trail-cap.jpg"], [])).toBe("invalid-path");
+    expect(validatePhotoList("trail-cap", ["../x.jpg"], ["trail-cap.jpg"])).toBe("invalid-path");
+  });
   it("rejects another product's or a traversing path", () => {
     expect(validatePhotoList("trail-cap", ["other-1700000000000.jpg"])).toBe("invalid-path");
     expect(validatePhotoList("trail-cap", ["../x.jpg"])).toBe("invalid-path");

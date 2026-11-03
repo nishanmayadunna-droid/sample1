@@ -68,7 +68,7 @@ async function usablePhotos(
   existing: string[],
 ): Promise<string[] | null> {
   const paths = parsePhotosField(raw);
-  if (!paths || validatePhotoList(id, paths) !== "ok") return null;
+  if (!paths || validatePhotoList(id, paths, existing) !== "ok") return null;
   for (const path of paths) {
     if (!existing.includes(path) && !(await imageExists(path))) return null;
   }
