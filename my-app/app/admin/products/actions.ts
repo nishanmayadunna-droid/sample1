@@ -10,19 +10,19 @@ import {
   getProductForAdmin,
   imageExists,
   insertProduct,
-  setProductImage,
+  setProductPhotos,
   setPublished,
   updateProduct,
 } from "@/lib/admin-products";
 import {
   imagePathFor,
   isDeleteConfirmed,
-  isValidImagePath,
   isValidProductId,
   MAX_IMAGE_BYTES,
   parseProductForm,
   type FieldName,
 } from "@/lib/product-form";
+import { parsePhotosField, validatePhotoList } from "@/lib/product-photos";
 
 // Every action re-checks admin access first: Server Actions are endpoints of
 // their own and can be called without going through the /admin pages.
@@ -57,12 +57,22 @@ function formFields(formData: FormData): Record<string, string | undefined> {
 }
 
 /**
- * Checks an uploaded photo before anything is written, so a bad photo never
- * leaves a half-saved product behind. True when there is none or it is valid.
+ * Checks the submitted photo list before anything is written, so a bad photo
+ * never leaves a half-saved product behind. Returns the paths, or null when the
+ * list is malformed, invalid, or names a file that was never uploaded. Paths the
+ * product already has are not re-checked.
  */
-async function imageIsUsable(id: string, imagePath: string | undefined): Promise<boolean> {
-  if (!imagePath) return true;
-  return isValidImagePath(id, imagePath) && (await imageExists(imagePath));
+async function usablePhotos(
+  id: string,
+  raw: string | undefined,
+  existing: string[],
+): Promise<string[] | null> {
+  const paths = parsePhotosField(raw);
+  if (!paths || validatePhotoList(id, paths) !== "ok") return null;
+  for (const path of paths) {
+    if (!existing.includes(path) && !(await imageExists(path))) return null;
+  }
+  return paths;
 }
 
 export async function createProductAction(
@@ -76,13 +86,12 @@ export async function createProductAction(
   const id = parsed.id!;
 
   try {
-    if (!(await imageIsUsable(id, fields.imagePath))) {
-      return { errors: { form: UPLOAD_FAILED } };
-    }
+    const photos = await usablePhotos(id, fields.photos, []);
+    if (!photos) return { errors: { form: UPLOAD_FAILED } };
     if ((await insertProduct(id, parsed.value)) === "exists") {
       return { errors: { id: "A product with this ID already exists." } };
     }
-    if (fields.imagePath) await setProductImage(id, fields.imagePath);
+    if (photos.length > 0) await setProductPhotos(id, photos);
   } catch {
     return { errors: { form: SOMETHING_WRONG } };
   }
@@ -97,17 +106,17 @@ export async function updateProductAction(
   formData: FormData,
 ): Promise<ProductFormState> {
   await requireAdmin(`/admin/products/${id}`);
-  if (!(await getProductForAdmin(id))) notFound();
+  const existing = await getProductForAdmin(id);
+  if (!existing) notFound();
   const fields = formFields(formData);
   const parsed = parseProductForm(fields, "update", await categorySlugs());
   if (!parsed.ok) return { errors: parsed.errors };
 
   try {
-    if (!(await imageIsUsable(id, fields.imagePath))) {
-      return { errors: { form: UPLOAD_FAILED } };
-    }
+    const photos = await usablePhotos(id, fields.photos, existing.photoPaths);
+    if (!photos) return { errors: { form: UPLOAD_FAILED } };
     await updateProduct(id, parsed.value);
-    if (fields.imagePath) await setProductImage(id, fields.imagePath);
+    await setProductPhotos(id, photos);
   } catch {
     return { errors: { form: SOMETHING_WRONG } };
   }
