@@ -45,7 +45,7 @@ export function summarizeRatings(ratings: number[]): RatingSummary | null {
 }
 
 /** The reviewer's first name only, for privacy. */
-export function firstName(name: string | null, email: string): string {
-  const word = (name ?? "").trim().split(/\s+/)[0];
-  return word || email.split("@")[0];
+export function firstName(name: string | null): string {
+  // A customer with no name is "Customer": never part of their email address.
+  return (name ?? "").trim().split(/\s+/)[0] || "Customer";
 }

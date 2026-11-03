@@ -39,11 +39,12 @@ describe("summarizeRatings", () => {
 
 describe("firstName", () => {
   it("uses the first word of the name", () => {
-    expect(firstName("  Nimal  Perera ", "x@y.lk")).toBe("Nimal");
+    expect(firstName("  Nimal  Perera ")).toBe("Nimal");
   });
 
-  it("falls back to the email local part", () => {
-    expect(firstName(null, "kamal@x.lk")).toBe("kamal");
-    expect(firstName("", "a@b.c")).toBe("a");
+  it("never falls back to part of the email address", () => {
+    expect(firstName(null)).toBe("Customer");
+    expect(firstName("")).toBe("Customer");
+    expect(firstName("   ")).toBe("Customer");
   });
 });

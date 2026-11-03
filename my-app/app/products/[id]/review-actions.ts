@@ -28,7 +28,7 @@ export async function submitReview(
       {
         product_id: productId,
         user_id: user.id,
-        author_name: firstName(user.name, user.email).slice(0, 60),
+        author_name: firstName(user.name).slice(0, 60),
         rating: checked.rating,
         body: checked.body,
         status: "pending",
