@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-type AdminTab = "products" | "categories" | "promotions" | "reviews" | "promises" | "settings";
+type AdminTab = "products" | "orders" | "categories" | "promotions" | "reviews" | "promises" | "settings";
 
 /** Section switcher shown at the top of the admin pages. */
 export default function AdminTabs({ active }: { active: AdminTab }) {
@@ -19,6 +19,7 @@ export default function AdminTabs({ active }: { active: AdminTab }) {
   return (
     <nav className="mb-8 flex flex-wrap gap-x-6 gap-y-2">
       {tab("products", "/admin", "Products")}
+      {tab("orders", "/admin/orders", "Orders")}
       {tab("categories", "/admin/categories", "Categories")}
       {tab("promotions", "/admin/promotions", "Promotions")}
       {tab("reviews", "/admin/reviews", "Reviews")}
