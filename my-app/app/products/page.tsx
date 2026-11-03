@@ -5,7 +5,7 @@ import { withPricing } from "@/lib/promotions";
 import { getRunningPromotions } from "@/lib/storefront";
 import { resolveCategoryParam } from "@/lib/category-form";
 import { filterProducts, parseView, type ProductView } from "@/lib/product-filters";
-import ProductCard from "../components/ProductCard";
+import ProductGrid from "../components/ProductGrid";
 import L from "../components/L";
 import PromoBanner from "../components/PromoBanner";
 
@@ -145,11 +145,7 @@ export default async function ProductsPage({
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        <ProductGrid products={products} />
       )}
     </div>
   );

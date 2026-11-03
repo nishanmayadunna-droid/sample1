@@ -1,256 +1,39 @@
-import Link from "next/link";
-import { formatPrice, formatPriceWhole } from "@/lib/products";
-import { freeShippingThreshold, withPricing } from "@/lib/promotions";
-import { getRunningPromotions } from "@/lib/storefront";
 import { getAllProducts, getCategories } from "@/lib/catalog";
-import { productsInCategory } from "@/lib/category-form";
-import ProductCard from "./components/ProductCard";
-import ProductImage from "./components/ProductImage";
-import FlashCountdown from "./components/FlashCountdown";
+import { dealProducts, soonestDealEnd } from "@/lib/home-sections";
+import { freeShippingThreshold, withPricing } from "@/lib/promotions";
+import { getRunningPromotions, getVisiblePromises } from "@/lib/storefront";
+import { promiseItems } from "@/lib/storefront-form";
+import CategoryShelf from "./components/CategoryShelf";
+import DealsRow from "./components/DealsRow";
+import HomeHero from "./components/HomeHero";
 import Newsletter from "./components/Newsletter";
-import L from "./components/L";
+import PromiseCards from "./components/PromiseCards";
 import PromoBanners from "./components/PromoBanners";
-
-// [label si, label en, detail si, detail en]
-type PromiseRow = [string, string, string, string];
-
-/** The free-shipping promise, while a running promotion offers it shop-wide. */
-function freeShippingPromise(threshold: number | null): PromiseRow[] {
-  if (threshold === null) return [];
-  if (threshold === 0) return [["නොමිලේ බෙදාහැරීම", "Free shipping", "සියලු ඇණවුම්වලට", "On every order"]];
-  const amount = formatPriceWhole(threshold);
-  return [["නොමිලේ බෙදාහැරීම", "Free shipping", `${amount}ට වැඩි ඇණවුම්වලට`, `On orders over ${amount}`]];
-}
-
-const PROMISES: PromiseRow[] = [
-  ["දින 30ක ආපසු භාරදීම", "30-day returns", "අමතර ගාස්තු නැහැ", "No restocking fees"],
-  ["අලුත්වැඩියාවට හදපු", "Built to be repaired", "වසරක් නොමිලේ අලුත්වැඩියා", "Free repairs for a year"],
-  ["කාබන්-උදාසීන", "Carbon-neutral", "සෑම ඇණවුමක්ම සමතුලිතයි", "Every order offset"],
-];
 
 // Re-fetch catalog data from Supabase at most once a minute (ISR).
 export const revalidate = 60;
 
 export default async function Home() {
-  // One query; every section below is a slice of the full catalog.
-  const [catalog, categories, promotions] = await Promise.all([
+  // One catalog query; every section below is a slice of it.
+  const [catalog, categories, promotions, promises] = await Promise.all([
     getAllProducts(),
     getCategories(),
     getRunningPromotions(),
+    getVisiblePromises(),
   ]);
   const products = withPricing(catalog, promotions, categories);
-  const promises = [...freeShippingPromise(freeShippingThreshold(promotions)), ...PROMISES];
-  // Shop-by-category tiles skip categories with no published products.
-  const categoryTiles = categories
-    .map((category) => ({
-      category,
-      count: productsInCategory(products, category, categories).length,
-    }))
-    .filter((tile) => tile.count > 0);
-  const featured = products.filter((p) => p.featured);
-  // Sale prices and promotion discounts alike.
-  const sale = products.filter((p) => p.pricing.compareAt != null);
-  const hero = products.find((p) => p.id === "field-jacket") ?? featured[0];
+  const deals = dealProducts(products);
+  // The brand hero steps aside while a promotion has a banner to show.
+  const hasBanner = promotions.some((p) => p.banner.mode !== "none");
+  const hero = products.find((p) => p.id === "field-jacket") ?? products.find((p) => p.featured);
 
   return (
     <div>
       <PromoBanners promotions={promotions} />
-
-      {/* HERO — the durability thesis, set on a spruce field panel. */}
-      <section className="bg-panel text-panelink">
-        <div className="mx-auto grid w-full max-w-6xl gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-          <div>
-            <span className="eyebrow rise text-panelmuted">
-              <L si="Northbound — 64°N සිට" en="Est. Northbound — 64°N" />
-            </span>
-            <h1 className="display mt-6 text-[clamp(2.75rem,8vw,5.5rem)]">
-              <span className="rise block" style={{ animationDelay: "80ms" }}>
-                <L si="ඉවත දමන්න නොව," en="Made to be" />
-              </span>
-              <span
-                className="rise block text-blaze"
-                style={{ animationDelay: "160ms" }}
-              >
-                <L si="දිගු කලක්" en="worn out," />
-              </span>
-              <span className="rise block" style={{ animationDelay: "240ms" }}>
-                <L si="අඳින්නට." en="not thrown out." />
-              </span>
-            </h1>
-            <p
-              className="rise mt-7 max-w-md text-lg leading-relaxed text-panelmuted"
-              style={{ animationDelay: "340ms" }}
-            >
-              <L
-                si="අවංක රෙදි, සරල නිර්මාණ, සහ සමයට වඩා කල් පවතින උපාංග. ඉදිරි ගමන් සඳහා ඇඳුම් සහ outerwear."
-                en="Honest materials, quiet design, and hardware built to outlast the season. Layers and outerwear for the cold miles ahead."
-              />
-            </p>
-            <div
-              className="rise mt-8 flex flex-wrap items-center gap-5"
-              style={{ animationDelay: "420ms" }}
-            >
-              <Link
-                href="/products"
-                className="rounded-full bg-blaze px-7 py-3.5 font-medium text-white transition-transform hover:-translate-y-0.5"
-              >
-                <L si="එකතුව බලන්න" en="Shop the collection" />
-              </Link>
-              <Link
-                href="/products?category=outerwear"
-                className="font-mono text-xs uppercase tracking-[0.16em] underline-offset-4 hover:underline"
-              >
-                <L si="Outerwear බලන්න →" en="Shop outerwear →" />
-              </Link>
-            </div>
-          </div>
-
-          {/* Field-tag feature — a hangtag for one hero product. */}
-          {hero && (
-            <Link
-              href={`/products/${hero.id}`}
-              className="rise group block"
-              style={{ animationDelay: "300ms" }}
-            >
-              <div className="overflow-hidden rounded-xl border border-white/15">
-                <ProductImage
-                  product={hero}
-                  className="aspect-[4/3] w-full transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                  sizes="(min-width: 1024px) 45vw, 100vw"
-                  preload
-                />
-                <div className="flex items-end justify-between gap-4 bg-black/25 p-5">
-                  <div>
-                    <span className="eyebrow text-panelmuted">
-                      <L si="අත්හදා බැලූ" en="Field tested" />
-                    </span>
-                    <p className="mt-1.5 font-medium">{hero.name}</p>
-                    <p className="mt-1 font-mono text-xs text-panelmuted">
-                      {hero.spec.material} · {hero.spec.origin}
-                    </p>
-                  </div>
-                  <span className="font-mono">{formatPrice(hero.pricing.price)}</span>
-                </div>
-              </div>
-            </Link>
-          )}
-        </div>
-        <div className="measure text-panelink opacity-70" />
-      </section>
-
-      {/* SHOP BY CATEGORY */}
-      <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-        <div className="mb-8 flex items-end justify-between gap-4">
-          <div>
-            <span className="eyebrow text-muted">
-              <L si="ඔබට ගැළපෙන දේ" en="Find your kit" />
-            </span>
-            <h2 className="display mt-2 text-[clamp(1.75rem,4vw,2.75rem)]">
-              <L si="වර්ගය අනුව" en="Shop by category" />
-            </h2>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
-          {categoryTiles.map(({ category, count }) => {
-            const [from, to] = category.swatch;
-            return (
-              <Link
-                key={category.slug}
-                href={`/products?category=${encodeURIComponent(category.slug)}`}
-                className="group relative flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-xl border border-line p-5 text-white"
-                style={{ background: `linear-gradient(150deg, ${from}, ${to})` }}
-              >
-                <span className="pointer-events-none absolute inset-0 bg-black/15 transition-colors group-hover:bg-black/0" />
-                <span className="relative font-mono text-[0.6rem] uppercase tracking-widest text-white/80">
-                  {String(count).padStart(2, "0")} <L si="මෝස්තර" en="styles" />
-                </span>
-                <span className="display relative mt-1 text-2xl leading-none">
-                  {category.name}
-                </span>
-                <span className="relative mt-2 font-mono text-xs text-white/80">
-                  <L si="බලන්න →" en="Shop →" />
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* FLASH SALE */}
-      <section className="mx-auto w-full max-w-6xl px-4 pb-4 sm:px-6">
-        <div className="rounded-2xl border border-line bg-surface p-6 sm:p-8">
-          <div className="flex flex-col gap-6 border-b border-line pb-6 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <span className="eyebrow text-blaze">
-                <L si="අද රෑ අවසන්" en="Ends tonight" />
-              </span>
-              <h2 className="display mt-2 text-[clamp(1.75rem,4vw,2.75rem)]">
-                <L si="Flash sale" en="Flash sale" />
-              </h2>
-              <p className="mt-1 max-w-md text-sm text-muted">
-                <L
-                  si="තෝරාගත් භාණ්ඩ සීමිත ප්‍රමාණයක් පමණයි. ඉවර වුණාම ඉවරයි."
-                  en="Limited stock on select field kit. When it's gone, it's gone."
-                />
-              </p>
-            </div>
-            <div>
-              <span className="eyebrow mb-2 text-muted">
-                <L si="ඉතිරි කාලය" en="Time left" />
-              </span>
-              <FlashCountdown />
-            </div>
-          </div>
-          <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
-            {sale.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FEATURED */}
-      <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-        <div className="mb-10 flex items-end justify-between gap-4">
-          <div>
-            <span className="eyebrow text-muted">
-              <L si="තෝරාගත්" en="Selected" />
-            </span>
-            <h2 className="display mt-2 text-[clamp(1.75rem,4vw,2.75rem)]">
-              <L si="ජනප්‍රිය භාණ්ඩ" en="Field favourites" />
-            </h2>
-          </div>
-          <Link
-            href="/products"
-            className="font-mono text-xs uppercase tracking-[0.16em] text-muted underline-offset-4 hover:text-ink hover:underline"
-          >
-            <L si="සියලු භාණ්ඩ →" en="All products →" />
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
-          {featured.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      </section>
-
-      {/* THE PROMISE — value props in the spec voice, split by hairline rules. */}
-      <section className="border-y border-line">
-        <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-px bg-line md:grid-cols-4">
-          {promises.map(([labelSi, labelEn, detailSi, detailEn]) => (
-            <div key={labelEn} className="bg-bg px-5 py-8 sm:px-6">
-              <p className="font-mono text-[0.7rem] uppercase tracking-[0.16em]">
-                <L si={labelSi} en={labelEn} />
-              </p>
-              <p className="mt-2 text-sm text-muted">
-                <L si={detailSi} en={detailEn} />
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* NEWSLETTER */}
+      {!hasBanner && <HomeHero hero={hero} />}
+      <DealsRow deals={deals} endsAt={soonestDealEnd(deals, promotions)} />
+      <CategoryShelf products={products} categories={categories} />
+      <PromiseCards items={promiseItems(promises, freeShippingThreshold(promotions))} />
       <Newsletter />
     </div>
   );

@@ -210,7 +210,7 @@ export default function ProductForm({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={preview} alt="New photo preview" className="h-full w-full object-cover" />
             ) : product ? (
-              <ProductImage product={product} sizes="96px" className="h-full w-full" />
+              <ProductImage showCategory={false} product={product} sizes="96px" className="h-full w-full" />
             ) : null}
           </div>
           <input

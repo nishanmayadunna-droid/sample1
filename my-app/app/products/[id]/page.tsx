@@ -9,7 +9,7 @@ import { getAllProducts, getCategories, getProduct, getProductsByCategory } from
 import { resolveCategoryParam } from "@/lib/category-form";
 import ProductImage from "../../components/ProductImage";
 import L from "../../components/L";
-import ProductCard from "../../components/ProductCard";
+import ProductGrid from "../../components/ProductGrid";
 import ProductPurchase from "../../components/ProductPurchase";
 
 // Re-fetch catalog data from Supabase at most once a minute (ISR).
@@ -162,10 +162,8 @@ export default async function ProductPage({
           <h2 className="display text-[clamp(1.5rem,3vw,2rem)]">
             <L si={`${product.categoryName} තවත්`} en={`More in ${product.categoryName}`} />
           </h2>
-          <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:grid-cols-4">
-            {related.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
+          <div className="mt-8">
+            <ProductGrid products={related} />
           </div>
         </section>
       )}

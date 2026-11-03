@@ -76,6 +76,7 @@ export default function CartView({
                 aria-label={product.name}
               >
                 <ProductImage
+                  showCategory={false}
                   product={product}
                   className="h-28 w-24"
                   sizes="96px"
