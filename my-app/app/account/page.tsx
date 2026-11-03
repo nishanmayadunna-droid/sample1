@@ -4,6 +4,8 @@ import { requireUser } from "@/lib/auth-guards";
 import { statusLabel } from "@/lib/orders";
 import { listOrdersForUser } from "@/lib/orders-data";
 import { isUserTrusted } from "@/lib/payments-data";
+import { ledgerKindLabel } from "@/lib/points";
+import { getPointsBalance, getPointsSettings, listLedgerForUser } from "@/lib/points-data";
 import { formatPrice } from "@/lib/products";
 import SignOutButton from "../components/SignOutButton";
 import L from "../components/L";
@@ -17,6 +19,15 @@ export default async function AccountPage() {
   const trusted = await isUserTrusted(user.id).catch((error) => {
     console.error("trusted lookup failed", error);
     return false;
+  });
+  // Points: a failed read just hides the section.
+  const points = await Promise.all([
+    getPointsSettings(),
+    getPointsBalance(user.id),
+    listLedgerForUser(user.id, 50),
+  ]).catch((error) => {
+    console.error("points read failed", error);
+    return null;
   });
   const orders = await listOrdersForUser(user.id).catch((error) => {
     console.error("orders list failed", error);
@@ -58,6 +69,57 @@ export default async function AccountPage() {
           </div>
         ))}
       </dl>
+      {points && (points[0].enabled || points[2].length > 0) && (
+        <section className="mt-10">
+          <h2 className="eyebrow text-muted">
+            <L si="මගේ points" en="My points" />
+          </h2>
+          <p className="mt-3 font-mono text-2xl">
+            {points[1]}{" "}
+            <span className="text-sm text-muted">
+              <L si="points" en="points" /> ≈ {formatPrice(points[1] * points[0].pointValue)}
+            </span>
+          </p>
+          {points[2].length > 0 && (
+            <ul className="mt-3 divide-y divide-line border-y border-line">
+              {points[2].map((entry) => {
+                const label = ledgerKindLabel(entry.kind);
+                return (
+                  <li key={entry.id} className="flex flex-wrap items-baseline justify-between gap-3 py-2 text-sm">
+                    <span>
+                      <L si={label.si} en={label.en} />
+                      {entry.orderNumber && (
+                        <>
+                          {" "}
+                          <Link href={`/orders/${entry.orderNumber}`} className="font-mono text-xs underline underline-offset-4">
+                            {entry.orderNumber}
+                          </Link>
+                        </>
+                      )}
+                      {entry.note && <span className="block text-xs text-muted">{entry.note}</span>}
+                    </span>
+                    <span className="font-mono">
+                      <span className={entry.points > 0 ? "text-blaze" : "text-muted"}>
+                        {entry.points > 0 ? "+" : "−"}
+                        {Math.abs(entry.points)}
+                      </span>{" "}
+                      <span className="text-xs text-muted">
+                        {new Date(entry.createdAt).toLocaleDateString("en-LK", {
+                          timeZone: "Asia/Colombo",
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      )}
+
       <h2 className="eyebrow mt-10 text-muted">
         <L si="මගේ ඇණවුම්" en="My orders" />
       </h2>
