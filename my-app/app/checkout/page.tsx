@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { requireUser } from "@/lib/auth-guards";
 import { getAllProducts, getCategories } from "@/lib/catalog";
+import { advanceRequired, type AdvanceSettings } from "@/lib/advance";
 import { getLatestDetailsForUser } from "@/lib/orders-data";
+import { getPaymentSettings, isUserTrusted } from "@/lib/payments-data";
 import { getRunningPromotions, getStoreSettings } from "@/lib/storefront";
 import CheckoutForm from "../components/CheckoutForm";
 import L from "../components/L";
@@ -11,7 +13,7 @@ export const metadata: Metadata = { title: "Checkout" };
 // Per-user (it reads the session), so unlike the catalog pages it is dynamic.
 export default async function CheckoutPage() {
   const user = await requireUser("/checkout");
-  const [products, categories, promotions, settings, initialDetails] = await Promise.all([
+  const [products, categories, promotions, settings, initialDetails, advanceInfo] = await Promise.all([
     getAllProducts(),
     getCategories(),
     getRunningPromotions(),
@@ -20,6 +22,13 @@ export default async function CheckoutPage() {
       console.error("latest order details failed", error);
       return null;
     }),
+    // The form only previews the advance; placeOrder decides it again on the server.
+    Promise.all([isUserTrusted(user.id), getPaymentSettings()])
+      .then(([trusted, payment]): AdvanceSettings | null => (advanceRequired(trusted, payment) ? payment : null))
+      .catch((error) => {
+        console.error("payment settings failed", error);
+        return null;
+      }),
   ]);
 
   return (
@@ -36,6 +45,7 @@ export default async function CheckoutPage() {
         initialPhone={initialDetails?.phone ?? ""}
         initialAddress={initialDetails?.address ?? ""}
         initialCity={initialDetails?.city ?? ""}
+        advanceInfo={advanceInfo}
       />
     </div>
   );

@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth-guards";
 import { getAllProducts, getCategories } from "@/lib/catalog";
+import { advanceFor, advanceRequired } from "@/lib/advance";
 import { createOrder } from "@/lib/orders-data";
+import { bankDetailsComplete, getPaymentSettings, isUserTrusted } from "@/lib/payments-data";
 import { planOrder } from "@/lib/order-plan";
 import { parseCheckoutDetails, type DetailsField, type OrderMessage } from "@/lib/orders";
 import { getRunningPromotions, getStoreSettings } from "@/lib/storefront";
@@ -76,7 +78,15 @@ export async function placeOrder(
       return { message: "unknown_product", productId: plan.productId };
     }
 
-    const result = await createOrder(user.id, key, details.value, plan.totals, plan.items, 0);
+    // The advance is decided here, never by the browser: untrusted customers pay
+    // one when the shop has it switched on. Without bank details to pay into, no
+    // order is placed at all (so nobody is left holding an unpayable advance).
+    const [trusted, payment] = await Promise.all([isUserTrusted(user.id), getPaymentSettings()]);
+    const required = advanceRequired(trusted, payment);
+    if (required && !bankDetailsComplete(payment)) return { message: "advance_setup" };
+    const advance = required ? advanceFor(plan.totals.total, payment) : 0;
+
+    const result = await createOrder(user.id, key, details.value, plan.totals, plan.items, advance);
     if (!result.ok) {
       if (result.error === "out_of_stock") {
         return { message: "out_of_stock", productId: result.productId, size: result.size, left: result.left };
