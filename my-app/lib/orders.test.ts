@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ORDER_STATUSES,
   canCustomerCancel,
+  cancelReasonLabel,
   nextStatuses,
   normalizePhone,
   orderTotals,
@@ -107,5 +108,12 @@ describe("orderTotals", () => {
       shipping: 350,
       total: 8350,
     });
+  });
+});
+
+describe("cancelReasonLabel", () => {
+  it("explains an expired advance in both languages", () => {
+    expect(cancelReasonLabel("advance_expired").en).not.toBe("");
+    expect(cancelReasonLabel("advance_expired").si).not.toBe("");
   });
 });

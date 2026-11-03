@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  advanceDeadline,
   advanceFor,
   advanceRequired,
+  isAdvanceStale,
   isValidSlipPath,
   parseAdvanceSettings,
   paymentStatusLabel,
@@ -65,6 +67,7 @@ describe("parseAdvanceSettings", () => {
     accountNumber: "1234567",
     branch: "Colombo",
     note: "Use your order number as the reference.",
+    expiryHours: "48",
   };
 
   it("parses rupees into cents", () => {
@@ -81,8 +84,14 @@ describe("parseAdvanceSettings", () => {
         accountNumber: "1234567",
         branch: "Colombo",
         note: "Use your order number as the reference.",
+        expiryHours: 48,
       },
     });
+  });
+
+  it.each(["0", "1", "720"])("allows %s expiry hours", (expiryHours) => {
+    const result = parseAdvanceSettings({ ...valid, expiryHours });
+    expect(result.ok && result.value.expiryHours).toBe(Number(expiryHours));
   });
 
   it("allows a zero minimum", () => {
@@ -103,6 +112,11 @@ describe("parseAdvanceSettings", () => {
     ["bankName", { bankName: "x".repeat(121) }],
     ["note", { note: "a\u0000b" }],
     ["note", { note: "x".repeat(501) }],
+    ["expiryHours", { expiryHours: "721" }],
+    ["expiryHours", { expiryHours: "-1" }],
+    ["expiryHours", { expiryHours: "2.5" }],
+    ["expiryHours", { expiryHours: "" }],
+    ["expiryHours", { expiryHours: "abc" }],
   ])("rejects bad %s", (field, override) => {
     const result = parseAdvanceSettings({ ...valid, ...override });
     expect(result.ok).toBe(false);
@@ -148,5 +162,69 @@ describe("paymentStatusLabel", () => {
       expect(paymentStatusLabel(status).en).not.toBe("");
       expect(paymentStatusLabel(status).si).not.toBe("");
     }
+  });
+});
+
+describe("advanceDeadline", () => {
+  const created = "2026-01-01T10:00:00.000Z";
+
+  it("is null when expiry is off", () => {
+    expect(advanceDeadline(created, null, 0)).toBeNull();
+    expect(advanceDeadline(created, null, -1)).toBeNull();
+  });
+
+  it("is the order time plus the hours", () => {
+    expect(advanceDeadline(created, null, 48)?.toISOString()).toBe("2026-01-03T10:00:00.000Z");
+  });
+
+  it("restarts from a later slip review, and ignores an earlier one", () => {
+    expect(advanceDeadline(created, "2026-01-02T00:00:00.000Z", 48)?.toISOString()).toBe("2026-01-04T00:00:00.000Z");
+    expect(advanceDeadline(created, "2025-12-31T00:00:00.000Z", 48)?.toISOString()).toBe("2026-01-03T10:00:00.000Z");
+  });
+
+  it("accepts Dates and strings alike", () => {
+    expect(advanceDeadline(new Date(created), null, 24)?.getTime()).toBe(advanceDeadline(created, null, 24)?.getTime());
+  });
+
+  it("is null for an invalid date", () => {
+    expect(advanceDeadline("not a date", null, 48)).toBeNull();
+  });
+});
+
+describe("isAdvanceStale", () => {
+  const order = {
+    status: "pending" as const,
+    paymentStatus: "advance_due" as const,
+    advanceAmount: 50000,
+    createdAt: "2026-01-01T00:00:00.000Z",
+  };
+  const at = (hoursAfterCreate: number) => new Date(Date.parse(order.createdAt) + hoursAfterCreate * 3600_000);
+
+  it("is false when expiry is off", () => {
+    expect(isAdvanceStale(order, null, 0, at(10_000))).toBe(false);
+  });
+
+  it("is false before and exactly at the deadline, true after", () => {
+    expect(isAdvanceStale(order, null, 48, at(47))).toBe(false);
+    expect(isAdvanceStale(order, null, 48, at(48))).toBe(false);
+    expect(isAdvanceStale(order, null, 48, at(49))).toBe(true);
+  });
+
+  it("never touches an order with a slip waiting, an already paid or plain COD order", () => {
+    expect(isAdvanceStale({ ...order, paymentStatus: "slip_uploaded" }, null, 48, at(500))).toBe(false);
+    expect(isAdvanceStale({ ...order, paymentStatus: "advance_paid" }, null, 48, at(500))).toBe(false);
+    expect(isAdvanceStale({ ...order, paymentStatus: "unpaid" }, null, 48, at(500))).toBe(false);
+    expect(isAdvanceStale({ ...order, advanceAmount: 0 }, null, 48, at(500))).toBe(false);
+  });
+
+  it.each(["confirmed", "shipped", "delivered", "cancelled"] as const)("never touches a %s order", (status) => {
+    expect(isAdvanceStale({ ...order, status }, null, 48, at(500))).toBe(false);
+  });
+
+  it("restarts the clock after a rejected slip", () => {
+    // 100 hours old, but a slip was rejected 1 hour ago: not stale yet.
+    expect(isAdvanceStale(order, at(99).toISOString(), 48, at(100))).toBe(false);
+    expect(isAdvanceStale(order, at(99).toISOString(), 48, at(147))).toBe(false);
+    expect(isAdvanceStale(order, at(99).toISOString(), 48, at(148))).toBe(true);
   });
 });
