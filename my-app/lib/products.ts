@@ -1,5 +1,7 @@
 // Product types and pure helpers. Safe to import from client components —
 // the data itself lives in Supabase and is fetched via `@/lib/catalog`.
+import type { RatingSummary } from "./reviews";
+import type { StockMap } from "./stock";
 
 /** A product category, managed by admins in the `categories` table. */
 export type Category = {
@@ -37,6 +39,10 @@ export type Product = {
   imageUrl?: string;
   /** Public URLs of the product photos, main photo first (empty = swatch only). */
   gallery: string[];
+  /** Units left per size; null (or a missing size) means not tracked. */
+  stock: StockMap;
+  /** Average of approved reviews; null when there are none. */
+  rating: RatingSummary | null;
   featured?: boolean;
   /** When the product was added (ISO timestamp); drives "New In". */
   createdAt: string;
@@ -84,6 +90,7 @@ export type ShellProduct = Pick<
   | "category"
   | "categoryName"
   | "sizes"
+  | "stock"
   | "description"
   | "featured"
   | "createdAt"
@@ -100,6 +107,7 @@ export function toShellProduct(p: Product): ShellProduct {
     category: p.category,
     categoryName: p.categoryName,
     sizes: p.sizes,
+    stock: p.stock,
     description: p.description,
     featured: p.featured,
     createdAt: p.createdAt,
