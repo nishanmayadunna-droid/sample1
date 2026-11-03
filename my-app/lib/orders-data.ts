@@ -4,7 +4,14 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { PlannedItem } from "@/lib/order-plan";
-import type { CheckoutDetails, OrderStatus, OrderTotals, PaymentMethod, PaymentStatus } from "@/lib/orders";
+import type {
+  CancelReason,
+  CheckoutDetails,
+  OrderStatus,
+  OrderTotals,
+  PaymentMethod,
+  PaymentStatus,
+} from "@/lib/orders";
 
 export type OrderItem = {
   productId: string | null;
@@ -22,6 +29,10 @@ export type Order = {
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
+  /** Set when the system (not a person) cancelled the order. */
+  cancelReason: CancelReason | null;
+  /** When the admin waived the advance, if they did. */
+  advanceWaivedAt: string | null;
   /** What the customer pays up front by bank transfer, in cents (0 for plain COD). */
   advanceAmount: number;
   /** Loyalty points spent on this order, the cents they took off, and the points it earns once delivered. */
@@ -57,6 +68,8 @@ type OrderRow = {
   status: OrderStatus;
   payment_method: PaymentMethod;
   payment_status: PaymentStatus;
+  cancel_reason: CancelReason | null;
+  advance_waived_at: string | null;
   advance_amount: number;
   points_used: number;
   points_discount: number;
@@ -75,7 +88,7 @@ type OrderRow = {
 };
 
 const COLUMNS =
-  "id, order_number, user_id, status, payment_method, payment_status, advance_amount, points_used, points_discount, points_to_earn, customer_name, phone, address, city, note, subtotal, discount, shipping, total, created_at, order_items(product_id, product_name, size, quantity, unit_price, compare_at)";
+  "id, order_number, user_id, status, payment_method, payment_status, cancel_reason, advance_waived_at, advance_amount, points_used, points_discount, points_to_earn, customer_name, phone, address, city, note, subtotal, discount, shipping, total, created_at, order_items(product_id, product_name, size, quantity, unit_price, compare_at)";
 
 function toOrder(row: OrderRow): Order {
   return {
@@ -85,6 +98,8 @@ function toOrder(row: OrderRow): Order {
     status: row.status,
     paymentMethod: row.payment_method,
     paymentStatus: row.payment_status,
+    cancelReason: row.cancel_reason,
+    advanceWaivedAt: row.advance_waived_at,
     advanceAmount: row.advance_amount,
     pointsUsed: row.points_used,
     pointsDiscount: row.points_discount,
@@ -279,4 +294,58 @@ export async function userHasDeliveredProduct(userId: string, productId: string)
     .returns<{ id: string }[]>();
   if (error) fail(error);
   return data.length > 0;
+}
+
+/**
+ * Pending orders still waiting for their advance (no slip yet, or one under
+ * review), oldest first, each with the time of the latest slip review (a
+ * rejection restarts an order's expiry clock).
+ */
+export async function listAwaitingAdvanceOrders(): Promise<{ order: Order; lastReviewedAt: string | null }[]> {
+  const { data, error } = await supabaseAdmin
+    .from("orders")
+    .select(COLUMNS)
+    .eq("status", "pending")
+    .gt("advance_amount", 0)
+    .in("payment_status", ["advance_due", "slip_uploaded"])
+    .order("created_at", { ascending: true })
+    .limit(300)
+    .returns<OrderRow[]>();
+  if (error) fail(error);
+  const orders = data.map(toOrder);
+  if (orders.length === 0) return [];
+
+  const { data: slips, error: slipError } = await supabaseAdmin
+    .from("payment_slips")
+    .select("order_id, reviewed_at")
+    .in(
+      "order_id",
+      orders.map((order) => order.id),
+    )
+    .not("reviewed_at", "is", null)
+    .returns<{ order_id: string; reviewed_at: string }[]>();
+  if (slipError) fail(slipError);
+
+  const latest = new Map<string, string>();
+  for (const slip of slips) {
+    const seen = latest.get(slip.order_id);
+    if (!seen || Date.parse(slip.reviewed_at) > Date.parse(seen)) latest.set(slip.order_id, slip.reviewed_at);
+  }
+  return orders.map((order) => ({ order, lastReviewedAt: latest.get(order.id) ?? null }));
+}
+
+/** Cancels every stale advance order (what the schedule runs). Returns how many. */
+export async function cancelStaleOrders(): Promise<number> {
+  const { data, error } = await supabaseAdmin.rpc("cancel_stale_advance_orders");
+  if (error) fail(error);
+  return typeof data === "number" ? data : 0;
+}
+
+/** The customer no longer owes an advance on this order; they pay the whole total on delivery. */
+export async function waiveAdvance(orderId: string): Promise<"ok" | "not_found" | "bad_state"> {
+  const { error } = await supabaseAdmin.rpc("waive_advance", { p_order_id: orderId });
+  if (!error) return "ok";
+  if (error.message.includes("order_not_found")) return "not_found";
+  if (error.message.includes("bad_state")) return "bad_state";
+  fail(error);
 }
