@@ -11,7 +11,8 @@ import {
 
 export type AppUser = {
   id: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   name: string | null;
   image: string | null;
   passwordHash: string | null;
@@ -22,7 +23,8 @@ export type AppUser = {
 
 type UserRow = {
   id: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   name: string | null;
   image: string | null;
   password_hash: string | null;
@@ -31,7 +33,7 @@ type UserRow = {
   created_at: string;
 };
 
-const COLUMNS = "id, email, name, image, password_hash, google_id, role, created_at";
+const COLUMNS = "id, email, phone, name, image, password_hash, google_id, role, created_at";
 const BCRYPT_COST = 12;
 // Postgres unique_violation: another row already has this email.
 const UNIQUE_VIOLATION = "23505";
@@ -40,6 +42,7 @@ function toAppUser(row: UserRow): AppUser {
   return {
     id: row.id,
     email: row.email,
+    phone: row.phone,
     name: row.name,
     image: row.image,
     passwordHash: row.password_hash,
@@ -58,7 +61,7 @@ export function toExistingAccount(user: AppUser | null): ExistingAccount {
   return user ? { googleId: user.googleId, hasPassword: user.passwordHash !== null } : null;
 }
 
-async function findOne(column: "id" | "email" | "google_id", value: string) {
+async function findOne(column: "id" | "email" | "google_id" | "phone", value: string) {
   const { data, error } = await supabaseAdmin
     .from("users")
     .select(COLUMNS)
@@ -70,6 +73,10 @@ async function findOne(column: "id" | "email" | "google_id", value: string) {
 
 export function findUserByEmail(email: string): Promise<AppUser | null> {
   return findOne("email", normalizeEmail(email));
+}
+
+export function findUserByPhone(phone: string): Promise<AppUser | null> {
+  return findOne("phone", phone);
 }
 
 export function findUserById(id: string): Promise<AppUser | null> {
@@ -114,6 +121,21 @@ export async function createGoogleUser(input: {
     })
     .select(COLUMNS)
     .single<UserRow>();
+  if (error) fail(error);
+  return toAppUser(data);
+}
+
+/** Creates a phone-only account; on a race with another sign-in, returns the existing row. */
+export async function createPhoneUser(phone: string): Promise<AppUser> {
+  const { data, error } = await supabaseAdmin
+    .from("users")
+    .insert({ phone })
+    .select(COLUMNS)
+    .single<UserRow>();
+  if (error?.code === UNIQUE_VIOLATION) {
+    const existing = await findUserByPhone(phone);
+    if (existing) return existing;
+  }
   if (error) fail(error);
   return toAppUser(data);
 }

@@ -36,7 +36,7 @@ export default async function AdminCustomersPage() {
             <li key={customer.id} className="flex flex-wrap items-center gap-4 py-4">
               <div className="min-w-56 flex-1">
                 <p className="text-sm">{customer.name ?? <span className="text-muted">(no name)</span>}</p>
-                <p className="font-mono text-xs text-muted">{customer.email}</p>
+                <p className="font-mono text-xs text-muted">{customer.email ?? customer.phone}</p>
               </div>
               <span className="font-mono text-xs text-muted">
                 {customer.orderCount} {customer.orderCount === 1 ? "order" : "orders"}

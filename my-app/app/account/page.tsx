@@ -35,11 +35,13 @@ export default async function AccountPage() {
   });
 
   const details: { key: string; label: React.ReactNode; value: React.ReactNode }[] = [
-    { key: "email", label: <L si="ඊමේල්" en="Email" />, value: user.email },
+    user.email
+      ? { key: "email", label: <L si="ඊමේල්" en="Email" />, value: user.email }
+      : { key: "phone", label: <L si="දුරකථන අංකය" en="Phone" />, value: user.phone },
     {
       key: "method",
       label: <L si="ඇතුළු වන ක්‍රමය" en="Sign-in method" />,
-      value: user.googleId ? "Google" : <L si="මුරපදය" en="Password" />,
+      value: user.googleId ? "Google" : user.passwordHash ? <L si="මුරපදය" en="Password" /> : <L si="SMS කේතය" en="SMS code" />,
     },
     {
       key: "role",
@@ -54,7 +56,7 @@ export default async function AccountPage() {
       <p className="eyebrow text-muted">
         <L si="ඔබේ ගිණුම" en="Your account" />
       </p>
-      <h1 className="display mt-2 text-5xl">{user.name ?? user.email}</h1>
+      <h1 className="display mt-2 text-5xl">{user.name ?? user.email ?? user.phone}</h1>
       {trusted && (
         <p className="mt-3 font-mono text-xs uppercase tracking-[0.14em] text-blaze">
           ✓ <L si="තහවුරු කළ පාරිභෝගික" en="Verified customer" />

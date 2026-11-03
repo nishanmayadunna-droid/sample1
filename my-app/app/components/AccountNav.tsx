@@ -30,7 +30,7 @@ export default function AccountNav() {
         </Link>
       )}
       <Link href="/account" className={`${linkClass} max-w-32 truncate`}>
-        {session.user.name ?? session.user.email}
+        {session.user.name ?? session.user.email ?? <L si="ගිණුම" en="Account" />}
       </Link>
     </>
   );
