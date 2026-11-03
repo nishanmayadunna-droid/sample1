@@ -2,7 +2,7 @@
 // validation and slip file paths. No I/O, so they are shared by the Server
 // Actions, the admin form and the unit tests. All money is in cents.
 import { parsePriceToCents } from "./product-form";
-import type { PaymentStatus } from "./orders";
+import type { OrderStatus, PaymentStatus } from "./orders";
 
 export type AdvanceMode = "off" | "fixed" | "percent";
 
@@ -40,6 +40,8 @@ export function advanceRequired(trusted: boolean, s: AdvanceSettings): boolean {
   return !trusted && s.mode !== "off";
 }
 
+export const MAX_EXPIRY_HOURS = 720;
+
 const MODES: AdvanceMode[] = ["off", "fixed", "percent"];
 // Newline and tab are fine in the note; other control characters are not.
 const CONTROL_CHARS = /[\u0000-\u0008\u000B-\u001F\u007F]/;
@@ -56,12 +58,18 @@ function money(raw: string | undefined, allowZero: boolean): number | null {
   return parsePriceToCents(value);
 }
 
+/** The settings the admin form saves: the advance, the bank details and when an unpaid advance order expires. */
+export type AdvanceForm = AdvanceSettings & BankDetails & {
+  /** Hours after which an order whose advance hasn't arrived is cancelled; 0 = never. */
+  expiryHours: number;
+};
+
 export function parseAdvanceSettings(
   fields: Record<string, string | undefined>,
 ):
-  | { ok: true; value: AdvanceSettings & BankDetails }
-  | { ok: false; errors: Partial<Record<keyof (AdvanceSettings & BankDetails), string>> } {
-  const errors: Partial<Record<keyof (AdvanceSettings & BankDetails), string>> = {};
+  | { ok: true; value: AdvanceForm }
+  | { ok: false; errors: Partial<Record<keyof AdvanceForm, string>> } {
+  const errors: Partial<Record<keyof AdvanceForm, string>> = {};
 
   const mode = MODES.find((m) => m === fields.mode);
   if (!mode) errors.mode = "Pick a mode.";
@@ -77,6 +85,12 @@ export function parseAdvanceSettings(
   const rawPercent = (fields.percent ?? "").trim();
   const percent = /^\d{1,3}$/.test(rawPercent) ? Number(rawPercent) : NaN;
   if (!(percent >= 1 && percent <= 100)) errors.percent = "Enter a whole number from 1 to 100.";
+
+  const rawExpiry = (fields.expiryHours ?? "").trim();
+  const expiryHours = /^\d{1,3}$/.test(rawExpiry) ? Number(rawExpiry) : Number.NaN;
+  if (!(expiryHours >= 0 && expiryHours <= MAX_EXPIRY_HOURS)) {
+    errors.expiryHours = "Enter a whole number of hours from 0 to 720 (0 = never cancel).";
+  }
 
   const bankName = text(fields.bankName, 120);
   if (bankName === null) errors.bankName = "Up to 120 characters.";
@@ -103,6 +117,7 @@ export function parseAdvanceSettings(
       accountNumber: accountNumber!,
       branch: branch!,
       note: note!,
+      expiryHours,
     },
   };
 }
@@ -142,4 +157,42 @@ const PAYMENT_LABELS: Record<PaymentStatus, { si: string; en: string }> = {
 
 export function paymentStatusLabel(status: PaymentStatus): { si: string; en: string } {
   return PAYMENT_LABELS[status];
+}
+
+const HOUR_MS = 3600_000;
+
+const toTime = (value: string | Date): number => (value instanceof Date ? value.getTime() : Date.parse(value));
+
+/**
+ * When an unpaid advance order expires: the later of the order time and the last
+ * slip review (a rejection restarts the clock) plus `hours`. Null when expiry is
+ * off (hours <= 0) or a date is invalid.
+ */
+export function advanceDeadline(
+  createdAt: string | Date,
+  lastReviewedAt: string | Date | null,
+  hours: number,
+): Date | null {
+  if (!(hours > 0)) return null;
+  const created = toTime(createdAt);
+  const reviewed = lastReviewedAt === null ? Number.NEGATIVE_INFINITY : toTime(lastReviewedAt);
+  if (Number.isNaN(created) || Number.isNaN(reviewed)) return null;
+  return new Date(Math.max(created, reviewed) + hours * HOUR_MS);
+}
+
+/**
+ * True for a pending order still waiting for its advance, with no slip under
+ * review, whose deadline has passed. Mirrors public.cancel_stale_advance_orders.
+ */
+export function isAdvanceStale(
+  order: { status: OrderStatus; paymentStatus: PaymentStatus; advanceAmount: number; createdAt: string | Date },
+  lastReviewedAt: string | Date | null,
+  hours: number,
+  now: Date,
+): boolean {
+  if (order.status !== "pending" || order.paymentStatus !== "advance_due" || order.advanceAmount <= 0) {
+    return false;
+  }
+  const deadline = advanceDeadline(order.createdAt, lastReviewedAt, hours);
+  return deadline !== null && deadline.getTime() < now.getTime();
 }

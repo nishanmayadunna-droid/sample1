@@ -4,6 +4,9 @@
 export const ORDER_STATUSES = ["pending", "confirmed", "shipped", "delivered", "cancelled"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
+/** Why an order was cancelled by the system rather than by a person. */
+export type CancelReason = "advance_expired";
+
 export type PaymentMethod = "cod" | "cod_advance";
 export type PaymentStatus = "unpaid" | "advance_due" | "slip_uploaded" | "advance_paid";
 
@@ -125,4 +128,15 @@ export function orderTotals(summary: {
     shipping: summary.shipping,
     total: summary.total - pointsDiscount,
   };
+}
+
+const CANCEL_REASONS: Record<CancelReason, { si: string; en: string }> = {
+  advance_expired: {
+    si: "advance එක නියමිත වෙලාවට ලැබුණේ නැති නිසා අවලංගු කළා",
+    en: "Cancelled because the advance didn't arrive in time",
+  },
+};
+
+export function cancelReasonLabel(reason: CancelReason): { si: string; en: string } {
+  return CANCEL_REASONS[reason];
 }

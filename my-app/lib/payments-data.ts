@@ -4,9 +4,9 @@
 // handed out as short-lived signed URLs from private buckets.
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import type { AdvanceMode, AdvanceSettings, BankDetails } from "@/lib/advance";
+import type { AdvanceForm, AdvanceMode, BankDetails } from "@/lib/advance";
 
-export type PaymentSettings = AdvanceSettings & BankDetails;
+export type PaymentSettings = AdvanceForm;
 
 type SettingsRow = {
   advance_mode: AdvanceMode;
@@ -14,6 +14,7 @@ type SettingsRow = {
   advance_percent: number;
   advance_min: number;
   advance_max: number;
+  advance_expiry_hours: number;
   bank_name: string;
   bank_account_name: string;
   bank_account_number: string;
@@ -22,7 +23,7 @@ type SettingsRow = {
 };
 
 const SETTINGS_COLUMNS =
-  "advance_mode, advance_fixed, advance_percent, advance_min, advance_max, bank_name, bank_account_name, bank_account_number, bank_branch, bank_note";
+  "advance_mode, advance_fixed, advance_percent, advance_min, advance_max, advance_expiry_hours, bank_name, bank_account_name, bank_account_number, bank_branch, bank_note";
 
 const QR_BUCKET = "payment-qr";
 const SLIP_BUCKET = "payment-slips";
@@ -51,6 +52,7 @@ export async function getPaymentSettings(): Promise<PaymentSettings> {
     percent: data?.advance_percent ?? 10,
     min: data?.advance_min ?? 50000,
     max: data?.advance_max ?? 500000,
+    expiryHours: data?.advance_expiry_hours ?? 48,
     bankName: data?.bank_name ?? "",
     accountName: data?.bank_account_name ?? "",
     accountNumber: data?.bank_account_number ?? "",
@@ -68,6 +70,7 @@ export async function savePaymentSettings(value: PaymentSettings): Promise<void>
       advance_percent: value.percent,
       advance_min: value.min,
       advance_max: value.max,
+      advance_expiry_hours: value.expiryHours,
       bank_name: value.bankName,
       bank_account_name: value.accountName,
       bank_account_number: value.accountNumber,
@@ -173,12 +176,14 @@ export type Slip = {
   status: "pending" | "approved" | "rejected";
   rejectReason: string | null;
   createdAt: string;
+  /** When an admin last reviewed it (approved, rejected or waived); null while pending. */
+  reviewedAt: string | null;
 };
 
 export async function listSlipsForOrder(orderId: string): Promise<Slip[]> {
   const { data, error } = await supabaseAdmin
     .from("payment_slips")
-    .select("id, order_id, path, status, reject_reason, created_at")
+    .select("id, order_id, path, status, reject_reason, created_at, reviewed_at")
     .eq("order_id", orderId)
     .order("created_at")
     .returns<
@@ -189,6 +194,7 @@ export async function listSlipsForOrder(orderId: string): Promise<Slip[]> {
         status: Slip["status"];
         reject_reason: string | null;
         created_at: string;
+        reviewed_at: string | null;
       }[]
     >();
   if (error) fail(error);
@@ -199,6 +205,7 @@ export async function listSlipsForOrder(orderId: string): Promise<Slip[]> {
     status: row.status,
     rejectReason: row.reject_reason,
     createdAt: row.created_at,
+    reviewedAt: row.reviewed_at,
   }));
 }
 

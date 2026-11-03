@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth-guards";
-import { MAX_SLIPS, paymentStatusLabel } from "@/lib/advance";
-import { canCustomerCancel } from "@/lib/orders";
+import { advanceDeadline, MAX_SLIPS, paymentStatusLabel } from "@/lib/advance";
+import { cancelReasonLabel, canCustomerCancel } from "@/lib/orders";
 import { getOrderForUser } from "@/lib/orders-data";
 import { getPaymentSettings, listQrCodes, listSlipsForOrder, qrSignedUrls } from "@/lib/payments-data";
 import { formatPrice } from "@/lib/products";
@@ -37,6 +37,19 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
       })
     : null;
   const remaining = Math.max(order.total - order.advanceAmount, 0);
+  // The deadline only applies while no slip is waiting for review; a rejection restarts the clock.
+  const deadline =
+    payment && order.paymentStatus === "advance_due"
+      ? advanceDeadline(
+          order.createdAt,
+          payment[2].reduce<string | null>(
+            (latest, slip) =>
+              slip.reviewedAt && (!latest || Date.parse(slip.reviewedAt) > Date.parse(latest)) ? slip.reviewedAt : latest,
+            null,
+          ),
+          payment[0].expiryHours,
+        )
+      : null;
 
   const rows: { key: string; label: React.ReactNode; value: React.ReactNode }[] = [
     { key: "subtotal", label: <L si="උප එකතුව" en="Subtotal" />, value: formatPrice(order.subtotal) },
@@ -124,6 +137,19 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
           )}
         </p>
       )}
+      {order.cancelReason && (
+        <p className="mt-4 text-sm text-blaze">
+          <L si={cancelReasonLabel(order.cancelReason).si} en={cancelReasonLabel(order.cancelReason).en} />
+        </p>
+      )}
+      {order.advanceWaivedAt && order.status !== "cancelled" && (
+        <p className="mt-4 text-sm text-muted">
+          <L
+            si="advance එක අවශ්‍ය නැත. මුළු මුදල බඩු ලැබෙන විට ගෙවන්න."
+            en="The advance was waived: pay the whole amount on delivery."
+          />
+        </p>
+      )}
       {order.status === "cancelled" && order.pointsUsed > 0 && (
         <p className="mt-4 text-sm text-muted">
           <L si={`භාවිතා කළ points ${order.pointsUsed}ක් ආපහු ලැබුණා.`} en={`${order.pointsUsed} points returned.`} />
@@ -179,6 +205,7 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
             createdAt: slip.createdAt,
           }))}
           canUpload={payment[2].length < MAX_SLIPS}
+          deadline={deadline ? deadline.toISOString() : null}
         />
       )}
 

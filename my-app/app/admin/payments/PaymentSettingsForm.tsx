@@ -34,6 +34,7 @@ export default function PaymentSettingsForm({ settings }: { settings: PaymentSet
   const [percent, setPercent] = useState(String(settings.percent));
   const [min, setMin] = useState(rupees(settings.min));
   const [max, setMax] = useState(rupees(settings.max));
+  const [expiryHours, setExpiryHours] = useState(String(settings.expiryHours));
   const [sample, setSample] = useState("10000");
   const errors = state.errors;
 
@@ -95,6 +96,21 @@ export default function PaymentSettingsForm({ settings }: { settings: PaymentSet
           <input name="max" inputMode="decimal" value={max} onChange={(e) => setMax(e.target.value)} className={inputClass} />
         </Field>
       </div>
+
+      <Field label="Cancel orders whose advance hasn't arrived after (hours, 0 = never)" error={errors.expiryHours}>
+        <input
+          name="expiryHours"
+          inputMode="numeric"
+          value={expiryHours}
+          onChange={(e) => setExpiryHours(e.target.value)}
+          className={`${inputClass} sm:w-48`}
+        />
+      </Field>
+      <p className="mt-2 max-w-prose text-sm text-muted">
+        Only a pending order with no slip waiting for review is cancelled (its stock and any points used come back). A
+        rejected slip gives the customer a fresh window. The cancelling runs on a schedule if you turned it on, or when
+        you press &quot;Cancel stale now&quot; on the Orders page.
+      </p>
 
       <div className="mt-5 rounded-md border border-line px-4 py-3 text-sm">
         <label>
