@@ -5,7 +5,15 @@ export const ORDER_STATUSES = ["pending", "confirmed", "shipped", "delivered", "
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 /** Codes the checkout Server Action returns; the UI turns them into text. */
-export type OrderMessage = "placed" | "details" | "empty" | "out_of_stock" | "price_changed" | "error";
+export type OrderMessage =
+  | "placed"
+  | "details"
+  | "empty"
+  | "out_of_stock"
+  | "price_changed"
+  | "unknown_product"
+  | "too_many_pending"
+  | "error";
 
 // Keep in step with public.set_order_status in the orders migration.
 const NEXT: Record<OrderStatus, OrderStatus[]> = {

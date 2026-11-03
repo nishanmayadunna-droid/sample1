@@ -105,6 +105,7 @@ export type CreateOrderResult =
   | { ok: true; orderNumber: string }
   | { ok: false; error: "out_of_stock"; productId: string; size: string; left: number }
   | { ok: false; error: "unknown_product"; productId: string }
+  | { ok: false; error: "too_many_pending" }
   | { ok: false; error: "error" };
 
 /** Places the order and takes the stock in one database transaction. */
@@ -140,6 +141,7 @@ export async function createOrder(
     if (stock) {
       return { ok: false, error: "out_of_stock", productId: stock[1], size: stock[2], left: Number(stock[3]) };
     }
+    if (error.message.includes("too_many_pending")) return { ok: false, error: "too_many_pending" };
     const unknown = /unknown_product:(.+)$/.exec(error.message);
     if (unknown) return { ok: false, error: "unknown_product", productId: unknown[1] };
     console.error("place_order failed", error);

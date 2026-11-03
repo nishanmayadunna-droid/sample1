@@ -46,6 +46,15 @@ export default function CheckoutForm({
 
   const summary = summarizeCart(lines, products, promotions, shippingFee, categories);
 
+  // Between clearing the cart and arriving at the order page.
+  if (result?.message === "placed") {
+    return (
+      <p className="py-16 font-mono text-sm text-muted">
+        <L si="ඔබේ ඇණවුම ලැබුණා…" en="Order placed…" />
+      </p>
+    );
+  }
+
   if (!hydrated) {
     return (
       <p className="py-16 font-mono text-sm text-muted">
@@ -54,7 +63,7 @@ export default function CheckoutForm({
     );
   }
 
-  if (summary.items.length === 0 && result?.message !== "placed") {
+  if (summary.items.length === 0) {
     return (
       <div className="flex flex-col items-start gap-5 py-16">
         <p className="display text-3xl">
@@ -78,12 +87,24 @@ export default function CheckoutForm({
     keyRef.current ??= crypto.randomUUID();
     const key = keyRef.current;
     startTransition(async () => {
-      const outcome = await placeOrder(lines, fields, summary.total, key);
+      // A lost response must not look like a failure to place: keep the key, so
+      // pressing the button again returns the same order if it was created.
+      let outcome: PlaceOrderResult;
+      try {
+        outcome = await placeOrder(lines, fields, summary.total, key);
+      } catch {
+        setResult({ message: "error" });
+        return;
+      }
       setResult(outcome);
       if (outcome.message === "placed" && outcome.orderNumber) {
         clear();
         router.push(`/orders/${outcome.orderNumber}`);
-      } else if (outcome.message === "price_changed" || outcome.message === "out_of_stock") {
+      } else if (
+        outcome.message === "price_changed" ||
+        outcome.message === "out_of_stock" ||
+        outcome.message === "unknown_product"
+      ) {
         // Pull the shop's current prices and stock into this page.
         router.refresh();
       }
@@ -172,6 +193,28 @@ export default function CheckoutForm({
             />{" "}
             <Link href="/cart" className="underline">
               <L si="කරත්තය වෙනස් කරන්න" en="Change your cart" />
+            </Link>
+          </p>
+        )}
+        {result?.message === "unknown_product" && (
+          <p role="alert" className="text-sm text-blaze">
+            <L
+              si="ඔබේ කරත්තයේ ඇති භාණ්ඩයක් තවදුරටත් නොමැත. කරත්තය පරීක්ෂා කරන්න."
+              en="An item in your cart is no longer available. Please check your cart."
+            />{" "}
+            <Link href="/cart" className="underline">
+              <L si="කරත්තය" en="Cart" />
+            </Link>
+          </p>
+        )}
+        {result?.message === "too_many_pending" && (
+          <p role="alert" className="text-sm text-blaze">
+            <L
+              si="ඔබට දැනටමත් තහවුරු කර නැති ඇණවුම් 3ක් ඇත. ඒවා තහවුරු වන තුරු හෝ අවලංගු කරන තුරු රැඳී සිටින්න."
+              en="You already have 3 orders waiting for confirmation. Please wait until they are confirmed, or cancel one."
+            />{" "}
+            <Link href="/account" className="underline">
+              <L si="මගේ ඇණවුම්" en="My orders" />
             </Link>
           </p>
         )}

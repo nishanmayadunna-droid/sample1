@@ -59,3 +59,25 @@ export function parseStockField(
   }
   return { ok: true, value: Object.keys(value).length === 0 ? null : value };
 }
+
+function sameStock(a: StockMap, b: StockMap): boolean {
+  const left = a ?? {};
+  const right = b ?? {};
+  const keys = Object.keys(left);
+  return keys.length === Object.keys(right).length && keys.every((key) => left[key] === right[key]);
+}
+
+/**
+ * What an admin product save should do with stock. Orders change stock behind
+ * the admin's back, so the form sends the stock it was opened with (`original`):
+ * untouched stock is not written at all ("keep"), an edit is written only when
+ * the stored stock still equals what the admin saw ("write"), else "conflict".
+ */
+export function planStockSave(
+  original: StockMap,
+  submitted: StockMap,
+  current: StockMap,
+): "keep" | "write" | "conflict" {
+  if (sameStock(original, submitted)) return "keep";
+  return sameStock(original, current) ? "write" : "conflict";
+}

@@ -20,7 +20,13 @@ export default function StatusButtons({ orderId, status }: { orderId: string; st
   }
 
   function change(to: OrderStatus) {
-    if (to === "cancelled" && !window.confirm("Cancel this order? Its stock goes back on the shelf.")) return;
+    if (to === "cancelled") {
+      const text =
+        status === "shipped"
+          ? "Cancel this shipped order? Its stock is NOT put back automatically: adjust it in the product once the parcel is really back."
+          : "Cancel this order? Its stock goes back on the shelf.";
+      if (!window.confirm(text)) return;
+    }
     startTransition(async () => {
       const result = await setOrderStatusAction(orderId, to);
       setError(result.error);

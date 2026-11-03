@@ -188,6 +188,9 @@ export default function ProductForm({
         />
       </Field>
 
+      {/* The stock this form was opened with: orders change stock meanwhile. */}
+      <input type="hidden" name="stockOriginal" value={JSON.stringify(product?.stock ?? {})} />
+
       <Field label="Sizes (comma-separated)" error={errors.sizes}>
         <input
           name="sizes"

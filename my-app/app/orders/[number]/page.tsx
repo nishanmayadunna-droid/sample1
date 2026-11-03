@@ -18,7 +18,7 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
   const order = await getOrderForUser(number, user.id);
   if (!order) notFound();
 
-  const rows: { key: string; label: React.ReactNode; value: string }[] = [
+  const rows: { key: string; label: React.ReactNode; value: React.ReactNode }[] = [
     { key: "subtotal", label: <L si="උප එකතුව" en="Subtotal" />, value: formatPrice(order.subtotal) },
     ...(order.discount > 0
       ? [{ key: "discount", label: <L si="වට්ටම" en="Discount" />, value: `− ${formatPrice(order.discount)}` }]
@@ -26,7 +26,7 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
     {
       key: "shipping",
       label: <L si="බෙදාහැරීම" en="Shipping" />,
-      value: order.shipping === 0 ? "—" : formatPrice(order.shipping),
+      value: order.shipping === 0 ? <L si="නොමිලේ" en="Free" /> : formatPrice(order.shipping),
     },
     { key: "total", label: <L si="මුළු මුදල" en="Total" />, value: formatPrice(order.total) },
   ];

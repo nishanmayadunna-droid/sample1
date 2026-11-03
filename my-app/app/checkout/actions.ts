@@ -36,7 +36,13 @@ export async function placeOrder(
   key: string,
 ): Promise<PlaceOrderResult> {
   const user = await requireUser("/checkout");
-  if (typeof key !== "string" || !UUID.test(key) || !Number.isInteger(expectedTotal)) {
+  if (
+    typeof key !== "string" ||
+    !UUID.test(key) ||
+    !Number.isInteger(expectedTotal) ||
+    typeof fields !== "object" ||
+    fields === null
+  ) {
     return { message: "error" };
   }
 
@@ -66,8 +72,8 @@ export async function placeOrder(
       if (plan.error === "out_of_stock") {
         return { message: "out_of_stock", productId: plan.productId, size: plan.size, left: plan.left };
       }
-      // A product that is hidden or gone: the cart page drops it, so send them there.
-      return { message: "error", productId: plan.productId };
+      // A product that is hidden, gone, or no longer offered in that size.
+      return { message: "unknown_product", productId: plan.productId };
     }
 
     const result = await createOrder(user.id, key, details.value, plan.totals, plan.items);
@@ -75,6 +81,7 @@ export async function placeOrder(
       if (result.error === "out_of_stock") {
         return { message: "out_of_stock", productId: result.productId, size: result.size, left: result.left };
       }
+      if (result.error === "too_many_pending") return { message: "too_many_pending" };
       return { message: "error" };
     }
 
