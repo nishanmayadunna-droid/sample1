@@ -98,7 +98,11 @@ export async function placeOrder(
     // The shopper must not agree to cash on delivery and end up owing a bank transfer.
     if (advance !== expectedAdvance) return { message: "advance_changed", advance };
 
-    const result = await createOrder(user.id, key, details.value, plan.totals, plan.items, advance);
+    const result = await createOrder(user.id, key, details.value, plan.totals, plan.items, advance, {
+      used: plan.points.used,
+      discount: plan.totals.pointsDiscount,
+      toEarn: plan.points.toEarn,
+    });
     if (!result.ok) {
       if (result.error === "out_of_stock") {
         return { message: "out_of_stock", productId: result.productId, size: result.size, left: result.left };

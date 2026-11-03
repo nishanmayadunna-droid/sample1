@@ -24,6 +24,10 @@ export type Order = {
   paymentStatus: PaymentStatus;
   /** What the customer pays up front by bank transfer, in cents (0 for plain COD). */
   advanceAmount: number;
+  /** Loyalty points spent on this order, the cents they took off, and the points it earns once delivered. */
+  pointsUsed: number;
+  pointsDiscount: number;
+  pointsToEarn: number;
   customerName: string;
   phone: string;
   address: string;
@@ -54,6 +58,9 @@ type OrderRow = {
   payment_method: PaymentMethod;
   payment_status: PaymentStatus;
   advance_amount: number;
+  points_used: number;
+  points_discount: number;
+  points_to_earn: number;
   customer_name: string;
   phone: string;
   address: string;
@@ -68,7 +75,7 @@ type OrderRow = {
 };
 
 const COLUMNS =
-  "id, order_number, user_id, status, payment_method, payment_status, advance_amount, customer_name, phone, address, city, note, subtotal, discount, shipping, total, created_at, order_items(product_id, product_name, size, quantity, unit_price, compare_at)";
+  "id, order_number, user_id, status, payment_method, payment_status, advance_amount, points_used, points_discount, points_to_earn, customer_name, phone, address, city, note, subtotal, discount, shipping, total, created_at, order_items(product_id, product_name, size, quantity, unit_price, compare_at)";
 
 function toOrder(row: OrderRow): Order {
   return {
@@ -79,6 +86,9 @@ function toOrder(row: OrderRow): Order {
     paymentMethod: row.payment_method,
     paymentStatus: row.payment_status,
     advanceAmount: row.advance_amount,
+    pointsUsed: row.points_used,
+    pointsDiscount: row.points_discount,
+    pointsToEarn: row.points_to_earn,
     customerName: row.customer_name,
     phone: row.phone,
     address: row.address,
@@ -110,6 +120,7 @@ export type CreateOrderResult =
   | { ok: false; error: "out_of_stock"; productId: string; size: string; left: number }
   | { ok: false; error: "unknown_product"; productId: string }
   | { ok: false; error: "too_many_pending" }
+  | { ok: false; error: "not_enough_points" }
   | { ok: false; error: "error" };
 
 /** Places the order and takes the stock in one database transaction. */
@@ -121,6 +132,8 @@ export async function createOrder(
   items: PlannedItem[],
   /** The advance to collect by bank transfer, in cents; 0 for plain COD. */
   advance: number,
+  /** Points spent, the cents they took off, and the points this order will earn on delivery. */
+  points: { used: number; discount: number; toEarn: number },
 ): Promise<CreateOrderResult> {
   const { data, error } = await supabaseAdmin.rpc("place_order", {
     p_user_id: userId,
@@ -134,6 +147,9 @@ export async function createOrder(
     },
     p_totals: totals,
     p_advance: advance,
+    p_points: points.used,
+    p_points_discount: points.discount,
+    p_points_to_earn: points.toEarn,
     p_items: items.map((item) => ({
       product_id: item.productId,
       product_name: item.productName,
@@ -149,6 +165,7 @@ export async function createOrder(
       return { ok: false, error: "out_of_stock", productId: stock[1], size: stock[2], left: Number(stock[3]) };
     }
     if (error.message.includes("too_many_pending")) return { ok: false, error: "too_many_pending" };
+    if (error.message.includes("not_enough_points")) return { ok: false, error: "not_enough_points" };
     const unknown = /unknown_product:(.+)$/.exec(error.message);
     if (unknown) return { ok: false, error: "unknown_product", productId: unknown[1] };
     console.error("place_order failed", error);
