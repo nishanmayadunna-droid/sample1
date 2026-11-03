@@ -4,7 +4,9 @@ import { formatPrice, formatPriceWhole, type PricedProduct } from "@/lib/product
 import type { ConditionalOffer } from "@/lib/promotions";
 import L from "./L";
 import ProductImage from "./ProductImage";
+import Stars from "./Stars";
 import QuickAdd from "./QuickAdd";
+import { allSoldOut } from "@/lib/stock";
 
 /** "Rs 10,000+ orders: 20% off" for a promotion rule with a minimum. */
 export function ConditionalOfferText({ offer }: { offer: ConditionalOffer }) {
@@ -59,7 +61,12 @@ export default function ProductCard({
             )}
           </span>
         )}
-        <QuickAdd productId={product.id} name={product.name} sizes={product.sizes} />
+        {allSoldOut(product) && (
+          <span className="pointer-events-none absolute bottom-2 left-2 rounded bg-panel px-1.5 py-0.5 font-mono text-[0.65rem] text-panelink">
+            <L si="අවසන්" en="Sold out" />
+          </span>
+        )}
+        <QuickAdd productId={product.id} name={product.name} sizes={product.sizes} stock={product.stock} />
       </div>
       <div className="flex flex-1 flex-col gap-0.5 pt-2">
         <Link
@@ -68,6 +75,14 @@ export default function ProductCard({
         >
           {product.name}
         </Link>
+        {product.rating && (
+          <p className="flex items-center gap-1.5 font-mono text-xs text-muted">
+            <Stars value={product.rating.average} className="text-xs" />
+            <span>
+              {product.rating.average.toFixed(1)} ({product.rating.count})
+            </span>
+          </p>
+        )}
         <p className="flex flex-wrap items-baseline gap-x-2">
           <span className={`font-mono text-base font-semibold ${saved ? "text-blaze" : ""}`}>
             {formatPrice(pricing.price)}

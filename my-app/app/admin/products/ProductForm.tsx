@@ -53,6 +53,19 @@ export default function ProductForm({
   const [state, submit, pending] = useActionState(action, initialState);
   const [, startTransition] = useTransition();
   const [id, setId] = useState(product?.id ?? "");
+  const [sizesText, setSizesText] = useState(product?.sizes.join(", ") ?? "");
+  // Typed stock per size; a size with no entry (or "") is not tracked.
+  const [stockText, setStockText] = useState<Record<string, string>>(() =>
+    Object.fromEntries(Object.entries(product?.stock ?? {}).map(([size, n]) => [size, String(n)])),
+  );
+  const sizeList = [...new Set(sizesText.split(",").map((s) => s.trim()).filter(Boolean))];
+  const stockJson = JSON.stringify(
+    Object.fromEntries(
+      sizeList
+        .filter((size) => (stockText[size] ?? "").trim() !== "")
+        .map((size) => [size, Number(stockText[size])]),
+    ),
+  );
   // Storage paths of the gallery photos, main photo first.
   const [photos, setPhotos] = useState<string[]>(product?.photoPaths ?? []);
   const [uploading, setUploading] = useState(false);
@@ -178,12 +191,40 @@ export default function ProductForm({
       <Field label="Sizes (comma-separated)" error={errors.sizes}>
         <input
           name="sizes"
-          defaultValue={product?.sizes.join(", ")}
+          value={sizesText}
+          onChange={(event) => setSizesText(event.target.value)}
           placeholder="XS, S, M, L, XL"
           className={inputClass}
           required
         />
       </Field>
+
+      {sizeList.length > 0 && (
+        <div className="mt-5">
+          <span className="eyebrow text-muted">Stock per size (blank = not tracked)</span>
+          <div className="mt-2 flex flex-wrap gap-3">
+            {sizeList.map((size) => (
+              <label key={size} className="block">
+                <span className="font-mono text-xs text-muted">{size}</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={9999}
+                  step={1}
+                  value={stockText[size] ?? ""}
+                  onChange={(event) =>
+                    setStockText((current) => ({ ...current, [size]: event.target.value }))
+                  }
+                  aria-label={`Stock for size ${size}`}
+                  className="mt-1 block w-24 rounded-md border border-line bg-bg px-3 py-2 outline-none focus:border-ink"
+                />
+              </label>
+            ))}
+          </div>
+          <input type="hidden" name="stock" value={stockJson} />
+          {errors.stock && <span className="mt-1 block text-sm text-blaze">{errors.stock}</span>}
+        </div>
+      )}
 
       <div className="grid gap-x-4 sm:grid-cols-3">
         <Field label="Material" error={errors.material}>

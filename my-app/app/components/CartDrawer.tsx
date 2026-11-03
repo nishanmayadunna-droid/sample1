@@ -9,6 +9,7 @@ import { useLang } from "@/app/context/LangContext";
 import { MAX_LINE_QUANTITY } from "@/lib/cart-rules";
 import { summarizeCart } from "@/lib/cart-summary";
 import { tr } from "@/lib/i18n";
+import { maxQuantity } from "@/lib/stock";
 import type { Promotion } from "@/lib/promotions";
 import { formatPrice, type Category, type ShellProduct } from "@/lib/products";
 import { CartProgress, CartTotals, LinePrice } from "./CartTotals";
@@ -163,7 +164,7 @@ export default function CartDrawer({
                         <button
                           type="button"
                           onClick={() => setQuantity(line.id, line.size, line.quantity + 1)}
-                          disabled={line.quantity >= MAX_LINE_QUANTITY}
+                          disabled={line.quantity >= Math.min(MAX_LINE_QUANTITY, maxQuantity(product, line.size))}
                           aria-label={tr(lang, "ප්‍රමාණය වැඩි කරන්න", "Increase quantity")}
                           className="px-2.5 py-0.5 text-muted hover:text-ink disabled:opacity-40"
                         >

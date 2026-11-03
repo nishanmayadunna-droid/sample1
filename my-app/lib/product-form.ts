@@ -1,5 +1,6 @@
 // Pure validation for the admin product form and photo paths. No I/O, so it is
 // shared by the Server Actions, the form and the unit tests.
+import { parseStockField } from "./stock";
 
 export type FieldName =
   | "id"
@@ -9,6 +10,7 @@ export type FieldName =
   | "category"
   | "description"
   | "sizes"
+  | "stock"
   | "material"
   | "construction"
   | "origin"
@@ -24,6 +26,8 @@ export type ProductInput = {
   category: string; // a category slug
   description: string;
   sizes: string[];
+  /** Units per size; null = not tracked. */
+  stock: Record<string, number> | null;
   material: string;
   construction: string;
   origin: string;
@@ -110,6 +114,13 @@ export function parseProductForm(
   const sizes = parseSizes(fields.sizes);
   if (sizes === null) errors.sizes = "Enter 1–12 sizes separated by commas.";
 
+  let stock: Record<string, number> | null = null;
+  if (sizes !== null) {
+    const parsedStock = parseStockField(fields.stock, sizes);
+    if (parsedStock.ok) stock = parsedStock.value;
+    else errors.stock = "Stock must be whole numbers from 0 to 9999.";
+  }
+
   const spec = {} as Record<"material" | "construction" | "origin", string>;
   for (const field of ["material", "construction", "origin"] as const) {
     const value = text(fields[field], 200);
@@ -141,6 +152,7 @@ export function parseProductForm(
       category: category!,
       description: description!,
       sizes: sizes!,
+      stock,
       material: spec.material,
       construction: spec.construction,
       origin: spec.origin,

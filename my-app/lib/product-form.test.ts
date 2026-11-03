@@ -61,10 +61,19 @@ describe("parseProductForm", () => {
         construction: "x",
         origin: "x",
         swatch: ["#aabbcc", "#112233"],
+        stock: null,
         featured: true,
         sort_order: 0,
       },
     }));
+
+  it("parses per-size stock", () => {
+    const result = parseProductForm({ ...valid, sizes: "M, L", stock: '{"M":4,"L":0}' }, "create", SLUGS);
+    expect(result.ok && result.value.stock).toEqual({ M: 4, L: 0 });
+  });
+
+  it.each(['{"M":-1}', '{"XL":2}', "nope"])("rejects stock %j", (stock) =>
+    expect(errorsFor({ sizes: "M, L", stock }).stock).toBe("Stock must be whole numbers from 0 to 9999."));
 
   it("ignores id in update mode", () => {
     const result = parseProductForm({ ...valid, id: "Bad ID" }, "update", SLUGS);

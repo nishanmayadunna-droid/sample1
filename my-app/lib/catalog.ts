@@ -3,6 +3,7 @@
 import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { categoryNameFor, productsInCategory } from "./category-form";
+import { summarizeRatings, type Review } from "./reviews";
 import { galleryUrls, sortedPhotoPaths } from "./product-photos";
 import type { Category, Product } from "./products";
 
@@ -32,10 +33,13 @@ export type ProductRow = {
   created_at: string;
   /** Embedded photo rows; null when the table is empty for this product. */
   product_images: { path: string; sort_order: number }[] | null;
+  stock: Record<string, number> | null;
+  /** Embedded approved reviews (RLS and the select filter hide the rest). */
+  reviews: { rating: number }[] | null;
 };
 
 export const COLUMNS =
-  "id, name, price, sale_price, category, description, sizes, material, construction, origin, swatch, image_url, featured, created_at, product_images(path, sort_order)";
+  "id, name, price, sale_price, category, description, sizes, material, construction, origin, swatch, image_url, featured, created_at, product_images(path, sort_order), stock, reviews(rating)";
 
 export function toProduct(row: ProductRow, categories: Category[]): Product {
   return {
@@ -59,6 +63,8 @@ export function toProduct(row: ProductRow, categories: Category[]): Product {
       sortedPhotoPaths(row.product_images),
       row.image_url,
     ),
+    stock: row.stock ?? null,
+    rating: summarizeRatings((row.reviews ?? []).map((r) => r.rating)),
     featured: row.featured,
     createdAt: row.created_at,
   };
@@ -84,7 +90,11 @@ export const getCategories = cache(async (): Promise<Category[]> => {
 
 // Unpublished products (hidden by an admin) never reach the shop.
 const selectProducts = () =>
-  supabase.from("products").select(COLUMNS).eq("published", true);
+  supabase
+    .from("products")
+    .select(COLUMNS)
+    .eq("published", true)
+    .eq("reviews.status", "approved");
 
 // cache() dedupes calls within one render (e.g. generateMetadata + page).
 export const getAllProducts = cache(async (): Promise<Product[]> => {
@@ -106,6 +116,28 @@ export const getProduct = cache(
     return data ? toProduct(data, await getCategories()) : undefined;
   },
 );
+
+type ReviewRow = { id: string; author_name: string; rating: number; body: string; created_at: string };
+
+/** Approved reviews for one product, newest first. */
+export const getProductReviews = cache(async (productId: string): Promise<Review[]> => {
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("id, author_name, rating, body, created_at")
+    .eq("product_id", productId)
+    .eq("status", "approved")
+    .order("created_at", { ascending: false })
+    .limit(50)
+    .overrideTypes<ReviewRow[], { merge: false }>();
+  if (error) throw new Error(`Failed to load reviews for ${productId}: ${error.message}`);
+  return data.map((row) => ({
+    id: row.id,
+    authorName: row.author_name,
+    rating: row.rating,
+    body: row.body,
+    createdAt: row.created_at,
+  }));
+});
 
 // Filters the full catalog with the same slug-or-legacy-name rule the rest of
 // the shop uses. A database filter can't: until the FK migration, a renamed

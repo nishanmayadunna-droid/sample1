@@ -10,6 +10,7 @@ import { cartBadgeCount } from "@/lib/cart-summary";
 import type { Category, ShellProduct } from "@/lib/products";
 import type { Promotion } from "@/lib/promotions";
 import AccountNav from "./AccountNav";
+import CartStockGuard from "./CartStockGuard";
 import CartSync from "./CartSync";
 import CategoryMenu from "./CategoryMenu";
 import L from "./L";
@@ -61,6 +62,7 @@ export default function Header({
             </span>
             <CartSync />
           </SessionProvider>
+          <CartStockGuard products={products} />
           <Link
             href="/account"
             aria-label={tr(lang, "මගේ ගිණුම", "My account")}

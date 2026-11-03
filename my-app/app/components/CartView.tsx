@@ -11,6 +11,7 @@ import ProductImage from "./ProductImage";
 import L from "./L";
 import { useLang } from "@/app/context/LangContext";
 import { tr } from "@/lib/i18n";
+import { maxQuantity } from "@/lib/stock";
 
 export default function CartView({
   products,
@@ -118,7 +119,7 @@ export default function CartView({
                       onClick={() =>
                         setQuantity(line.id, line.size, line.quantity + 1)
                       }
-                      disabled={line.quantity >= MAX_LINE_QUANTITY}
+                      disabled={line.quantity >= Math.min(MAX_LINE_QUANTITY, maxQuantity(product, line.size))}
                       className="px-3 py-1 text-lg leading-none text-muted hover:text-ink disabled:opacity-40"
                       aria-label={tr(lang, "ප්‍රමාණය වැඩි කරන්න", "Increase quantity")}
                     >
