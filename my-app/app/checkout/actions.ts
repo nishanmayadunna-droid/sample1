@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth-guards";
 import { getAllProducts, getCategories } from "@/lib/catalog";
 import { advanceFor, advanceRequired } from "@/lib/advance";
-import { createOrder } from "@/lib/orders-data";
+import { createOrder, findOrderNumberByKey } from "@/lib/orders-data";
 import type { PointsSettings } from "@/lib/points";
 import { getPointsBalance, getPointsSettings } from "@/lib/points-data";
 import { bankDetailsComplete, getPaymentSettings, isUserTrusted } from "@/lib/payments-data";
@@ -65,6 +65,11 @@ export async function placeOrder(
   }
 
   try {
+    // A retry after a lost response (same key) must get the order that was already
+    // placed. Planning again would see the spent points and call it a price change.
+    const placedAlready = await findOrderNumberByKey(user.id, key);
+    if (placedAlready) return { message: "placed", orderNumber: placedAlready };
+
     const [products, categories, promotions, settings] = await Promise.all([
       getAllProducts(),
       getCategories(),

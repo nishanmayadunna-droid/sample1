@@ -174,6 +174,18 @@ export async function createOrder(
   return { ok: true, orderNumber: data as string };
 }
 
+/** The number of the user's order placed with this checkout key, if any. */
+export async function findOrderNumberByKey(userId: string, key: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin
+    .from("orders")
+    .select("order_number")
+    .eq("user_id", userId)
+    .eq("idempotency_key", key)
+    .maybeSingle<{ order_number: string }>();
+  if (error) fail(error);
+  return data?.order_number ?? null;
+}
+
 /** The user's own order; null for a missing number or someone else's order. */
 export async function getOrderForUser(orderNumber: string, userId: string): Promise<Order | null> {
   const { data, error } = await supabaseAdmin

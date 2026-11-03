@@ -62,7 +62,7 @@ export default function PointsSettingsForm({ settings }: { settings: PointsSetti
         <span>
           Points are on
           <span className="block text-sm text-muted">
-            When off, customers earn nothing new and can&apos;t spend points; balances are kept.
+            When off, new orders earn nothing and customers can&apos;t spend points; balances are kept, and orders already placed still credit the points they were promised on delivery.
           </span>
         </span>
       </label>

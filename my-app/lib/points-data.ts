@@ -52,13 +52,20 @@ export async function getPointsBalance(userId: string): Promise<number> {
 export async function balancesForUsers(userIds: string[]): Promise<Map<string, number>> {
   const balances = new Map<string, number>();
   if (userIds.length === 0) return balances;
-  const { data, error } = await supabaseAdmin
-    .from("points_ledger")
-    .select("user_id, points")
-    .in("user_id", userIds)
-    .returns<{ user_id: string; points: number }[]>();
-  if (error) fail(error);
-  for (const row of data) balances.set(row.user_id, (balances.get(row.user_id) ?? 0) + row.points);
+  // PostgREST returns at most 1000 rows per request, so read the ledger in pages.
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabaseAdmin
+      .from("points_ledger")
+      .select("user_id, points")
+      .in("user_id", userIds)
+      .order("id")
+      .range(from, from + PAGE - 1)
+      .returns<{ user_id: string; points: number }[]>();
+    if (error) fail(error);
+    for (const row of data) balances.set(row.user_id, (balances.get(row.user_id) ?? 0) + row.points);
+    if (data.length < PAGE) break;
+  }
   return balances;
 }
 
