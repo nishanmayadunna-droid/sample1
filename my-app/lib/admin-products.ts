@@ -68,7 +68,11 @@ export async function insertProduct(
   return "ok";
 }
 
-export async function updateProduct(id: string, input: ProductInput): Promise<void> {
+/** `stock` is left out when the save must not touch it (see planStockSave). */
+export async function updateProduct(
+  id: string,
+  input: Omit<ProductInput, "stock"> & { stock?: ProductInput["stock"] },
+): Promise<void> {
   const { error } = await supabaseAdmin.from("products").update(input).eq("id", id);
   if (error) fail(error);
 }

@@ -117,13 +117,20 @@ export const getProduct = cache(
   },
 );
 
-type ReviewRow = { id: string; author_name: string; rating: number; body: string; created_at: string };
+type ReviewRow = {
+  id: string;
+  author_name: string;
+  rating: number;
+  body: string;
+  created_at: string;
+  verified: boolean;
+};
 
 /** Approved reviews for one product, newest first. */
 export const getProductReviews = cache(async (productId: string): Promise<Review[]> => {
   const { data, error } = await supabase
     .from("reviews")
-    .select("id, author_name, rating, body, created_at")
+    .select("id, author_name, rating, body, created_at, verified")
     .eq("product_id", productId)
     .eq("status", "approved")
     .order("created_at", { ascending: false })
@@ -136,6 +143,7 @@ export const getProductReviews = cache(async (productId: string): Promise<Review
     rating: row.rating,
     body: row.body,
     createdAt: row.created_at,
+    verified: row.verified,
   }));
 });
 

@@ -40,6 +40,11 @@ export default function ReviewSection({
               <p className="flex flex-wrap items-center gap-x-3 text-sm">
                 <Stars value={review.rating} />
                 <span className="font-medium">{review.authorName}</span>
+                {review.verified && (
+                  <span className="font-mono text-xs text-blaze">
+                    ✓ <L si="තහවුරු කළ ගැනුම්කරු" en="Verified buyer" />
+                  </span>
+                )}
                 <span className="font-mono text-xs text-muted">
                   {new Date(review.createdAt).toLocaleDateString("en-LK", {
                     timeZone: "Asia/Colombo",

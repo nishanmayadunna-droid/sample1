@@ -3,6 +3,7 @@
 import { requireUser } from "@/lib/auth-guards";
 import { getProduct } from "@/lib/catalog";
 import { firstName, validateReview, type ReviewMessage } from "@/lib/reviews";
+import { userHasDeliveredProduct } from "@/lib/orders-data";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 /**
@@ -24,6 +25,11 @@ export async function submitReview(
   try {
     // Hidden or unknown products can't be reviewed.
     if (!(await getProduct(productId))) return { message: "error" };
+    // "Verified buyer": they have received this product. A failed lookup just means not verified.
+    const verified = await userHasDeliveredProduct(user.id, productId).catch((error) => {
+      console.error("verified lookup failed", error);
+      return false;
+    });
     const { error } = await supabaseAdmin.from("reviews").upsert(
       {
         product_id: productId,
@@ -32,6 +38,7 @@ export async function submitReview(
         rating: checked.rating,
         body: checked.body,
         status: "pending",
+        verified,
         created_at: new Date().toISOString(),
       },
       { onConflict: "product_id,user_id" },

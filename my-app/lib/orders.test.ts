@@ -1,0 +1,92 @@
+import { describe, expect, it } from "vitest";
+import {
+  ORDER_STATUSES,
+  canCustomerCancel,
+  nextStatuses,
+  normalizePhone,
+  orderTotals,
+  parseCheckoutDetails,
+  statusLabel,
+} from "./orders";
+
+describe("nextStatuses", () => {
+  it("allows only the forward steps and cancel", () => {
+    expect(nextStatuses("pending")).toEqual(["confirmed", "cancelled"]);
+    expect(nextStatuses("confirmed")).toEqual(["shipped", "cancelled"]);
+    expect(nextStatuses("shipped")).toEqual(["delivered", "cancelled"]);
+    expect(nextStatuses("delivered")).toEqual([]);
+    expect(nextStatuses("cancelled")).toEqual([]);
+  });
+
+  it("has a label for every status", () => {
+    for (const status of ORDER_STATUSES) {
+      expect(statusLabel(status).en).not.toBe("");
+      expect(statusLabel(status).si).not.toBe("");
+    }
+  });
+});
+
+describe("canCustomerCancel", () => {
+  it("is true only while pending", () => {
+    expect(ORDER_STATUSES.filter(canCustomerCancel)).toEqual(["pending"]);
+  });
+});
+
+describe("normalizePhone", () => {
+  it.each(["0771234567", "+94771234567", "94771234567", "077 123 4567", "077-123-4567"])(
+    "accepts %j",
+    (raw) => expect(normalizePhone(raw)).toBe("0771234567"),
+  );
+
+  it.each(["0112345678", "12345", "", "07712345678", "abc"])("rejects %j", (raw) =>
+    expect(normalizePhone(raw)).toBeNull(),
+  );
+});
+
+describe("parseCheckoutDetails", () => {
+  const valid = {
+    name: "Nimal Perera",
+    phone: "077 123 4567",
+    address: "12 Temple Road",
+    city: "Colombo",
+    note: "",
+  };
+
+  it("parses valid details, normalising the phone and blank note", () => {
+    expect(parseCheckoutDetails(valid)).toEqual({
+      ok: true,
+      value: { name: "Nimal Perera", phone: "0771234567", address: "12 Temple Road", city: "Colombo", note: null },
+    });
+  });
+
+  it("keeps a note, trimmed", () => {
+    const result = parseCheckoutDetails({ ...valid, note: "  call first \n" });
+    expect(result.ok && result.value.note).toBe("call first");
+  });
+
+  it.each([
+    ["name", { name: "A" }],
+    ["phone", { phone: "12345" }],
+    ["address", { address: "abc" }],
+    ["city", { city: "" }],
+    ["note", { note: "x".repeat(501) }],
+    ["address", { address: "x\u0000y road" }],
+  ] as const)("flags only %s", (field, override) => {
+    const result = parseCheckoutDetails({ ...valid, ...override });
+    expect(result).toEqual({ ok: false, errors: { [field]: true } });
+  });
+});
+
+describe("orderTotals", () => {
+  it("maps a cart summary, with and without a discount", () => {
+    expect(
+      orderTotals({ subtotal: 10000, orderDiscount: { amount: 1000 }, shipping: 350, total: 9350 }),
+    ).toEqual({ subtotal: 10000, discount: 1000, shipping: 350, total: 9350 });
+    expect(orderTotals({ subtotal: 10000, orderDiscount: null, shipping: 0, total: 10000 })).toEqual({
+      subtotal: 10000,
+      discount: 0,
+      shipping: 0,
+      total: 10000,
+    });
+  });
+});

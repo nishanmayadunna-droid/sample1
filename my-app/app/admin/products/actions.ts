@@ -23,6 +23,7 @@ import {
   type FieldName,
 } from "@/lib/product-form";
 import { parsePhotosField, validatePhotoList } from "@/lib/product-photos";
+import { parseStockField, planStockSave } from "@/lib/stock";
 
 // Every action re-checks admin access first: Server Actions are endpoints of
 // their own and can be called without going through the /admin pages.
@@ -112,10 +113,27 @@ export async function updateProductAction(
   const parsed = parseProductForm(fields, "update", await categorySlugs());
   if (!parsed.ok) return { errors: parsed.errors };
 
+  // Orders change stock while the form is open, so only an actual stock edit is
+  // written, and only if the stored stock is still what the admin was looking at.
+  const openedWith = parseStockField(fields.stockOriginal, existing.sizes);
+  const stockPlan = planStockSave(
+    openedWith.ok && fields.stockOriginal !== undefined ? openedWith.value : existing.stock,
+    parsed.value.stock,
+    existing.stock,
+  );
+  if (stockPlan === "conflict") {
+    return {
+      errors: {
+        stock: "Stock changed while you were editing (an order may have come in). Reload this page and try again.",
+      },
+    };
+  }
+  const { stock, ...rest } = parsed.value;
+
   try {
     const photos = await usablePhotos(id, fields.photos, existing.photoPaths);
     if (!photos) return { errors: { form: UPLOAD_FAILED } };
-    await updateProduct(id, parsed.value);
+    await updateProduct(id, stockPlan === "write" ? { ...rest, stock } : rest);
     await setProductPhotos(id, photos);
   } catch {
     return { errors: { form: SOMETHING_WRONG } };

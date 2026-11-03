@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { requireUser } from "@/lib/auth-guards";
+import { statusLabel } from "@/lib/orders";
+import { listOrdersForUser } from "@/lib/orders-data";
+import { formatPrice } from "@/lib/products";
 import SignOutButton from "../components/SignOutButton";
 import L from "../components/L";
 
@@ -7,6 +11,11 @@ export const metadata: Metadata = { title: "Account" };
 
 export default async function AccountPage() {
   const user = await requireUser("/account");
+  // A failed read hides the list; it never breaks the account page.
+  const orders = await listOrdersForUser(user.id).catch((error) => {
+    console.error("orders list failed", error);
+    return [];
+  });
 
   const details: { key: string; label: React.ReactNode; value: React.ReactNode }[] = [
     { key: "email", label: <L si="ඊමේල්" en="Email" />, value: user.email },
@@ -38,6 +47,37 @@ export default async function AccountPage() {
           </div>
         ))}
       </dl>
+      <h2 className="eyebrow mt-10 text-muted">
+        <L si="මගේ ඇණවුම්" en="My orders" />
+      </h2>
+      {orders.length === 0 ? (
+        <p className="mt-3 text-sm text-muted">
+          <L si="තවම ඇණවුම් නැත." en="No orders yet." />
+        </p>
+      ) : (
+        <ul className="mt-3 divide-y divide-line border-y border-line">
+          {orders.map((order) => {
+            const label = statusLabel(order.status);
+            return (
+              <li key={order.id}>
+                <Link href={`/orders/${order.orderNumber}`} className="flex flex-wrap items-center justify-between gap-3 py-3 hover:bg-surface">
+                  <span>
+                    <span className="font-mono text-sm">{order.orderNumber}</span>
+                    <span className="block font-mono text-xs text-muted">
+                      {new Date(order.createdAt).toLocaleDateString("en-LK", { timeZone: "Asia/Colombo", day: "numeric", month: "short", year: "numeric" })}
+                    </span>
+                  </span>
+                  <span className="font-mono text-xs uppercase tracking-[0.14em] text-muted">
+                    <L si={label.si} en={label.en} />
+                  </span>
+                  <span className="font-mono text-sm">{formatPrice(order.total)}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
       <div className="mt-8">
         <SignOutButton />
       </div>

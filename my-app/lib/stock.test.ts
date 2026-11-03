@@ -5,6 +5,7 @@ import {
   lowStockLeft,
   maxQuantity,
   parseStockField,
+  planStockSave,
   sizeStock,
 } from "./stock";
 
@@ -59,5 +60,28 @@ describe("parseStockField", () => {
     for (const raw of ['{"M":-1}', '{"M":1.5}', '{"M":10000}', '{"XL":2}', "[1]", "not json", '{"M":"3"}']) {
       expect(parseStockField(raw, sizes)).toEqual({ ok: false });
     }
+  });
+});
+
+describe("planStockSave", () => {
+  it("keeps the stored stock when the admin did not touch it", () => {
+    // The form showed {M:5}; orders have since lowered it to {M:3}: don't overwrite.
+    expect(planStockSave({ M: 5 }, { M: 5 }, { M: 3 })).toBe("keep");
+    expect(planStockSave(null, null, { M: 3 })).toBe("keep");
+    expect(planStockSave(null, {}, null)).toBe("keep");
+  });
+
+  it("writes an edit when nothing else changed meanwhile", () => {
+    expect(planStockSave({ M: 5 }, { M: 9 }, { M: 5 })).toBe("write");
+    expect(planStockSave(null, { M: 4 }, null)).toBe("write");
+    expect(planStockSave({ M: 5 }, null, { M: 5 })).toBe("write");
+  });
+
+  it("reports a conflict when the stock moved under the admin's edit", () => {
+    expect(planStockSave({ M: 5 }, { M: 9 }, { M: 3 })).toBe("conflict");
+  });
+
+  it("ignores key order", () => {
+    expect(planStockSave({ M: 1, L: 2 }, { M: 1, L: 2 }, { L: 2, M: 1 })).toBe("keep");
   });
 });
