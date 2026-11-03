@@ -72,6 +72,10 @@ export async function placeOrder(
       shippingFee: settings.shippingFee,
       categories,
       expectedTotal,
+      // Wired to the real balance and settings in the checkout step of Part 7.
+      pointsRequested: 0,
+      pointsBalance: 0,
+      pointsSettings: { enabled: false, earnPer: 10000, pointValue: 100, maxPercent: 50 },
     });
     if (!plan.ok) {
       if (plan.error === "empty") return { message: "empty" };

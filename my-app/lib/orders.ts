@@ -17,6 +17,7 @@ export type OrderMessage =
   | "unknown_product"
   | "too_many_pending"
   | "advance_changed"
+  | "points_changed"
   | "advance_setup"
   | "error";
 
@@ -100,18 +101,28 @@ export function parseCheckoutDetails(
   return { ok: true, value: { name: name!, phone: phone!, address: address!, city: city!, note } };
 }
 
-export type OrderTotals = { subtotal: number; discount: number; shipping: number; total: number };
+export type OrderTotals = {
+  subtotal: number;
+  /** The promotions' order discount. */
+  discount: number;
+  /** What the customer's loyalty points took off the goods. */
+  pointsDiscount: number;
+  shipping: number;
+  /** subtotal - discount - pointsDiscount + shipping. */
+  total: number;
+};
 
 export function orderTotals(summary: {
   subtotal: number;
   orderDiscount: { amount: number } | null;
   shipping: number;
   total: number;
-}): OrderTotals {
+}, pointsDiscount = 0): OrderTotals {
   return {
     subtotal: summary.subtotal,
     discount: summary.orderDiscount?.amount ?? 0,
+    pointsDiscount,
     shipping: summary.shipping,
-    total: summary.total,
+    total: summary.total - pointsDiscount,
   };
 }

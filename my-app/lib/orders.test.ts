@@ -89,12 +89,23 @@ describe("orderTotals", () => {
   it("maps a cart summary, with and without a discount", () => {
     expect(
       orderTotals({ subtotal: 10000, orderDiscount: { amount: 1000 }, shipping: 350, total: 9350 }),
-    ).toEqual({ subtotal: 10000, discount: 1000, shipping: 350, total: 9350 });
+    ).toEqual({ subtotal: 10000, discount: 1000, pointsDiscount: 0, shipping: 350, total: 9350 });
     expect(orderTotals({ subtotal: 10000, orderDiscount: null, shipping: 0, total: 10000 })).toEqual({
       subtotal: 10000,
       discount: 0,
+      pointsDiscount: 0,
       shipping: 0,
       total: 10000,
+    });
+  });
+
+  it("takes the points discount off the total", () => {
+    expect(orderTotals({ subtotal: 10000, orderDiscount: null, shipping: 350, total: 10350 }, 2000)).toEqual({
+      subtotal: 10000,
+      discount: 0,
+      pointsDiscount: 2000,
+      shipping: 350,
+      total: 8350,
     });
   });
 });
