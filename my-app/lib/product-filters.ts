@@ -39,7 +39,10 @@ export function filterProducts<T extends PricedProduct>(
     : [...products];
   if (opts.q) result = result.filter((p) => matchesQuery(p, opts.q!));
   const promo = opts.promo;
-  if (promo) result = result.filter((p) => promo.rules.some((r) => ruleMatches(r, p, categories)));
+  // A banner-only promotion (no rules) links to the whole shop.
+  if (promo && promo.rules.length > 0) {
+    result = result.filter((p) => promo.rules.some((r) => ruleMatches(r, p, categories)));
+  }
 
   switch (opts.view) {
     case "deals":

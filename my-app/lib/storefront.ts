@@ -7,6 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 import { DEFAULT_LANG_SETTINGS, isLang, type LangSettings } from "./i18n";
 import {
   isRunning,
+  nextPromotionChange,
   PROMOTION_COLUMNS,
   toPromotion,
   type Promotion,
@@ -89,12 +90,8 @@ export const getVisiblePromises = cache(async (): Promise<StorePromise[]> => {
   return data.map(toStorePromise);
 });
 
-/**
- * Promotions running right now, with their rules, in display order; none when
- * they can't be read. Decided here at render time — the client uses this list
- * as is, so the page and the cart drawer always agree.
- */
-export const getRunningPromotions = cache(async (): Promise<Promotion[]> => {
+/** Every active promotion (running, scheduled or ended), in display order; none on error. */
+const getActivePromotions = cache(async (): Promise<Promotion[]> => {
   const { data, error } = await supabase
     .from("promotions")
     .select(PROMOTION_COLUMNS)
@@ -106,6 +103,19 @@ export const getRunningPromotions = cache(async (): Promise<Promotion[]> => {
     console.error("promotions query failed", error);
     return [];
   }
-  const now = new Date();
-  return data.map(toPromotion).filter((p) => isRunning(p, now));
+  return data.map(toPromotion);
 });
+
+/**
+ * Promotions running right now, with their rules, in display order. Decided
+ * here at render time — the client uses this list as is, never its own clock.
+ */
+export const getRunningPromotions = cache(async (): Promise<Promotion[]> => {
+  const now = new Date();
+  return (await getActivePromotions()).filter((p) => isRunning(p, now));
+});
+
+/** When the running set next changes, so open tabs know when to refresh. */
+export const getNextPromotionChange = cache(async (): Promise<string | null> =>
+  nextPromotionChange(await getActivePromotions(), new Date()),
+);

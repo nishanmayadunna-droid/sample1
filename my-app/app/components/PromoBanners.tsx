@@ -14,14 +14,19 @@ export default function PromoBanners({ promotions }: { promotions: Promotion[] }
   const lang = useLang();
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
+  // Rotation also holds while the pointer or keyboard focus is on the slider,
+  // so a slide never disappears under someone reading or tabbing to it.
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const held = paused || hovered || focused;
 
   useEffect(() => {
-    if (banners.length < 2 || paused) return;
+    if (banners.length < 2 || held) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     // setState lives inside the interval callback, not the effect body.
     const id = window.setInterval(() => setCurrent((i) => (i + 1) % banners.length), ROTATE_MS);
     return () => window.clearInterval(id);
-  }, [banners.length, paused]);
+  }, [banners.length, held]);
 
   if (banners.length === 0) return null;
   if (banners.length === 1) {
@@ -38,6 +43,12 @@ export default function PromoBanners({ promotions }: { promotions: Promotion[] }
       role="region"
       aria-roledescription="carousel"
       aria-label={tr(lang, "ප්‍රවර්ධන", "Promotions")}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);
+      }}
     >
       {/* Every banner stays in the page; only the current one shows. */}
       {banners.map((promotion, i) => (

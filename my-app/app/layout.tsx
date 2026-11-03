@@ -6,7 +6,13 @@ import PromiseStrip from "./components/PromiseStrip";
 import Header from "./components/Header";
 import InlineScript from "./components/InlineScript";
 import CartDrawer from "./components/CartDrawer";
-import { getRunningPromotions, getStoreSettings, getVisiblePromises } from "@/lib/storefront";
+import {
+  getNextPromotionChange,
+  getRunningPromotions,
+  getStoreSettings,
+  getVisiblePromises,
+} from "@/lib/storefront";
+import PromotionClock from "./components/PromotionClock";
 import { freeShippingThreshold } from "@/lib/promotions";
 import { getAllProducts, getCategories } from "@/lib/catalog";
 import { toShellProduct, type Category, type ShellProduct } from "@/lib/products";
@@ -81,12 +87,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   // Each read falls back on its own, so the shell never fails the page.
-  const [settings, products, categories, promises, promotions] = await Promise.all([
+  const [settings, products, categories, promises, promotions, nextChange] = await Promise.all([
     getStoreSettings(),
     getShellProducts(),
     getShellCategories(),
     getVisiblePromises(),
     getRunningPromotions(),
+    getNextPromotionChange(),
   ]);
   const shippingThreshold = freeShippingThreshold(promotions);
 
@@ -112,6 +119,7 @@ export default async function RootLayout({
           promotions={promotions}
         />
         <main className="flex-1">{children}</main>
+        <PromotionClock nextChange={nextChange} />
         <CartDrawer
           products={products}
           promotions={promotions}

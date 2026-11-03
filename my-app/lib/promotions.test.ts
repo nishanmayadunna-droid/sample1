@@ -3,6 +3,7 @@ import {
   freeShippingThreshold,
   isRunning,
   itemPricing,
+  nextPromotionChange,
   promotionStatus,
   ruleMatches,
   toPromotion,
@@ -171,5 +172,23 @@ describe("toPromotion", () => {
     const withImage = toPromotion({ ...base, banner_mode: "image", image_url: "https://x/y.jpg", image_alt_en: "Bats" });
     expect(withImage.banner).toEqual({ mode: "image", imageUrl: "https://x/y.jpg", altSi: "", altEn: "Bats" });
     expect(toPromotion({ ...base, banner_mode: "image" }).banner).toEqual({ mode: "none" });
+  });
+});
+
+describe("nextPromotionChange", () => {
+  const at = new Date("2026-10-28T12:00:00.000Z");
+
+  it("is the soonest future start or end", () => {
+    const list = [
+      promo({ endsAt: "2026-10-31T18:30:00.000Z" }),
+      promo({ startsAt: "2026-10-29T00:00:00.000Z" }),
+      promo({ startsAt: "2026-10-01T00:00:00.000Z", endsAt: "2026-10-20T00:00:00.000Z" }),
+    ];
+    expect(nextPromotionChange(list, at)).toBe("2026-10-29T00:00:00.000Z");
+  });
+
+  it("ignores inactive promotions and is null when nothing changes", () => {
+    expect(nextPromotionChange([promo({ active: false, startsAt: "2026-11-01T00:00:00.000Z" })], at)).toBeNull();
+    expect(nextPromotionChange([promo()], at)).toBeNull();
   });
 });

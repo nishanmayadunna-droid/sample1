@@ -262,3 +262,20 @@ export function withPricing<T extends Product>(
 ): (T & { pricing: ItemPricing })[] {
   return products.map((p) => ({ ...p, pricing: itemPricing(p, promotions, categories) }));
 }
+
+/**
+ * When the set of running promotions next changes (a start or an end still
+ * ahead), as an ISO timestamp; null when nothing is scheduled to change.
+ */
+export function nextPromotionChange(promotions: Promotion[], now: Date): string | null {
+  let next: number | null = null;
+  for (const p of promotions) {
+    if (!p.active) continue;
+    for (const iso of [p.startsAt, p.endsAt]) {
+      if (!iso) continue;
+      const t = Date.parse(iso);
+      if (t > now.getTime() && (next === null || t < next)) next = t;
+    }
+  }
+  return next === null ? null : new Date(next).toISOString();
+}

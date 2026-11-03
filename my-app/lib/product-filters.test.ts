@@ -130,4 +130,8 @@ describe("filterProducts", () => {
     expect(ids(filterProducts(all, { promo: bottoms }, categories))).toEqual(["chino"]);
     expect(ids(filterProducts(all, { promo: promo() }, categories))).toEqual(["tee", "shirt", "chino", "cap"]);
   });
+
+  it("promo: a banner-only promotion (no rules) keeps every product", () => {
+    expect(ids(filterProducts(all, { promo: promo({ rules: [] }) }, categories))).toEqual(["tee", "shirt", "chino", "cap"]);
+  });
 });
