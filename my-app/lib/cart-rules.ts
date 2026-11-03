@@ -1,6 +1,8 @@
 // Pure cart-sync decisions: no I/O, no React/Next/Supabase imports, so they're
 // shared by the client sync, the server actions and the unit tests.
 
+import { maxQuantity, type StockMap } from "./stock";
+
 /** A single line in the cart: a product in a specific size, with a quantity. */
 export type CartLine = {
   id: string;
@@ -90,4 +92,31 @@ export function decideSync(input: {
     return owner === userId && dirty ? "push" : "pull";
   }
   return owner === null ? "none" : "clear";
+}
+
+/**
+ * Caps each line at the stock the shop has now and drops lines whose size is
+ * sold out. Lines for products not in `products` are left alone (the shop
+ * skips unknown ids elsewhere). `changed` is true only if a line was touched.
+ */
+export function clampToStock(
+  lines: CartLine[],
+  products: { id: string; stock: StockMap }[],
+): { lines: CartLine[]; changed: boolean } {
+  const byId = new Map(products.map((product) => [product.id, product]));
+  let changed = false;
+  const next: CartLine[] = [];
+  for (const line of lines) {
+    const product = byId.get(line.id);
+    const cap = product ? maxQuantity(product, line.size) : Infinity;
+    if (cap <= 0) {
+      changed = true;
+    } else if (line.quantity > cap) {
+      changed = true;
+      next.push({ ...line, quantity: cap });
+    } else {
+      next.push(line);
+    }
+  }
+  return { lines: changed ? next : lines, changed };
 }

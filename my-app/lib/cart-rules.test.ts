@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decideSync, mergeCartLines, sanitizeCartLines } from "./cart-rules";
+import { clampToStock, decideSync, mergeCartLines, sanitizeCartLines } from "./cart-rules";
 
 const l = (id: string, size: string, quantity: number) => ({ id, size, quantity });
 
@@ -87,4 +87,35 @@ describe("decideSync", () => {
     [{ status: "unauthenticated", userId: null, owner: "u1", dirty: true }, "clear"],
     [{ status: "unauthenticated", userId: null, owner: null, dirty: false }, "none"],
   ] as const)("%j → %s", (input, expected) => expect(decideSync(input)).toBe(expected));
+});
+
+describe("clampToStock", () => {
+  const line = (id: string, size: string, quantity: number) => ({ id, size, quantity });
+
+  it("lowers a line above its cap", () => {
+    const result = clampToStock([line("a", "M", 5)], [{ id: "a", stock: { M: 2 } }]);
+    expect(result).toEqual({ lines: [line("a", "M", 2)], changed: true });
+  });
+
+  it("drops a sold-out line", () => {
+    const result = clampToStock([line("a", "M", 1), line("b", "L", 1)], [{ id: "a", stock: { M: 0 } }]);
+    expect(result).toEqual({ lines: [line("b", "L", 1)], changed: true });
+  });
+
+  it("leaves untracked, unknown and in-range lines alone", () => {
+    const lines = [line("a", "M", 3), line("b", "M", 2), line("zzz", "M", 9)];
+    const result = clampToStock(lines, [
+      { id: "a", stock: null },
+      { id: "b", stock: { M: 2 } },
+    ]);
+    expect(result).toEqual({ lines, changed: false });
+  });
+
+  it("caps each size by its own entry", () => {
+    const result = clampToStock(
+      [line("a", "M", 4), line("a", "L", 4)],
+      [{ id: "a", stock: { M: 1 } }],
+    );
+    expect(result.lines).toEqual([line("a", "M", 1), line("a", "L", 4)]);
+  });
 });
