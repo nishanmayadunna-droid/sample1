@@ -5,6 +5,7 @@ import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { resolveGoogleSignIn } from "@/lib/auth-rules";
+import { verifyPhoneCode } from "@/lib/phone-auth";
 import {
   createGoogleUser,
   findUserByEmail,
@@ -33,6 +34,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!user) return null;
         if (!user.passwordHash) throw new GoogleAccountError();
         if (!(await verifyPassword(user, password))) return null;
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+          role: user.role,
+        };
+      },
+    }),
+    Credentials({
+      id: "phone",
+      credentials: { phone: {}, code: {} },
+      async authorize(credentials) {
+        const { phone, code } = credentials;
+        if (typeof phone !== "string" || typeof code !== "string") return null;
+
+        const user = await verifyPhoneCode(phone, code);
+        if (!user) return null;
 
         return {
           id: user.id,
@@ -89,7 +109,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.id = dbUser.id;
           token.role = dbUser.role;
         }
-      } else if (account?.provider === "credentials" && user?.id) {
+      } else if (
+        (account?.provider === "credentials" || account?.provider === "phone") &&
+        user?.id
+      ) {
         token.id = user.id;
         token.role = user.role;
       }
