@@ -4,7 +4,7 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { PlannedItem } from "@/lib/order-plan";
-import type { CheckoutDetails, OrderStatus, OrderTotals } from "@/lib/orders";
+import type { CheckoutDetails, OrderStatus, OrderTotals, PaymentMethod, PaymentStatus } from "@/lib/orders";
 
 export type OrderItem = {
   productId: string | null;
@@ -20,8 +20,10 @@ export type Order = {
   orderNumber: string;
   userId: string;
   status: OrderStatus;
-  paymentMethod: "cod";
-  paymentStatus: "unpaid";
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  /** What the customer pays up front by bank transfer, in cents (0 for plain COD). */
+  advanceAmount: number;
   customerName: string;
   phone: string;
   address: string;
@@ -49,8 +51,9 @@ type OrderRow = {
   order_number: string;
   user_id: string;
   status: OrderStatus;
-  payment_method: "cod";
-  payment_status: "unpaid";
+  payment_method: PaymentMethod;
+  payment_status: PaymentStatus;
+  advance_amount: number;
   customer_name: string;
   phone: string;
   address: string;
@@ -65,7 +68,7 @@ type OrderRow = {
 };
 
 const COLUMNS =
-  "id, order_number, user_id, status, payment_method, payment_status, customer_name, phone, address, city, note, subtotal, discount, shipping, total, created_at, order_items(product_id, product_name, size, quantity, unit_price, compare_at)";
+  "id, order_number, user_id, status, payment_method, payment_status, advance_amount, customer_name, phone, address, city, note, subtotal, discount, shipping, total, created_at, order_items(product_id, product_name, size, quantity, unit_price, compare_at)";
 
 function toOrder(row: OrderRow): Order {
   return {
@@ -75,6 +78,7 @@ function toOrder(row: OrderRow): Order {
     status: row.status,
     paymentMethod: row.payment_method,
     paymentStatus: row.payment_status,
+    advanceAmount: row.advance_amount,
     customerName: row.customer_name,
     phone: row.phone,
     address: row.address,
@@ -115,6 +119,8 @@ export async function createOrder(
   details: CheckoutDetails,
   totals: OrderTotals,
   items: PlannedItem[],
+  /** The advance to collect by bank transfer, in cents; 0 for plain COD. */
+  advance: number,
 ): Promise<CreateOrderResult> {
   const { data, error } = await supabaseAdmin.rpc("place_order", {
     p_user_id: userId,
@@ -127,6 +133,7 @@ export async function createOrder(
       note: details.note ?? "",
     },
     p_totals: totals,
+    p_advance: advance,
     p_items: items.map((item) => ({
       product_id: item.productId,
       product_name: item.productName,
@@ -218,7 +225,7 @@ export async function changeOrderStatus(
   orderId: string,
   to: OrderStatus,
   userId?: string,
-): Promise<"ok" | "bad_transition" | "not_found"> {
+): Promise<"ok" | "bad_transition" | "not_found" | "advance_unpaid"> {
   const { error } = await supabaseAdmin.rpc("set_order_status", {
     p_order_id: orderId,
     p_to: to,
@@ -226,6 +233,7 @@ export async function changeOrderStatus(
   });
   if (!error) return "ok";
   if (error.message.includes("bad_transition")) return "bad_transition";
+  if (error.message.includes("advance_unpaid")) return "advance_unpaid";
   if (error.message.includes("order_not_found")) return "not_found";
   fail(error);
 }

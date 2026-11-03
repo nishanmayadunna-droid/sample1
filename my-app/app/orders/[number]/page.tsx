@@ -2,12 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth-guards";
+import { MAX_SLIPS, paymentStatusLabel } from "@/lib/advance";
 import { canCustomerCancel } from "@/lib/orders";
 import { getOrderForUser } from "@/lib/orders-data";
+import { getPaymentSettings, listQrCodes, listSlipsForOrder, qrSignedUrls } from "@/lib/payments-data";
 import { formatPrice } from "@/lib/products";
 import CancelOrderButton from "../../components/CancelOrderButton";
 import L from "../../components/L";
 import OrderStatusSteps from "../../components/OrderStatusSteps";
+import PaymentPanel from "../../components/PaymentPanel";
 
 export const metadata: Metadata = { title: "Your order" };
 
@@ -17,6 +20,23 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
   const user = await requireUser(`/orders/${number}`);
   const order = await getOrderForUser(number, user.id);
   if (!order) notFound();
+
+  // An advance order that is still waiting for its advance shows how to pay it.
+  const awaitingAdvance =
+    order.advanceAmount > 0 &&
+    order.status !== "cancelled" &&
+    (order.paymentStatus === "advance_due" || order.paymentStatus === "slip_uploaded");
+  const payment = awaitingAdvance
+    ? await Promise.all([
+        getPaymentSettings(),
+        listQrCodes().then(qrSignedUrls),
+        listSlipsForOrder(order.id),
+      ]).catch((error) => {
+        console.error("payment panel data failed", error);
+        return null;
+      })
+    : null;
+  const remaining = Math.max(order.total - order.advanceAmount, 0);
 
   const rows: { key: string; label: React.ReactNode; value: React.ReactNode }[] = [
     { key: "subtotal", label: <L si="උප එකතුව" en="Subtotal" />, value: formatPrice(order.subtotal) },
@@ -103,16 +123,50 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
           <h2 className="eyebrow text-muted">
             <L si="ගෙවීම" en="Payment" />
           </h2>
-          <p className="mt-2 text-sm">
-            <L si="බඩු ලැබෙන විට ගෙවන්න (Cash on delivery)." en="Cash on delivery: pay when your order arrives." />
-          </p>
+          {order.advanceAmount > 0 ? (
+            <p className="mt-2 text-sm leading-relaxed">
+              <L si={`Advance ${formatPrice(order.advanceAmount)}`} en={`Advance ${formatPrice(order.advanceAmount)}`} />:{" "}
+              <L si={paymentStatusLabel(order.paymentStatus).si} en={paymentStatusLabel(order.paymentStatus).en} />
+              <br />
+              <L si={`බඩු ලැබෙන විට ගෙවන්න: ${formatPrice(remaining)}`} en={`Pay on delivery: ${formatPrice(remaining)}`} />
+            </p>
+          ) : (
+            <p className="mt-2 text-sm">
+              <L si="බඩු ලැබෙන විට ගෙවන්න (Cash on delivery)." en="Cash on delivery: pay when your order arrives." />
+            </p>
+          )}
         </div>
       </div>
 
-      {canCustomerCancel(order.status) && (
+      {payment && (
+        <PaymentPanel
+          orderNumber={order.orderNumber}
+          advanceAmount={order.advanceAmount}
+          total={order.total}
+          bank={payment[0]}
+          qr={payment[1]}
+          slips={payment[2].map((slip) => ({
+            id: slip.id,
+            status: slip.status,
+            rejectReason: slip.rejectReason,
+            createdAt: slip.createdAt,
+          }))}
+          canUpload={payment[2].length < MAX_SLIPS}
+        />
+      )}
+
+      {canCustomerCancel(order.status, order.paymentStatus) && (
         <div className="mt-8">
           <CancelOrderButton orderNumber={order.orderNumber} />
         </div>
+      )}
+      {order.status === "pending" && !canCustomerCancel(order.status, order.paymentStatus) && (
+        <p className="mt-8 text-sm text-muted">
+          <L
+            si="ඔබේ advance එක ලැබී ඇති නිසා මෙම ඇණවුම අවලංගු කිරීමට අප අමතන්න."
+            en="Your advance is already in, so please contact us if you want to cancel this order."
+          />
+        </p>
       )}
     </div>
   );

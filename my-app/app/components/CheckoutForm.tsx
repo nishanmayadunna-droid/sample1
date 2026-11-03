@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { clear, useCart } from "@/app/context/CartContext";
 import { useLang } from "@/app/context/LangContext";
 import { placeOrder, type PlaceOrderResult } from "@/app/checkout/actions";
+import { advanceFor, type AdvanceSettings } from "@/lib/advance";
 import { summarizeCart } from "@/lib/cart-summary";
 import { tr } from "@/lib/i18n";
 import type { DetailsField } from "@/lib/orders";
@@ -26,6 +27,7 @@ export default function CheckoutForm({
   initialPhone,
   initialAddress,
   initialCity,
+  advanceInfo,
 }: {
   products: Product[];
   promotions: Promotion[];
@@ -35,6 +37,8 @@ export default function CheckoutForm({
   initialPhone: string;
   initialAddress: string;
   initialCity: string;
+  /** Set when this customer must pay an advance (the server decides again on submit). */
+  advanceInfo: AdvanceSettings | null;
 }) {
   const router = useRouter();
   const lang = useLang();
@@ -45,6 +49,7 @@ export default function CheckoutForm({
   const keyRef = useRef<string | null>(null);
 
   const summary = summarizeCart(lines, products, promotions, shippingFee, categories);
+  const advance = advanceInfo ? advanceFor(summary.total, advanceInfo) : 0;
 
   // Between clearing the cart and arriving at the order page.
   if (result?.message === "placed") {
@@ -91,7 +96,7 @@ export default function CheckoutForm({
       // pressing the button again returns the same order if it was created.
       let outcome: PlaceOrderResult;
       try {
-        outcome = await placeOrder(lines, fields, summary.total, key);
+        outcome = await placeOrder(lines, fields, summary.total, key, advance);
       } catch {
         setResult({ message: "error" });
         return;
@@ -102,6 +107,7 @@ export default function CheckoutForm({
         router.push(`/orders/${outcome.orderNumber}`);
       } else if (
         outcome.message === "price_changed" ||
+        outcome.message === "advance_changed" ||
         outcome.message === "out_of_stock" ||
         outcome.message === "unknown_product"
       ) {
@@ -170,12 +176,21 @@ export default function CheckoutForm({
         <h2 className="eyebrow mt-2 text-muted">
           <L si="ගෙවීම" en="Payment" />
         </h2>
-        <p className="rounded-md border border-line px-4 py-3 text-sm">
-          <L
-            si="බඩු ලැබෙන විට ගෙවන්න (Cash on delivery)."
-            en="Cash on delivery: pay when your order arrives."
-          />
-        </p>
+        {advance > 0 ? (
+          <p className="rounded-md border border-line px-4 py-3 text-sm leading-relaxed">
+            <L
+              si={`අලුත් ගනුදෙනුකරුවන් ඇණවුම සඳහා කුඩා advance එකක් බැංකු මාරුවකින් ගෙවිය යුතුයි: ${formatPrice(advance)}. ඇණවුම ස්ථාපනය කළ පසු ඊළඟ පිටුවේ බැංකු විස්තර සහ slip එක upload කිරීම පෙන්වයි. ඉතිරි ${formatPrice(Math.max(summary.total - advance, 0))} බඩු ලැබෙන විට ගෙවන්න.`}
+              en={`New customers pay a small advance by bank transfer: ${formatPrice(advance)}. After you place the order, the next page shows the bank details and lets you upload your slip. The remaining ${formatPrice(Math.max(summary.total - advance, 0))} is paid when it arrives.`}
+            />
+          </p>
+        ) : (
+          <p className="rounded-md border border-line px-4 py-3 text-sm">
+            <L
+              si="බඩු ලැබෙන විට ගෙවන්න (Cash on delivery)."
+              en="Cash on delivery: pay when your order arrives."
+            />
+          </p>
+        )}
 
         {result?.message === "price_changed" && (
           <p role="alert" className="text-sm text-blaze">
@@ -194,6 +209,22 @@ export default function CheckoutForm({
             <Link href="/cart" className="underline">
               <L si="කරත්තය වෙනස් කරන්න" en="Change your cart" />
             </Link>
+          </p>
+        )}
+        {result?.message === "advance_changed" && (
+          <p role="alert" className="text-sm text-blaze">
+            <L
+              si="ගෙවීමේ විස්තර වෙනස් වී ඇත. ඉහත විස්තර පරීක්ෂා කර නැවත ඇණවුම් කරන්න."
+              en="The payment terms changed. Please review the details above and place the order again."
+            />
+          </p>
+        )}
+        {result?.message === "advance_setup" && (
+          <p role="alert" className="text-sm text-blaze">
+            <L
+              si="ගෙවීම් තවම සකසා නැත. කරුණාකර අප අමතන්න."
+              en="Payments aren't set up yet. Please contact us to place your order."
+            />
           </p>
         )}
         {result?.message === "unknown_product" && (

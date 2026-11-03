@@ -17,7 +17,7 @@ export async function cancelMyOrder(
   const user = await requireUser(`/orders/${orderNumber}`);
   try {
     const order = await getOrderForUser(orderNumber, user.id);
-    if (!order || !canCustomerCancel(order.status)) return { message: "not_allowed" };
+    if (!order || !canCustomerCancel(order.status, order.paymentStatus)) return { message: "not_allowed" };
     const outcome = await changeOrderStatus(order.id, "cancelled", user.id);
     if (outcome !== "ok") return { message: "not_allowed" };
 

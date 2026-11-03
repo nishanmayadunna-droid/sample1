@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth-guards";
 import { statusLabel } from "@/lib/orders";
 import { listOrdersForUser } from "@/lib/orders-data";
+import { isUserTrusted } from "@/lib/payments-data";
 import { formatPrice } from "@/lib/products";
 import SignOutButton from "../components/SignOutButton";
 import L from "../components/L";
@@ -12,6 +13,11 @@ export const metadata: Metadata = { title: "Account" };
 export default async function AccountPage() {
   const user = await requireUser("/account");
   // A failed read hides the list; it never breaks the account page.
+  // A failed lookup just hides the badge.
+  const trusted = await isUserTrusted(user.id).catch((error) => {
+    console.error("trusted lookup failed", error);
+    return false;
+  });
   const orders = await listOrdersForUser(user.id).catch((error) => {
     console.error("orders list failed", error);
     return [];
@@ -38,6 +44,11 @@ export default async function AccountPage() {
         <L si="ඔබේ ගිණුම" en="Your account" />
       </p>
       <h1 className="display mt-2 text-5xl">{user.name ?? user.email}</h1>
+      {trusted && (
+        <p className="mt-3 font-mono text-xs uppercase tracking-[0.14em] text-blaze">
+          ✓ <L si="තහවුරු කළ පාරිභෝගික" en="Verified customer" />
+        </p>
+      )}
       <div className="measure mt-6 text-ink" />
       <dl className="mt-8 divide-y divide-line border-y border-line">
         {details.map(({ key, label, value }) => (
