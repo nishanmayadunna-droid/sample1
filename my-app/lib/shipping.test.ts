@@ -85,6 +85,21 @@ describe("validateZones", () => {
     expect(validateZones([{ ...ok, fee: 100000 }]).ok).toBe(true);
   });
 
+  it("accepts a padded fee string", () => {
+    const result = validateZones([{ ...ok, fee: " 300 " }]);
+    expect(result.ok && result.value[0].fee).toBe(30000);
+  });
+
+  it("rejects fee strings that are not plain digits", () => {
+    for (const fee of ["1e3", "0x10", "+5", "-0", "1_0"]) {
+      expect(validateZones([{ ...ok, fee }]).ok, fee).toBe(false);
+    }
+  });
+
+  it("accepts a zone with no districts", () => {
+    expect(validateZones([{ name: "Empty", fee: 1, districts: [] }]).ok).toBe(true);
+  });
+
   it("rejects fees out of range or not whole numbers", () => {
     for (const fee of ["-1", 100001, "1.5", "abc", "", "  ", NaN, 2.5]) {
       expect(validateZones([{ ...ok, fee }]).ok, String(fee)).toBe(false);
@@ -131,6 +146,18 @@ describe("trackingUrl", () => {
   it("fills in the encoded number", () => {
     expect(trackingUrl(template, "AB-123")).toBe("https://courier.example/track?no=AB-123");
     expect(trackingUrl(template, "a b")).toBe("https://courier.example/track?no=a%20b");
+  });
+
+  it("encodes slashes and question marks in the number", () => {
+    expect(trackingUrl(template, "a/b?c=d")).toBe("https://courier.example/track?no=a%2Fb%3Fc%3Dd");
+  });
+
+  it("replaces every {number}", () => {
+    expect(trackingUrl("https://x.lk/{number}/t?n={number}", "AB1")).toBe("https://x.lk/AB1/t?n=AB1");
+  });
+
+  it("requires a lower-case https:// prefix", () => {
+    expect(trackingUrl("HTTPS://x.lk/{number}", "AB1")).toBeNull();
   });
 
   it("returns null for a missing or unusable template", () => {

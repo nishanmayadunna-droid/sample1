@@ -76,7 +76,8 @@ export function validateZones(
     }
 
     const raw = typeof zone.fee === "string" ? zone.fee.trim() : zone.fee;
-    const rupees = raw === "" ? NaN : Number(raw);
+    const rupees =
+      typeof raw === "string" ? (/^\d+$/.test(raw) ? Number(raw) : NaN) : raw;
     if (!Number.isInteger(rupees) || rupees < 0 || rupees > ZONE_FEE_MAX_RUPEES) {
       errors.push(`${label}: fee must be a whole number from 0 to ${ZONE_FEE_MAX_RUPEES}.`);
     }
