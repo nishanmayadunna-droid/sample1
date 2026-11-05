@@ -24,7 +24,7 @@ create table public.newsletter_subscribers (
   id                uuid primary key default gen_random_uuid(),
   email             text not null,
   source            text not null default 'footer',
-  unsubscribe_token text not null unique default encode(gen_random_bytes(18), 'hex'),
+  unsubscribe_token text not null unique default replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''),
   created_at        timestamptz not null default now(),
   unsubscribed_at   timestamptz
 );
