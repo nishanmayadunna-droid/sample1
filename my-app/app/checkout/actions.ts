@@ -78,6 +78,13 @@ export async function placeOrder(
       } catch (error) {
         console.error("setOrderDistrict failed", error);
       }
+      // Dedupe makes this a no-op when the first attempt already sent the SMS.
+      try {
+        const existing = await getOrderForUser(placedAlready, user.id);
+        if (existing) await notifyOrder(existing, "placed");
+      } catch (error) {
+        console.error("placed notification failed", error instanceof Error ? error.name : "unknown");
+      }
       return { message: "placed", orderNumber: placedAlready };
     }
 

@@ -84,13 +84,13 @@ function compose(event: NotificationEvent, d: MessageData, lang: Lang, o: Option
         return `Northbound: ${n}${via} යවා ඇත.${no ? ` Tracking ${no}.` : ""}${url}`;
       }
       const via = courier ? ` via ${courier}` : "";
-      const track = no ? `${courier ? ", " : " "}tracking ${no}` : "";
+      const track = no ? `, tracking ${no}` : "";
       return `Northbound: order ${n} is on its way${via}${track}.${url}`;
     }
     case "delivered": {
       const p = d.pointsEarned ?? 0;
       if (si) {
-        return `Northbound: ඇණවුම ${n} ලැබුණා.${p > 0 ? ` ඔබට points ${p} ලැබුණා.` : ""} ස්තූතියි!`;
+        return `Northbound: ඔබේ ඇණවුම ${n} භාර දෙන ලදී.${p > 0 ? ` ඔබට points ${p} ලැබුණා.` : ""} ස්තූතියි!`;
       }
       return `Northbound: order ${n} delivered.${p > 0 ? ` You earned ${p} points.` : ""} Thank you!`;
     }
@@ -186,4 +186,17 @@ export const CANCEL_NOTICE_WINDOW_HOURS = 24;
 
 export function cancelNoticeCutoff(now: Date): string {
   return new Date(now.getTime() - CANCEL_NOTICE_WINDOW_HOURS * 3600_000).toISOString();
+}
+
+/** At most this many SMS per phone number, and per shop, in 24 hours (stops abuse and runaway cost). */
+export const PHONE_DAILY_CAP = 6;
+export const SHOP_DAILY_CAP = 300;
+
+export function withinSendCaps(counts: { phone: number; shop: number }): boolean {
+  return counts.phone < PHONE_DAILY_CAP && counts.shop < SHOP_DAILY_CAP;
+}
+
+/** True when the order has moved on so that a stored message would now be wrong. */
+export function isStaleForStatus(event: NotificationEvent, orderStatus: string): boolean {
+  return orderStatus === "cancelled" && (event === "placed" || event === "advance_due" || event === "shipped");
 }

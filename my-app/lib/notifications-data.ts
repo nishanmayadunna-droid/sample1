@@ -4,7 +4,7 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendSms, smsTokenSet } from "@/lib/sms";
-import { getSmsSettings } from "@/lib/sms-data";
+import { readSmsSettings } from "@/lib/sms-data";
 import { getStoreSettings } from "@/lib/storefront";
 import { getPaymentSettings } from "@/lib/payments-data";
 import { advanceDeadline } from "@/lib/advance";
@@ -20,6 +20,8 @@ import {
   type NotificationEvent,
   type NotificationSettings,
   cancelNoticeCutoff,
+  isStaleForStatus,
+  withinSendCaps,
 } from "@/lib/notifications";
 
 type SettingsRow = { enabled: boolean } & Record<`ev_${NotificationEvent}`, boolean>;
@@ -32,6 +34,11 @@ function defaults(): NotificationSettings {
 
 /** Any error (including the migration not being applied yet) means "off". */
 export async function getNotificationSettings(): Promise<NotificationSettings> {
+  return (await readNotificationSettings()).settings;
+}
+
+/** Like getNotificationSettings, but says whether the read itself failed (versus "off"). */
+export async function readNotificationSettings(): Promise<{ settings: NotificationSettings; failed: boolean }> {
   try {
     const { data, error } = await supabaseAdmin
       .from("notification_settings")
@@ -39,15 +46,15 @@ export async function getNotificationSettings(): Promise<NotificationSettings> {
       .maybeSingle<SettingsRow>();
     if (error || !data) {
       if (error) console.error("notification settings unreadable", error.code ?? "unknown");
-      return defaults();
+      return { settings: defaults(), failed: Boolean(error) };
     }
     const out = defaults();
     out.enabled = data.enabled === true;
     for (const e of NOTIFICATION_EVENTS) out.events[e] = data[`ev_${e}`] !== false;
-    return out;
+    return { settings: out, failed: false };
   } catch {
     console.error("notification settings unreadable");
-    return defaults();
+    return { settings: defaults(), failed: true };
   }
 }
 
@@ -61,6 +68,19 @@ export async function saveNotificationSettings(value: NotificationSettings): Pro
     console.error("notification settings save failed", error.code ?? "unknown");
     throw new Error("notification settings save failed");
   }
+}
+
+async function underSendCaps(phone: string): Promise<boolean> {
+  const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+  const base = () =>
+    supabaseAdmin
+      .from("order_notifications")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["sent", "failed"])
+      .gte("created_at", since);
+  const [byPhone, byShop] = await Promise.all([base().eq("phone", phone), base()]);
+  if (byPhone.error || byShop.error || byPhone.count === null || byShop.count === null) return false;
+  return withinSendCaps({ phone: byPhone.count, shop: byShop.count });
 }
 
 type NotifyOptions = { slipId?: string; rejectReason?: string; lastReviewedAt?: string | null };
@@ -80,14 +100,19 @@ export async function notifyOrder(
     const actual: NotificationEvent =
       event === "placed" && order.advanceAmount > 0 ? "advance_due" : event;
 
-    const [settings, sms, store, payment] = await Promise.all([
-      getNotificationSettings(),
-      getSmsSettings(),
+    const [settingsRead, smsRead, store, payment] = await Promise.all([
+      readNotificationSettings(),
+      readSmsSettings(),
       getStoreSettings(),
       actual === "advance_due"
         ? getPaymentSettings().catch(() => ({ expiryHours: 0 }))
         : Promise.resolve(null),
     ]);
+
+    const settings = settingsRead.settings;
+    const sms = smsRead.settings;
+    // A failed settings read is not "off": log it as failed so Resend can recover it.
+    const readFailed = settingsRead.failed || smsRead.failed;
 
     const data: MessageData = {
       orderNumber: order.orderNumber,
@@ -113,6 +138,12 @@ export async function notifyOrder(
       senderId: sms.senderId,
     });
 
+    // Caps, checked before the claim: anyone can put any phone number on an order,
+    // so place-and-cancel loops must not turn into unlimited SMS to one number or cost.
+    // A count that errors counts as over the cap (fail closed).
+    let capOk = true;
+    if (!readFailed && decision === "send") capOk = await underSendCaps(order.phone);
+
     const { data: row, error } = await supabaseAdmin
       .from("order_notifications")
       .insert({
@@ -123,7 +154,7 @@ export async function notifyOrder(
         phone: order.phone,
         body,
         segments: segmentCount(body),
-        status: decision === "send" ? "failed" : "skipped",
+        status: readFailed || (decision === "send" && capOk) ? "failed" : "skipped",
       })
       .select("id")
       .single<{ id: string }>();
@@ -132,7 +163,7 @@ export async function notifyOrder(
       if (error.code !== "23505") console.error("notification log failed", error.code ?? "unknown");
       return;
     }
-    if (decision !== "send") return;
+    if (readFailed || decision !== "send" || !capOk) return;
 
     const ok = await sendSms(order.phone, body, sms.senderId);
     if (ok) {
@@ -220,9 +251,16 @@ export async function resendNotification(
   try {
     const { data: row, error } = await supabaseAdmin
       .from("order_notifications")
-      .select("id, event, phone, body, status")
+      .select("id, order_id, event, phone, body, status")
       .eq("id", id)
-      .maybeSingle<{ id: string; event: NotificationEvent; phone: string; body: string; status: string }>();
+      .maybeSingle<{
+        id: string;
+        order_id: string;
+        event: NotificationEvent;
+        phone: string;
+        body: string;
+        status: string;
+      }>();
     if (error) {
       console.error("notification lookup failed", error.code ?? "unknown");
       return "failed_again";
@@ -230,7 +268,22 @@ export async function resendNotification(
     if (!row) return "not_found";
     if (row.status !== "failed") return "not_failed";
 
-    const [settings, sms] = await Promise.all([getNotificationSettings(), getSmsSettings()]);
+    // The order may have moved on (e.g. cancelled): the stored text would now be wrong.
+    const { data: ord, error: ordError } = await supabaseAdmin
+      .from("orders")
+      .select("status")
+      .eq("id", row.order_id)
+      .maybeSingle<{ status: string }>();
+    if (ordError) {
+      console.error("notification order lookup failed", ordError.code ?? "unknown");
+      return "failed_again";
+    }
+    if (ord && isStaleForStatus(row.event, ord.status)) return "not_failed";
+
+    const [settings, sms] = await Promise.all([
+      getNotificationSettings(),
+      readSmsSettings().then((r) => r.settings),
+    ]);
     const decision = shouldSend({
       settings,
       event: row.event,

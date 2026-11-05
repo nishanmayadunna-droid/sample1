@@ -10,6 +10,12 @@ type Row = { enabled: boolean; sender_id: string; daily_cap: number };
 
 /** Any error (including the migration not being applied yet) means "feature off". */
 export async function getSmsSettings(): Promise<SmsSettings> {
+  return (await readSmsSettings()).settings;
+}
+
+/** Like getSmsSettings, but says whether the read itself failed (versus "off"). */
+export async function readSmsSettings(): Promise<{ settings: SmsSettings; failed: boolean }> {
+  const failed = (): { settings: SmsSettings; failed: boolean } => ({ settings: { ...OFF }, failed: true });
   try {
     const { data, error } = await supabaseAdmin
       .from("sms_settings")
@@ -17,17 +23,20 @@ export async function getSmsSettings(): Promise<SmsSettings> {
       .maybeSingle<Row>();
     if (error) {
       console.error("sms settings unreadable", error.code ?? "unknown");
-      return { ...OFF };
+      return failed();
     }
-    if (!data) return { ...OFF };
+    if (!data) return { settings: { ...OFF }, failed: false };
     return {
-      enabled: data.enabled,
-      senderId: data.sender_id ?? "",
-      dailyCap: data.daily_cap ?? DEFAULT_DAILY_CAP,
+      settings: {
+        enabled: data.enabled,
+        senderId: data.sender_id ?? "",
+        dailyCap: data.daily_cap ?? DEFAULT_DAILY_CAP,
+      },
+      failed: false,
     };
   } catch {
     console.error("sms settings unreadable");
-    return { ...OFF };
+    return failed();
   }
 }
 

@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   NOTIFICATION_EVENTS,
   buildMessage,
+  PHONE_DAILY_CAP,
+  SHOP_DAILY_CAP,
   cancelNoticeCutoff,
+  isStaleForStatus,
+  withinSendCaps,
   dedupeKey,
   eventForStatus,
   parseNotificationSettings,
@@ -221,7 +225,7 @@ describe("shipped message fallbacks", () => {
       "Northbound: order NB-10001 is on its way via Pronto.",
     );
     expect(buildMessage("shipped", { ...base, trackingNumber: "AB123" }, "en")).toBe(
-      "Northbound: order NB-10001 is on its way tracking AB123.",
+      "Northbound: order NB-10001 is on its way, tracking AB123.",
     );
   });
 });
@@ -229,5 +233,35 @@ describe("shipped message fallbacks", () => {
 describe("cancelNoticeCutoff", () => {
   it("is 24 hours before now", () => {
     expect(cancelNoticeCutoff(new Date("2026-11-10T12:00:00Z"))).toBe("2026-11-09T12:00:00.000Z");
+  });
+});
+
+describe("withinSendCaps", () => {
+  it("allows below both caps and blocks at them", () => {
+    expect(withinSendCaps({ phone: PHONE_DAILY_CAP - 1, shop: SHOP_DAILY_CAP - 1 })).toBe(true);
+    expect(withinSendCaps({ phone: PHONE_DAILY_CAP, shop: 0 })).toBe(false);
+    expect(withinSendCaps({ phone: 0, shop: SHOP_DAILY_CAP })).toBe(false);
+  });
+});
+
+describe("isStaleForStatus", () => {
+  it("is stale for placed, advance_due and shipped once cancelled", () => {
+    for (const e of ["placed", "advance_due", "shipped"] as const) {
+      expect(isStaleForStatus(e, "cancelled")).toBe(true);
+      expect(isStaleForStatus(e, "confirmed")).toBe(false);
+    }
+  });
+  it("is never stale for other events", () => {
+    for (const e of ["slip_approved", "slip_rejected", "delivered", "cancelled"] as const) {
+      expect(isStaleForStatus(e, "cancelled")).toBe(false);
+    }
+  });
+});
+
+describe("delivered (si)", () => {
+  it("differs from placed", () => {
+    const d: MessageData = { orderNumber: "NB-10001", total: 100000 };
+    expect(buildMessage("delivered", d, "si")).toContain("භාර දෙන ලදී");
+    expect(buildMessage("delivered", d, "si")).not.toBe(buildMessage("placed", d, "si"));
   });
 });
