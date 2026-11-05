@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Geist, Geist_Mono, Anton, Noto_Sans_Sinhala } from "next/font/google";
 import "./globals.css";
 import Footer from "./components/Footer";
@@ -141,6 +143,8 @@ export default async function RootLayout({
           promises={promises}
           freeShippingThreshold={shippingThreshold}
         />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
