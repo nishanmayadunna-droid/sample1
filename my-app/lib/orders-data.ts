@@ -3,6 +3,7 @@
 // pass the session user's id.
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { trackingUrl } from "@/lib/shipping";
 import type { PlannedItem } from "@/lib/order-plan";
 import type {
   CancelReason,
@@ -44,6 +45,10 @@ export type Order = {
   address: string;
   city: string;
   note: string | null;
+  district: string | null;
+  courierName: string | null;
+  trackingNumber: string | null;
+  trackingUrl: string | null;
   subtotal: number;
   discount: number;
   shipping: number;
@@ -79,6 +84,10 @@ type OrderRow = {
   address: string;
   city: string;
   note: string | null;
+  district: string | null;
+  courier_name: string | null;
+  tracking_number: string | null;
+  tracking_url: string | null;
   subtotal: number;
   discount: number;
   shipping: number;
@@ -88,7 +97,7 @@ type OrderRow = {
 };
 
 const COLUMNS =
-  "id, order_number, user_id, status, payment_method, payment_status, cancel_reason, advance_waived_at, advance_amount, points_used, points_discount, points_to_earn, customer_name, phone, address, city, note, subtotal, discount, shipping, total, created_at, order_items(product_id, product_name, size, quantity, unit_price, compare_at)";
+  "id, order_number, user_id, status, payment_method, payment_status, cancel_reason, advance_waived_at, advance_amount, points_used, points_discount, points_to_earn, customer_name, phone, address, city, note, district, courier_name, tracking_number, tracking_url, subtotal, discount, shipping, total, created_at, order_items(product_id, product_name, size, quantity, unit_price, compare_at)";
 
 function toOrder(row: OrderRow): Order {
   return {
@@ -109,6 +118,10 @@ function toOrder(row: OrderRow): Order {
     address: row.address,
     city: row.city,
     note: row.note,
+    district: row.district,
+    courierName: row.courier_name,
+    trackingNumber: row.tracking_number,
+    trackingUrl: row.tracking_url,
     subtotal: row.subtotal,
     discount: row.discount,
     shipping: row.shipping,
@@ -225,19 +238,32 @@ export async function listOrdersForUser(userId: string): Promise<Order[]> {
   return data.map(toOrder);
 }
 
-/** The delivery details of the user's latest order, to prefill the checkout form. */
-export async function getLatestDetailsForUser(userId: string): Promise<CheckoutDetails | null> {
+/** Records the district on the user's order, only while none is stored yet. Callers log failures and carry on. */
+export async function setOrderDistrict(orderNumber: string, userId: string, district: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("orders")
+    .update({ district })
+    .eq("order_number", orderNumber)
+    .eq("user_id", userId)
+    .is("district", null);
+  if (error) fail(error);
+}
+
+/** The delivery details of the user's latest order, to prefill the checkout form (district is null on older orders). */
+export async function getLatestDetailsForUser(
+  userId: string,
+): Promise<(Omit<CheckoutDetails, "district"> & { district: string | null }) | null> {
   const { data, error } = await supabaseAdmin
     .from("orders")
-    .select("customer_name, phone, address, city")
+    .select("customer_name, phone, address, city, district")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(1)
-    .returns<{ customer_name: string; phone: string; address: string; city: string }[]>();
+    .returns<{ customer_name: string; phone: string; address: string; city: string; district: string | null }[]>();
   if (error) fail(error);
   const row = data[0];
   return row
-    ? { name: row.customer_name, phone: row.phone, address: row.address, city: row.city, note: null }
+    ? { name: row.customer_name, phone: row.phone, address: row.address, city: row.city, district: row.district, note: null }
     : null;
 }
 
@@ -348,4 +374,34 @@ export async function waiveAdvance(orderId: string): Promise<"ok" | "not_found" 
   if (error.message.includes("order_not_found")) return "not_found";
   if (error.message.includes("bad_state")) return "bad_state";
   fail(error);
+}
+
+/** Records the courier and tracking number on a confirmed or shipped order. */
+export async function saveShipment(
+  orderNumber: string,
+  courier: { name: string; trackingUrlTemplate: string | null },
+  trackingNumber: string,
+): Promise<"ok" | "not_found" | "bad_state"> {
+  const { data, error } = await supabaseAdmin
+    .from("orders")
+    .select("status")
+    .eq("order_number", orderNumber)
+    .maybeSingle<{ status: OrderStatus }>();
+  if (error) fail(error);
+  if (!data) return "not_found";
+  if (data.status !== "confirmed" && data.status !== "shipped") return "bad_state";
+  const { data: updated, error: updateError } = await supabaseAdmin
+    .from("orders")
+    .update({
+      courier_name: courier.name,
+      tracking_number: trackingNumber,
+      tracking_url: trackingUrl(courier.trackingUrlTemplate, trackingNumber),
+    })
+    .eq("order_number", orderNumber)
+    .in("status", ["confirmed", "shipped"])
+    .select("id");
+  if (updateError) fail(updateError);
+  // The order moved on (e.g. cancelled) between the check and the update.
+  if (!updated || updated.length === 0) return "bad_state";
+  return "ok";
 }

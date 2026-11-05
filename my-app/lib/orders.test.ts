@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ORDER_STATUSES,
   canCustomerCancel,
+  collectOnDelivery,
   cancelReasonLabel,
   nextStatuses,
   normalizePhone,
@@ -58,14 +59,19 @@ describe("parseCheckoutDetails", () => {
     phone: "077 123 4567",
     address: "12 Temple Road",
     city: "Colombo",
+    district: "Colombo",
     note: "",
   };
 
   it("parses valid details, normalising the phone and blank note", () => {
     expect(parseCheckoutDetails(valid)).toEqual({
       ok: true,
-      value: { name: "Nimal Perera", phone: "0771234567", address: "12 Temple Road", city: "Colombo", note: null },
+      value: { name: "Nimal Perera", phone: "0771234567", address: "12 Temple Road", city: "Colombo", district: "Colombo", note: null },
     });
+  });
+
+  it("flags a missing district", () => {
+    expect(parseCheckoutDetails({ ...valid, district: undefined })).toEqual({ ok: false, errors: { district: true } });
   });
 
   it("keeps a note, trimmed", () => {
@@ -78,6 +84,9 @@ describe("parseCheckoutDetails", () => {
     ["phone", { phone: "12345" }],
     ["address", { address: "abc" }],
     ["city", { city: "" }],
+    ["district", { district: "" }],
+    ["district", { district: "Atlantis" }],
+    ["district", { district: "colombo" }],
     ["note", { note: "x".repeat(501) }],
     ["address", { address: "x\u0000y road" }],
   ] as const)("flags only %s", (field, override) => {
@@ -115,5 +124,20 @@ describe("cancelReasonLabel", () => {
   it("explains an expired advance in both languages", () => {
     expect(cancelReasonLabel("advance_expired").en).not.toBe("");
     expect(cancelReasonLabel("advance_expired").si).not.toBe("");
+  });
+});
+
+describe("collectOnDelivery", () => {
+  it("subtracts the advance only once it is paid", () => {
+    expect(collectOnDelivery({ total: 500000, advanceAmount: 100000, paymentStatus: "advance_paid" })).toBe(400000);
+    expect(collectOnDelivery({ total: 500000, advanceAmount: 100000, paymentStatus: "advance_due" })).toBe(500000);
+    expect(collectOnDelivery({ total: 500000, advanceAmount: 0, paymentStatus: "unpaid" })).toBe(500000);
+  });
+  it("collects the full total while a slip is under review or the advance was waived", () => {
+    expect(collectOnDelivery({ total: 500000, advanceAmount: 100000, paymentStatus: "slip_uploaded" })).toBe(500000);
+    expect(collectOnDelivery({ total: 500000, advanceAmount: 0, paymentStatus: "waived" })).toBe(500000);
+  });
+  it("never goes below zero", () => {
+    expect(collectOnDelivery({ total: 100000, advanceAmount: 150000, paymentStatus: "advance_paid" })).toBe(0);
   });
 });
