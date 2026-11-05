@@ -93,6 +93,36 @@ export default function Footer({
                 <L si="කරත්තය" en="Cart" />
               </Link>
             </li>
+            <li>
+              <Link href="/about" className={linkClass}>
+                <L si="අප ගැන" en="About" />
+              </Link>
+            </li>
+            <li>
+              <Link href="/contact" className={linkClass}>
+                <L si="සම්බන්ධ වන්න" en="Contact" />
+              </Link>
+            </li>
+            <li>
+              <Link href="/returns" className={linkClass}>
+                <L si="ආපසු භාර දීම" en="Returns" />
+              </Link>
+            </li>
+            <li>
+              <Link href="/size-guide" className={linkClass}>
+                <L si="ප්‍රමාණ මාර්ගෝපදේශය" en="Size guide" />
+              </Link>
+            </li>
+            <li>
+              <Link href="/privacy" className={linkClass}>
+                <L si="රහස්‍යතා ප්‍රතිපත්තිය" en="Privacy" />
+              </Link>
+            </li>
+            <li>
+              <Link href="/terms" className={linkClass}>
+                <L si="කොන්දේසි" en="Terms" />
+              </Link>
+            </li>
           </ul>
           <ul className="mt-5 flex flex-col gap-2 border-t border-white/10 pt-4 text-sm">
             {promiseItems(promises, freeShippingThreshold).map((item) => (
