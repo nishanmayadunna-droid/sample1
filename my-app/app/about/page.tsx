@@ -46,8 +46,8 @@ export default function AboutPage() {
           </li>
           <li>
             <L
-              si="බෙදා හැරි ඇණවුම් සඳහා ලකුණු උපයා, ඔබ මිලදී ගත් දේ ගැන සමාලෝචන ලියන්න."
-              en="Earn points on delivered orders and leave reviews of what you bought."
+              si="ඔබ මිලදී ගත් දේ ගැන සමාලෝචන ලියන්න."
+              en="Leave a review of what you bought."
             />
           </li>
         </Bullets>

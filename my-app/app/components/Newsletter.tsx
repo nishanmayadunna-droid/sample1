@@ -50,7 +50,7 @@ export default function Newsletter() {
               <L si="ඔබ ලැයිස්තුවට එක් වුණා" en="You're on the list" />
             </p>
             <p className="mt-2 text-panelmuted">
-              <L si="ඊළඟ ලිපිය ඔබේ inbox එකට එනවා." en="Watch your inbox for the next dispatch." />
+              <L si="අපි ඔබව සම්බන්ධ කර ගන්නෙමු." en="We'll be in touch." />
             </p>
           </div>
         ) : (
@@ -84,7 +84,7 @@ export default function Newsletter() {
             {/* Honeypot: hidden from people and assistive tech, still submitted. */}
             <input
               type="text"
-              name="website"
+              name="nb_hp"
               tabIndex={-1}
               autoComplete="off"
               aria-hidden="true"

@@ -7,7 +7,7 @@ export type SubscribeResult = { message: "subscribed" | "invalid" | "busy" | "er
 
 export async function subscribeNewsletter(formData: FormData): Promise<SubscribeResult> {
   const email = formData.get("email");
-  const trap = formData.get("website");
+  const trap = formData.get("nb_hp");
   // Bots fill the hidden field: pretend it worked, store nothing.
   if (isHoneypotFilled(typeof trap === "string" ? trap : null)) return { message: "subscribed" };
   if (typeof email !== "string") return { message: "invalid" };

@@ -47,6 +47,12 @@ export default function TermsPage() {
           </li>
           <li>
             <L
+              si="අත්තිකාරම් ඉල්ලූ ඇණවුමක් ගෙවා නොමැති නම්, සාප්පුවේ නියමිත රැඳී සිටීමේ කාලයෙන් පසු ස්වයංක්‍රීයව අවලංගු වේ."
+              en="An order that needs an advance is cancelled automatically if the advance is not paid within the shop's waiting period."
+            />
+          </li>
+          <li>
+            <L
               si="තොග හෝ මිල වැරදීමක් සිදු වූයේ නම් අපට ඇණවුමක් අවලංගු කිරීමට හැක."
               en="If a stock or price error occurs, we may cancel the order."
             />

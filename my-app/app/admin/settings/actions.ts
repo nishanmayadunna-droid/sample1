@@ -87,7 +87,6 @@ export async function saveContactAction(
     return { errors: { form: "Something went wrong, please try again." }, saved: false };
   }
 
-  revalidatePath("/", "layout");
   for (const path of STORE_PAGE_PATHS) revalidatePath(path);
   return { errors: {}, saved: true };
 }

@@ -29,7 +29,7 @@ export default async function ReturnsPage() {
           <p>
             <L
               si="අපි සාමාන්‍යයෙන් ආපසු භාර ගන්නේ නැත; දෝෂ සහිත හෝ වැරදි භාණ්ඩ හැර."
-              en="We do not accept returns, except for faulty items."
+              en="We do not accept returns, except for faulty or wrong items."
             />
           </p>
         ) : (
@@ -41,24 +41,32 @@ export default async function ReturnsPage() {
           </p>
         )}
       </Section>
-      {days > 0 && (
-        <Section title={<L si="කොන්දේසි" en="Conditions" />}>
-          <Bullets>
+      <Section
+        title={
+          days > 0 ? (
+            <L si="කොන්දේසි" en="Conditions" />
+          ) : (
+            <L si="දෝෂ සහිත හෝ වැරදි භාණ්ඩ" en="Faulty or wrong items" />
+          )
+        }
+      >
+        <Bullets>
+          {days > 0 && (
             <li>
               <L
                 si="භාණ්ඩය භාවිතා නොකළ, ටැග් සහිත තත්ත්වයේ තිබිය යුතුය."
                 en="The item must be unused and still have its tags."
               />
             </li>
-            <li>
-              <L
-                si="දෝෂ සහිත භාණ්ඩයක් ලැබුණේ නම් කරුණාකර වහාම දන්වන්න."
-                en="If you received a faulty item, please tell us right away."
-              />
-            </li>
-          </Bullets>
-        </Section>
-      )}
+          )}
+          <li>
+            <L
+              si="දෝෂ සහිත හෝ වැරදි භාණ්ඩයක් ලැබුණේ නම් කරුණාකර වහාම දන්වන්න."
+              en="If you received a faulty or wrong item, please tell us right away."
+            />
+          </li>
+        </Bullets>
+      </Section>
       <Section title={<L si="ආපසු භාර දෙන ආකාරය" en="How to request a return" />}>
         <p>
           <L

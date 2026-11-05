@@ -79,8 +79,8 @@ export default async function ContactPage() {
       ) : (
         <p>
           <L
-            si="සම්බන්ධ වීමේ විස්තර ඉක්මනින් එක් කෙරේ. එතෙක් ඔබේ ඇණවුම් පිටුව භාවිතා කරන්න."
-            en="Our contact details are coming soon. Until then, please use your order page."
+            si="අපගේ සම්බන්ධ වීමේ විස්තර ඉක්මනින් මෙහි එක් කෙරේ."
+            en="Our contact details will be added here soon."
           />
         </p>
       )}

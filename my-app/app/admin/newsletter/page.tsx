@@ -77,7 +77,7 @@ export default async function AdminNewsletterPage() {
                         <td className="py-2 pr-4 font-mono">{timeFormat.format(new Date(row.createdAt))}</td>
                         <td className="py-2 pr-4 font-mono">{row.unsubscribedAt ? "unsubscribed" : "active"}</td>
                         <td className="py-2">
-                          <DeleteSubscriberButton id={row.id} />
+                          {row.unsubscribedAt ? null : <DeleteSubscriberButton id={row.id} />}
                         </td>
                       </tr>
                     ))}
@@ -85,6 +85,9 @@ export default async function AdminNewsletterPage() {
                 </table>
               </div>
             )}
+            <p className="mt-4 text-sm text-muted">
+              Unsubscribed addresses are kept so they are never mailed again.
+            </p>
           </section>
         </>
       )}
