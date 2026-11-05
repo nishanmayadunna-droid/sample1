@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth-guards";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/orders";
-import { changeOrderStatus } from "@/lib/orders-data";
+import { changeOrderStatus, getOrderById } from "@/lib/orders-data";
+import { eventForStatus } from "@/lib/notifications";
+import { notifyOrder, sweepStaleCancelNotices } from "@/lib/notifications-data";
 import { cancelStaleOrders, saveShipment, waiveAdvance } from "@/lib/orders-data";
 import { parseShipment } from "@/lib/shipping";
 import { listCouriers } from "@/lib/shipping-data";
@@ -29,6 +31,16 @@ export async function setOrderStatusAction(orderId: string, to: string): Promise
     if (outcome === "not_found") return { error: "That order no longer exists." };
     if (outcome === "advance_unpaid") return { error: "Approve the advance slip before confirming this order." };
     if (outcome === "bad_transition") return { error: "That status change isn't allowed from the current status." };
+
+    const event = eventForStatus(to);
+    if (event) {
+      try {
+        const order = await getOrderById(orderId);
+        if (order) await notifyOrder(order, event);
+      } catch (error) {
+        console.error("status notification failed", error instanceof Error ? error.name : "unknown");
+      }
+    }
 
     // Page paths come from the order itself, so nothing here trusts the client.
     const { data } = await supabaseAdmin
@@ -77,6 +89,22 @@ export async function reviewSlipAction(
     if (outcome === "not_found") return { error: "That slip no longer exists." };
     if (outcome === "not_pending") return { error: "That slip was already reviewed. Refresh the page." };
     if (outcome === "bad_state") return { error: "This order is cancelled." };
+    try {
+      const { data: slip } = await supabaseAdmin
+        .from("payment_slips")
+        .select("order_id")
+        .eq("id", slipId)
+        .maybeSingle<{ order_id: string }>();
+      const order = slip ? await getOrderById(slip.order_id) : null;
+      if (order) {
+        await notifyOrder(order, approve ? "slip_approved" : "slip_rejected", {
+          slipId,
+          rejectReason: approve ? undefined : cleanReason,
+        });
+      }
+    } catch (error) {
+      console.error("slip notification failed", error instanceof Error ? error.name : "unknown");
+    }
     revalidatePath("/admin/orders");
     revalidatePath("/admin/orders/[number]", "page");
     revalidatePath("/orders/[number]", "page");
@@ -95,6 +123,11 @@ export async function cancelStaleOrdersAction(): Promise<{ error: string | null;
   await requireAdmin("/admin/orders");
   try {
     const cancelled = await cancelStaleOrders();
+    try {
+      await sweepStaleCancelNotices();
+    } catch (error) {
+      console.error("stale notice sweep failed", error instanceof Error ? error.name : "unknown");
+    }
     revalidatePath("/admin/orders");
     revalidatePath("/admin/orders/[number]", "page");
     revalidatePath("/orders/[number]", "page");

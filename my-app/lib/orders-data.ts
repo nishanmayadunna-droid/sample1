@@ -290,6 +290,16 @@ export async function getOrderForAdmin(orderNumber: string): Promise<Order | nul
   return data ? toOrder(data) : null;
 }
 
+export async function getOrderById(id: string): Promise<Order | null> {
+  const { data, error } = await supabaseAdmin
+    .from("orders")
+    .select(COLUMNS)
+    .eq("id", id)
+    .maybeSingle<OrderRow>();
+  if (error) fail(error);
+  return data ? toOrder(data) : null;
+}
+
 /** Moves an order along its flow; the database function enforces the rules. */
 export async function changeOrderStatus(
   orderId: string,

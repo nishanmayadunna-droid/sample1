@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth-guards";
 import { canCustomerCancel } from "@/lib/orders";
-import { changeOrderStatus, getOrderForUser } from "@/lib/orders-data";
+import { changeOrderStatus, getOrderById, getOrderForUser } from "@/lib/orders-data";
+import { notifyOrder } from "@/lib/notifications-data";
 
 /**
  * Lets the signed-in customer cancel their own order while it is still pending.
@@ -20,6 +21,14 @@ export async function cancelMyOrder(
     if (!order || !canCustomerCancel(order.status, order.paymentStatus)) return { message: "not_allowed" };
     const outcome = await changeOrderStatus(order.id, "cancelled", user.id);
     if (outcome !== "ok") return { message: "not_allowed" };
+
+    // Re-read so the SMS sees the cancelled order; trouble here never changes the result.
+    try {
+      const cancelled = await getOrderById(order.id);
+      if (cancelled) await notifyOrder(cancelled, "cancelled");
+    } catch (error) {
+      console.error("cancel notification failed", error instanceof Error ? error.name : "unknown");
+    }
 
     revalidatePath(`/orders/${orderNumber}`);
     revalidatePath("/account");
