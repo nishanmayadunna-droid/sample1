@@ -29,3 +29,8 @@ export function toCsv(
   }
   return lines.join("\r\n");
 }
+
+/** Unsubscribe tokens are 64 hex characters (two uuids with the dashes removed). */
+export function isUnsubscribeToken(value: string): boolean {
+  return typeof value === "string" && /^[0-9a-f]{64}$/i.test(value);
+}
