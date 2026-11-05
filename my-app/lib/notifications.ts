@@ -170,3 +170,9 @@ export function parseNotificationSettings(
 export function dedupeKey(event: NotificationEvent, slipId?: string): string {
   return (event === "slip_approved" || event === "slip_rejected") && slipId ? slipId : "";
 }
+
+/** The SMS event for an order moving to this status; confirmed and pending send nothing. */
+export function eventForStatus(status: string): NotificationEvent | null {
+  if (status === "shipped" || status === "delivered" || status === "cancelled") return status;
+  return null;
+}

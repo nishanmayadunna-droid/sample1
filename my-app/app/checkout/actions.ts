@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth-guards";
 import { getAllProducts, getCategories } from "@/lib/catalog";
 import { advanceFor, advanceRequired } from "@/lib/advance";
-import { createOrder, findOrderNumberByKey, setOrderDistrict } from "@/lib/orders-data";
+import { createOrder, findOrderNumberByKey, getOrderForUser, setOrderDistrict } from "@/lib/orders-data";
+import { notifyOrder } from "@/lib/notifications-data";
 import type { PointsSettings } from "@/lib/points";
 import { getPointsBalance, getPointsSettings } from "@/lib/points-data";
 import { bankDetailsComplete, getPaymentSettings, isUserTrusted } from "@/lib/payments-data";
@@ -152,6 +153,14 @@ export async function placeOrder(
       await setOrderDistrict(result.orderNumber, user.id, details.value.district);
     } catch (error) {
       console.error("setOrderDistrict failed", error);
+    }
+
+    // Read after the district is recorded so the SMS sees the final order.
+    try {
+      const placed = await getOrderForUser(result.orderNumber, user.id);
+      if (placed) await notifyOrder(placed, "placed");
+    } catch (error) {
+      console.error("placed notification failed", error instanceof Error ? error.name : "unknown");
     }
 
     // Stock changed: refresh everything that shows sizes, sold-out tags or ratings.

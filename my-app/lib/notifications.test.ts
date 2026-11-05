@@ -3,6 +3,7 @@ import {
   NOTIFICATION_EVENTS,
   buildMessage,
   dedupeKey,
+  eventForStatus,
   parseNotificationSettings,
   segmentCount,
   shouldSend,
@@ -179,5 +180,18 @@ describe("dedupeKey", () => {
     expect(dedupeKey("slip_approved", "abc")).toBe("abc");
     expect(dedupeKey("slip_rejected", "abc")).toBe("abc");
     expect(dedupeKey("placed", "abc")).toBe("");
+  });
+});
+
+describe("eventForStatus", () => {
+  it("maps shipped, delivered and cancelled to their events", () => {
+    expect(eventForStatus("shipped")).toBe("shipped");
+    expect(eventForStatus("delivered")).toBe("delivered");
+    expect(eventForStatus("cancelled")).toBe("cancelled");
+  });
+  it("sends nothing for confirmed, pending or unknown", () => {
+    expect(eventForStatus("confirmed")).toBeNull();
+    expect(eventForStatus("pending")).toBeNull();
+    expect(eventForStatus("x")).toBeNull();
   });
 });
