@@ -88,7 +88,14 @@ export function CartTotals({
       )}
       <div className="flex justify-between gap-4">
         <dt className="text-muted">
-          <L si="බෙදාහැරීම" en="Shipping" />
+          {summary.shipping > 0 ? (
+            <L
+              si="බෙදාහැරීම (ඇස්තමේන්තුව, checkout හිදී දිස්ත්‍රික්කය අනුව තීරණය වේ)"
+              en="Shipping (estimate, set by district at checkout)"
+            />
+          ) : (
+            <L si="බෙදාහැරීම" en="Shipping" />
+          )}
         </dt>
         <dd className="text-right">
           {summary.shipping > 0 ? formatPrice(summary.shipping) : <L si="නොමිලේ" en="Free" />}

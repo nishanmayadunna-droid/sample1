@@ -70,7 +70,15 @@ export async function placeOrder(
     // A retry after a lost response (same key) must get the order that was already
     // placed. Planning again would see the spent points and call it a price change.
     const placedAlready = await findOrderNumberByKey(user.id, key);
-    if (placedAlready) return { message: "placed", orderNumber: placedAlready };
+    if (placedAlready) {
+      // The first attempt may have been cut off before the district was recorded.
+      try {
+        await setOrderDistrict(placedAlready, user.id, details.value.district);
+      } catch (error) {
+        console.error("setOrderDistrict failed", error);
+      }
+      return { message: "placed", orderNumber: placedAlready };
+    }
 
     const [products, categories, promotions, settings, zones] = await Promise.all([
       getAllProducts(),

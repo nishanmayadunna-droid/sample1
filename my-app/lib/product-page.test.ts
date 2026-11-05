@@ -16,10 +16,14 @@ function pricing(over: Partial<ItemPricing> = {}): ItemPricing {
 }
 
 describe("deliveryChips", () => {
-  it("shows the shipping fee when nothing ships free", () => {
+  it("says the delivery fee depends on the district when nothing ships free", () => {
     const chips = deliveryChips(pricing(), 35000, null);
     expect(chips).toEqual([
-      { key: "shipping", si: "බෙදාහැරීම Rs 350.00", en: "Shipping Rs 350.00" },
+      {
+        key: "shipping",
+        si: "බෙදාහැරීමේ ගාස්තුව ඔබේ දිස්ත්‍රික්කය අනුව වේ, checkout හිදී පෙන්වයි",
+        en: "Delivery fee depends on your district, shown at checkout",
+      },
     ]);
   });
 

@@ -75,31 +75,14 @@ export async function listCouriers(): Promise<Courier[]> {
   }));
 }
 
-/** Replaces every zone with the given list (delete, then insert in order). Fees are cents. */
+/** Replaces every zone in one database transaction (all or nothing). Fees are cents. */
 export async function saveZones(
   zones: { name: string; fee: number; districts: string[] }[],
 ): Promise<void> {
-  const { error: deleteError } = await supabaseAdmin
-    .from("shipping_zones")
-    .delete()
-    .not("id", "is", null);
-  if (deleteError) {
-    console.error("shipping zones delete failed", deleteError.code);
-    throw new Error("shipping zones delete failed");
-  }
-  if (zones.length === 0) return;
-  const { error: insertError } = await supabaseAdmin.from("shipping_zones").insert(
-    zones.map((zone, index) => ({
-      name: zone.name,
-      fee: zone.fee,
-      districts: zone.districts,
-      sort_order: index,
-    })),
-  );
-  if (insertError) {
-    // The old zones are already gone: say so loudly so the admin saves again.
-    console.error("shipping zones insert failed after delete", insertError.code);
-    throw new Error("shipping zones insert failed");
+  const { error } = await supabaseAdmin.rpc("save_shipping_zones", { p_zones: zones });
+  if (error) {
+    console.error("shipping zones save failed", error.code);
+    throw new Error("shipping zones save failed");
   }
 }
 

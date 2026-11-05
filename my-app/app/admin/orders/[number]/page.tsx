@@ -138,7 +138,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
           {order.courierName && order.trackingNumber && (
             <p className="mt-2 text-sm">
               {order.courierName} · <span className="font-mono">{order.trackingNumber}</span>
-              {order.trackingUrl && (
+              {order.trackingUrl?.startsWith("https://") && (
                 <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="ml-3 text-blaze underline underline-offset-4">
                   Track
                 </a>

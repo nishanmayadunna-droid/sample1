@@ -201,7 +201,7 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
             <br />
             <L si="Tracking අංකය" en="Tracking number" />: <span className="font-mono">{order.trackingNumber}</span>
           </p>
-          {order.trackingUrl && (
+          {order.trackingUrl?.startsWith("https://") && (
             <a
               href={order.trackingUrl}
               target="_blank"

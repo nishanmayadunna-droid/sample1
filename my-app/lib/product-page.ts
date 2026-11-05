@@ -1,6 +1,6 @@
 // Pure rules for the product page's delivery and offer chips. Every chip is
 // real data (a running promotion or the admin's shipping fee).
-import { formatPrice, formatPriceWhole } from "./products";
+import { formatPriceWhole } from "./products";
 import type { ItemPricing } from "./promotions";
 
 export type DeliveryChip = { key: string; si: string; en: string };
@@ -11,7 +11,7 @@ function colomboDate(date: Date, locale: string): string {
 
 export function deliveryChips(
   pricing: ItemPricing,
-  /** The admin's shipping fee, in cents. */
+  /** The admin's default shipping fee, in cents (only whether it is above zero matters here). */
   shippingFee: number,
   /** When the promotion behind the price ends, if it does. */
   endsAt: Date | null,
@@ -21,8 +21,12 @@ export function deliveryChips(
   if (pricing.freeShipping) {
     chips.push({ key: "free-shipping", si: "නොමිලේ බෙදාහැරීම", en: "Free shipping" });
   } else if (shippingFee > 0) {
-    const fee = formatPrice(shippingFee);
-    chips.push({ key: "shipping", si: `බෙදාහැරීම ${fee}`, en: `Shipping ${fee}` });
+    // The fee is set per district at checkout, so no single amount is stated here.
+    chips.push({
+      key: "shipping",
+      si: "බෙදාහැරීමේ ගාස්තුව ඔබේ දිස්ත්‍රික්කය අනුව වේ, checkout හිදී පෙන්වයි",
+      en: "Delivery fee depends on your district, shown at checkout",
+    });
   }
 
   for (const { promotion, rule } of pricing.conditional) {

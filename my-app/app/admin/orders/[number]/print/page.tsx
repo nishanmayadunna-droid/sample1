@@ -12,6 +12,8 @@ export const metadata: Metadata = { title: "Print slip" };
 const PRINT_CSS = `
 @page { size: A5; margin: 10mm; }
 @media print {
+  html:root { color-scheme: light; --bg: #fff; --surface: #fff; --text: #000; --muted: #333; --line: rgba(0, 0, 0, 0.35); }
+  body { background: #fff !important; color: #000 !important; }
   body > *:not(main) { display: none !important; }
   main { display: block !important; }
   .slip { max-width: none !important; padding: 0 !important; }

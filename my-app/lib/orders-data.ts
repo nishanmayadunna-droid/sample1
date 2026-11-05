@@ -238,13 +238,14 @@ export async function listOrdersForUser(userId: string): Promise<Order[]> {
   return data.map(toOrder);
 }
 
-/** Records the district on the user's order (idempotent). Callers log failures and carry on. */
+/** Records the district on the user's order, only while none is stored yet. Callers log failures and carry on. */
 export async function setOrderDistrict(orderNumber: string, userId: string, district: string): Promise<void> {
   const { error } = await supabaseAdmin
     .from("orders")
     .update({ district })
     .eq("order_number", orderNumber)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .is("district", null);
   if (error) fail(error);
 }
 
@@ -389,7 +390,7 @@ export async function saveShipment(
   if (error) fail(error);
   if (!data) return "not_found";
   if (data.status !== "confirmed" && data.status !== "shipped") return "bad_state";
-  const { error: updateError } = await supabaseAdmin
+  const { data: updated, error: updateError } = await supabaseAdmin
     .from("orders")
     .update({
       courier_name: courier.name,
@@ -397,7 +398,10 @@ export async function saveShipment(
       tracking_url: trackingUrl(courier.trackingUrlTemplate, trackingNumber),
     })
     .eq("order_number", orderNumber)
-    .in("status", ["confirmed", "shipped"]);
+    .in("status", ["confirmed", "shipped"])
+    .select("id");
   if (updateError) fail(updateError);
+  // The order moved on (e.g. cancelled) between the check and the update.
+  if (!updated || updated.length === 0) return "bad_state";
   return "ok";
 }

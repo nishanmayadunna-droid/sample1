@@ -48,7 +48,7 @@ export async function saveZonesAction(_prev: ZonesState, formData: FormData): Pr
   try {
     await saveZones(parsed.value);
   } catch {
-    return { errors: ["Saving failed and the zones may be empty now. Press Save again."], saved: false };
+    return { errors: ["Could not save the zones, nothing was changed."], saved: false };
   }
   revalidateShipping();
   return { errors: [], saved: true };

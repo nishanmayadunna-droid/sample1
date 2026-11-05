@@ -133,6 +133,10 @@ describe("collectOnDelivery", () => {
     expect(collectOnDelivery({ total: 500000, advanceAmount: 100000, paymentStatus: "advance_due" })).toBe(500000);
     expect(collectOnDelivery({ total: 500000, advanceAmount: 0, paymentStatus: "unpaid" })).toBe(500000);
   });
+  it("collects the full total while a slip is under review or the advance was waived", () => {
+    expect(collectOnDelivery({ total: 500000, advanceAmount: 100000, paymentStatus: "slip_uploaded" })).toBe(500000);
+    expect(collectOnDelivery({ total: 500000, advanceAmount: 0, paymentStatus: "waived" })).toBe(500000);
+  });
   it("never goes below zero", () => {
     expect(collectOnDelivery({ total: 100000, advanceAmount: 150000, paymentStatus: "advance_paid" })).toBe(0);
   });
