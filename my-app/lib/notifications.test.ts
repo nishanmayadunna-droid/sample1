@@ -90,6 +90,39 @@ describe("buildMessage", () => {
   });
 });
 
+describe("buildMessage fallbacks", () => {
+  const ship: MessageData = {
+    ...base,
+    courierName: "C".repeat(20),
+    trackingNumber: "T".repeat(15),
+    trackingUrl: "https://t.example/" + "x".repeat(42),
+  };
+
+  it("drops a long tracking url in si but keeps courier and tracking number", () => {
+    const m = buildMessage("shipped", ship, "si");
+    expect(m).not.toContain("http");
+    expect(segmentCount(m)).toBeLessThanOrEqual(2);
+    expect(m).toContain("C".repeat(20));
+    expect(m).toContain("T".repeat(15));
+  });
+
+  it("keeps the url when it fits", () => {
+    const m = buildMessage("shipped", { ...ship, trackingUrl: "https://t.example/AB" }, "en");
+    expect(m).toContain("https://t.example/AB");
+  });
+
+  it("truncates a long reject reason with an ellipsis", () => {
+    const data: MessageData = { ...base, rejectReason: "r".repeat(400) };
+    for (const [lang, ellipsis] of [["en", "..."], ["si", "…"]] as const) {
+      const m = buildMessage("slip_rejected", data, lang);
+      expect(segmentCount(m)).toBeLessThanOrEqual(2);
+      expect(m).toContain("NB-10001");
+      expect(m).toContain("r" + ellipsis);
+      expect(m).not.toContain("r".repeat(400));
+    }
+  });
+});
+
 describe("segmentCount", () => {
   it("counts GSM-7 and Unicode segments", () => {
     expect(segmentCount("a".repeat(160))).toBe(1);

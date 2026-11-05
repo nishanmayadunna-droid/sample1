@@ -108,7 +108,7 @@ export function buildMessage(event: NotificationEvent, data: MessageData, lang: 
   if (event === "slip_rejected" && data.rejectReason) {
     const full = Array.from(data.rejectReason);
     for (let len = full.length - 1; len >= 0; len--) {
-      const reason = full.slice(0, len).join("").trimEnd() + "…";
+      const reason = full.slice(0, len).join("").trimEnd() + (lang === "en" ? "..." : "…");
       text = compose(event, data, lang, { withUrl: false, reason });
       if (segmentCount(text) <= MAX_SEGMENTS) return text;
     }
