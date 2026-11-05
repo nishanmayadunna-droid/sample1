@@ -27,3 +27,12 @@ Suggested starting rules, per IP: `POST /signin` 10 per minute, `POST /api/auth/
 
 ## 6. Smoke test (after the domain is live)
 Sign up, sign in (email and Google), add to cart, checkout (COD and, if on, advance), cancel, admin confirm/ship/deliver, points earned, review, sign out.
+
+## 7. Search, analytics, monitoring (Part 15)
+- [ ] Vercel dashboard -> project -> **Web Analytics: Enable** and **Speed Insights: Enable** (the code is already installed; nothing is collected until these are on).
+- [ ] When the domain exists: set `NEXT_PUBLIC_SITE_URL=https://<domain>` in Vercel (Production) and redeploy, so canonical links, the sitemap and share cards use it.
+- [ ] Google Search Console: add the site, submit `https://<domain>/sitemap.xml`, check the Product pages for rich-result errors.
+- [ ] Free uptime monitor (e.g. UptimeRobot) on `https://<domain>/api/health` (expects HTTP 200 and `{"ok":true}`); alert to your phone/email.
+- [ ] Optional: Vercel Firewall rate limit on `/api/health` (it is unauthenticated and reads the database).
+- [ ] Share a product link in WhatsApp and Facebook and check the preview card (title, photo).
+- [ ] Previews are never indexed (robots disallows everything outside production) -- only the production domain should appear in Google.
