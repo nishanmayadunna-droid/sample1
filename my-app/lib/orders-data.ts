@@ -3,6 +3,7 @@
 // pass the session user's id.
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { trackingUrl } from "@/lib/shipping";
 import type { PlannedItem } from "@/lib/order-plan";
 import type {
   CancelReason,
@@ -372,4 +373,31 @@ export async function waiveAdvance(orderId: string): Promise<"ok" | "not_found" 
   if (error.message.includes("order_not_found")) return "not_found";
   if (error.message.includes("bad_state")) return "bad_state";
   fail(error);
+}
+
+/** Records the courier and tracking number on a confirmed or shipped order. */
+export async function saveShipment(
+  orderNumber: string,
+  courier: { name: string; trackingUrlTemplate: string | null },
+  trackingNumber: string,
+): Promise<"ok" | "not_found" | "bad_state"> {
+  const { data, error } = await supabaseAdmin
+    .from("orders")
+    .select("status")
+    .eq("order_number", orderNumber)
+    .maybeSingle<{ status: OrderStatus }>();
+  if (error) fail(error);
+  if (!data) return "not_found";
+  if (data.status !== "confirmed" && data.status !== "shipped") return "bad_state";
+  const { error: updateError } = await supabaseAdmin
+    .from("orders")
+    .update({
+      courier_name: courier.name,
+      tracking_number: trackingNumber,
+      tracking_url: trackingUrl(courier.trackingUrlTemplate, trackingNumber),
+    })
+    .eq("order_number", orderNumber)
+    .in("status", ["confirmed", "shipped"]);
+  if (updateError) fail(updateError);
+  return "ok";
 }

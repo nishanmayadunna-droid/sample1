@@ -5,10 +5,12 @@ import { requireAdmin } from "@/lib/auth-guards";
 import { paymentStatusLabel } from "@/lib/advance";
 import { cancelReasonLabel, statusLabel } from "@/lib/orders";
 import { getOrderForAdmin } from "@/lib/orders-data";
+import { listCouriers } from "@/lib/shipping-data";
 import { isUserTrusted, listSlipsForOrder, slipSignedUrl } from "@/lib/payments-data";
 import { formatPrice } from "@/lib/products";
 import AdminTabs from "../../AdminTabs";
 import PaymentReview from "../PaymentReview";
+import ShipmentForm from "../ShipmentForm";
 import StatusButtons from "../StatusButtons";
 import WaiveAdvanceButton from "../WaiveAdvanceButton";
 
@@ -39,6 +41,16 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
           (await listSlipsForOrder(order.id)).map(async (slip) => ({ ...slip, url: await slipSignedUrl(slip.path) })),
         )
       : [];
+
+  const canShip = order.status === "confirmed" || order.status === "shipped";
+  const couriers = canShip
+    ? (
+        await listCouriers().catch((error) => {
+          console.error("couriers lookup failed", error);
+          return [];
+        })
+      ).filter((c) => c.active)
+    : [];
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6">
@@ -113,6 +125,29 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
         </section>
       )}
 
+      {canShip && (
+        <section className="mt-8">
+          <h2 className="eyebrow text-muted">Shipment</h2>
+          {order.courierName && order.trackingNumber && (
+            <p className="mt-2 text-sm">
+              {order.courierName} · <span className="font-mono">{order.trackingNumber}</span>
+              {order.trackingUrl && (
+                <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="ml-3 text-blaze underline underline-offset-4">
+                  Track
+                </a>
+              )}
+            </p>
+          )}
+          <ShipmentForm
+            key={`${order.courierName}-${order.trackingNumber}`}
+            orderNumber={order.orderNumber}
+            couriers={couriers.map((c) => ({ id: c.id, name: c.name }))}
+            courierName={order.courierName}
+            trackingNumber={order.trackingNumber}
+          />
+        </section>
+      )}
+
       <section className="mt-8">
         <h2 className="eyebrow text-muted">Customer</h2>
         <p className="mt-2 text-sm leading-relaxed">
@@ -125,6 +160,12 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
           <span className="whitespace-pre-line">{order.address}</span>
           <br />
           {order.city}
+          {order.district && (
+            <>
+              <br />
+              {order.district} district
+            </>
+          )}
         </p>
         {order.note && <p className="mt-2 whitespace-pre-line text-sm text-muted">Note: {order.note}</p>}
       </section>

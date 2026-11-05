@@ -74,3 +74,74 @@ export async function listCouriers(): Promise<Courier[]> {
     sortOrder: row.sort_order,
   }));
 }
+
+/** Replaces every zone with the given list (delete, then insert in order). Fees are cents. */
+export async function saveZones(
+  zones: { name: string; fee: number; districts: string[] }[],
+): Promise<void> {
+  const { error: deleteError } = await supabaseAdmin
+    .from("shipping_zones")
+    .delete()
+    .not("id", "is", null);
+  if (deleteError) {
+    console.error("shipping zones delete failed", deleteError.code);
+    throw new Error("shipping zones delete failed");
+  }
+  if (zones.length === 0) return;
+  const { error: insertError } = await supabaseAdmin.from("shipping_zones").insert(
+    zones.map((zone, index) => ({
+      name: zone.name,
+      fee: zone.fee,
+      districts: zone.districts,
+      sort_order: index,
+    })),
+  );
+  if (insertError) {
+    // The old zones are already gone: say so loudly so the admin saves again.
+    console.error("shipping zones insert failed after delete", insertError.code);
+    throw new Error("shipping zones insert failed");
+  }
+}
+
+/** Creates a courier (no id) or updates one. `active` is left alone when omitted. */
+export async function saveCourier(input: {
+  id?: string;
+  name: string;
+  template: string | null;
+  active?: boolean;
+}): Promise<void> {
+  const fields = {
+    name: input.name,
+    tracking_url_template: input.template,
+    ...(input.active === undefined ? {} : { active: input.active }),
+  };
+  if (input.id) {
+    const { error } = await supabaseAdmin.from("couriers").update(fields).eq("id", input.id);
+    if (error) {
+      console.error("courier update failed", error.code);
+      throw new Error("courier update failed");
+    }
+    return;
+  }
+  const { data: last } = await supabaseAdmin
+    .from("couriers")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .returns<{ sort_order: number }[]>();
+  const { error } = await supabaseAdmin
+    .from("couriers")
+    .insert({ ...fields, sort_order: (last?.[0]?.sort_order ?? -1) + 1 });
+  if (error) {
+    console.error("courier insert failed", error.code);
+    throw new Error("courier insert failed");
+  }
+}
+
+export async function deleteCourier(id: string): Promise<void> {
+  const { error } = await supabaseAdmin.from("couriers").delete().eq("id", id);
+  if (error) {
+    console.error("courier delete failed", error.code);
+    throw new Error("courier delete failed");
+  }
+}
