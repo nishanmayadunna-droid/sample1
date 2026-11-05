@@ -76,12 +76,16 @@ function compose(event: NotificationEvent, d: MessageData, lang: Lang, o: Option
         : `Northbound: your slip for ${n} was not accepted: ${reason}. Please upload a new one.`;
     }
     case "shipped": {
-      const courier = d.courierName ?? "";
-      const no = d.trackingNumber ?? "";
-      const url = o.withUrl && d.trackingUrl ? ` ${d.trackingUrl}` : "";
-      return si
-        ? `Northbound: ${n} ${courier} මගින් යවා ඇත. Tracking ${no}.${url}`
-        : `Northbound: order ${n} is on its way via ${courier}, tracking ${no}.${url}`;
+      const courier = d.courierName?.trim() ?? "";
+      const no = d.trackingNumber?.trim() ?? "";
+      const url = o.withUrl && no && d.trackingUrl ? ` ${d.trackingUrl}` : "";
+      if (si) {
+        const via = courier ? ` ${courier} මගින්` : "";
+        return `Northbound: ${n}${via} යවා ඇත.${no ? ` Tracking ${no}.` : ""}${url}`;
+      }
+      const via = courier ? ` via ${courier}` : "";
+      const track = no ? `${courier ? ", " : " "}tracking ${no}` : "";
+      return `Northbound: order ${n} is on its way${via}${track}.${url}`;
     }
     case "delivered": {
       const p = d.pointsEarned ?? 0;
@@ -175,4 +179,11 @@ export function dedupeKey(event: NotificationEvent, slipId?: string): string {
 export function eventForStatus(status: string): NotificationEvent | null {
   if (status === "shipped" || status === "delivered" || status === "cancelled") return status;
   return null;
+}
+
+/** Auto-cancel notices are only sent for orders cancelled within this window. */
+export const CANCEL_NOTICE_WINDOW_HOURS = 24;
+
+export function cancelNoticeCutoff(now: Date): string {
+  return new Date(now.getTime() - CANCEL_NOTICE_WINDOW_HOURS * 3600_000).toISOString();
 }

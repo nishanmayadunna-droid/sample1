@@ -19,6 +19,7 @@ import {
   type MessageData,
   type NotificationEvent,
   type NotificationSettings,
+  cancelNoticeCutoff,
 } from "@/lib/notifications";
 
 type SettingsRow = { enabled: boolean } & Record<`ev_${NotificationEvent}`, boolean>;
@@ -154,6 +155,9 @@ export async function sweepStaleCancelNotices(): Promise<void> {
       .select("order_number")
       .eq("status", "cancelled")
       .eq("cancel_reason", "advance_expired")
+      // Only recent cancels: the first click must not text customers about orders
+      // cancelled long ago. The dedupe log makes repeats inside the window no-ops.
+      .gte("cancelled_at", cancelNoticeCutoff(new Date()))
       .order("created_at", { ascending: false })
       .limit(100)
       .returns<{ order_number: string }[]>();

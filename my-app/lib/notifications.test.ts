@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   NOTIFICATION_EVENTS,
   buildMessage,
+  cancelNoticeCutoff,
   dedupeKey,
   eventForStatus,
   parseNotificationSettings,
@@ -193,5 +194,40 @@ describe("eventForStatus", () => {
     expect(eventForStatus("confirmed")).toBeNull();
     expect(eventForStatus("pending")).toBeNull();
     expect(eventForStatus("x")).toBeNull();
+  });
+});
+
+describe("shipped message fallbacks", () => {
+  const base: MessageData = { orderNumber: "NB-10001", total: 100000 };
+  const cases: [string, Partial<MessageData>][] = [
+    ["none", {}],
+    ["courier only", { courierName: "Pronto" }],
+    ["tracking only", { trackingNumber: "AB123" }],
+    ["both", { courierName: "Pronto", trackingNumber: "AB123" }],
+  ];
+  for (const lang of ["en", "si"] as const) {
+    for (const [name, extra] of cases) {
+      it(`${lang} ${name}: short, no blank artefacts`, () => {
+        const t = buildMessage("shipped", { ...base, ...extra }, lang);
+        expect(segmentCount(t)).toBeLessThanOrEqual(2);
+        expect(t).not.toMatch(/, tracking \.|tracking \.|via \.|via ,|  /);
+        expect(t).toContain("NB-10001");
+      });
+    }
+  }
+  it("reads naturally in English", () => {
+    expect(buildMessage("shipped", base, "en")).toBe("Northbound: order NB-10001 is on its way.");
+    expect(buildMessage("shipped", { ...base, courierName: "Pronto" }, "en")).toBe(
+      "Northbound: order NB-10001 is on its way via Pronto.",
+    );
+    expect(buildMessage("shipped", { ...base, trackingNumber: "AB123" }, "en")).toBe(
+      "Northbound: order NB-10001 is on its way tracking AB123.",
+    );
+  });
+});
+
+describe("cancelNoticeCutoff", () => {
+  it("is 24 hours before now", () => {
+    expect(cancelNoticeCutoff(new Date("2026-11-10T12:00:00Z"))).toBe("2026-11-09T12:00:00.000Z");
   });
 });
