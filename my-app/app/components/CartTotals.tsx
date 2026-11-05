@@ -65,9 +65,12 @@ export function CartProgress({ summary }: { summary: CartSummary<unknown> }) {
 /** Subtotal, order discount, shipping and total rows. */
 export function CartTotals({
   summary,
+  shippingIsEstimate = true,
   className = "",
 }: {
   summary: CartSummary<unknown>;
+  /** False at checkout, where the fee is the final per-district one. */
+  shippingIsEstimate?: boolean;
   className?: string;
 }) {
   return (
@@ -88,7 +91,7 @@ export function CartTotals({
       )}
       <div className="flex justify-between gap-4">
         <dt className="text-muted">
-          {summary.shipping > 0 ? (
+          {summary.shipping > 0 && shippingIsEstimate ? (
             <L
               si="බෙදාහැරීම (ඇස්තමේන්තුව, checkout හිදී දිස්ත්‍රික්කය අනුව තීරණය වේ)"
               en="Shipping (estimate, set by district at checkout)"

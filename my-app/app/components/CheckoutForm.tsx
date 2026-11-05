@@ -386,7 +386,7 @@ export default function CheckoutForm({
             <span className="text-blaze">− {formatPrice(applied.discount)}</span>
           </p>
         )}
-        <CartTotals summary={{ ...summary, total }} className="mt-4" />
+        <CartTotals summary={{ ...summary, total }} shippingIsEstimate={false} className="mt-4" />
       </aside>
     </div>
   );
