@@ -1,21 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { subscribeNewsletter } from "../newsletter-actions";
 import L from "./L";
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+type Status = "idle" | "done" | "invalid" | "busy" | "error";
 
 export default function Newsletter() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "done" | "error">("idle");
+  const [status, setStatus] = useState<Status>("idle");
+  const [pending, startTransition] = useTransition();
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!EMAIL_RE.test(email)) {
-      setStatus("error");
-      return;
-    }
-    setStatus("done"); // Demo only — no request is sent.
+    const formData = new FormData(e.currentTarget);
+    startTransition(async () => {
+      try {
+        const result = await subscribeNewsletter(formData);
+        setStatus(result.message === "subscribed" ? "done" : result.message);
+      } catch {
+        setStatus("error");
+      }
+    });
   }
 
   return (
@@ -59,26 +64,46 @@ export default function Newsletter() {
             <div className="mt-3 flex flex-col gap-3 sm:flex-row">
               <input
                 id="newsletter-email"
+                name="email"
                 type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (status === "error") setStatus("idle");
+                onChange={() => {
+                  if (status !== "idle") setStatus("idle");
                 }}
                 placeholder="you@example.com"
-                aria-invalid={status === "error"}
+                aria-invalid={status === "invalid"}
                 className="w-full rounded-full border border-white/20 bg-white/5 px-5 py-3 text-panelink placeholder:text-panelmuted focus:border-blaze focus:outline-none"
               />
               <button
                 type="submit"
-                className="shrink-0 rounded-full bg-blaze px-6 py-3 font-medium text-white transition-transform hover:-translate-y-0.5"
+                disabled={pending}
+                className="shrink-0 rounded-full bg-blaze px-6 py-3 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60"
               >
                 <L si="ලියාපදිංචි වන්න" en="Subscribe" />
               </button>
             </div>
-            {status === "error" && (
-              <p className="mt-2 font-mono text-xs text-blaze">
+            {/* Honeypot: hidden from people and assistive tech, still submitted. */}
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              defaultValue=""
+              className="absolute -left-[9999px] h-px w-px overflow-hidden opacity-0"
+            />
+            {status === "invalid" && (
+              <p role="alert" className="mt-2 font-mono text-xs text-blaze">
                 <L si="ඉදිරියට යාමට වලංගු ඊමේල් ලිපිනයක් දෙන්න." en="Enter a valid email address to continue." />
+              </p>
+            )}
+            {status === "busy" && (
+              <p role="alert" className="mt-2 font-mono text-xs text-blaze">
+                <L si="දැන් ඉතා කාර්යබහුලයි. පසුව නැවත උත්සාහ කරන්න." en="We're busy right now. Please try again later." />
+              </p>
+            )}
+            {status === "error" && (
+              <p role="alert" className="mt-2 font-mono text-xs text-blaze">
+                <L si="යමක් වැරදුණා. නැවත උත්සාහ කරන්න." en="Something went wrong. Please try again." />
               </p>
             )}
           </form>
