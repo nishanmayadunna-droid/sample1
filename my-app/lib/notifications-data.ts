@@ -53,7 +53,9 @@ export async function getNotificationSettings(): Promise<NotificationSettings> {
 export async function saveNotificationSettings(value: NotificationSettings): Promise<void> {
   const update: Record<string, boolean> = { enabled: value.enabled };
   for (const e of NOTIFICATION_EVENTS) update[`ev_${e}`] = value.events[e];
-  const { error } = await supabaseAdmin.from("notification_settings").update(update).eq("id", true);
+  const { error } = await supabaseAdmin
+    .from("notification_settings")
+    .upsert({ id: true, ...update }, { onConflict: "id" });
   if (error) {
     console.error("notification settings save failed", error.code ?? "unknown");
     throw new Error("notification settings save failed");
@@ -81,7 +83,9 @@ export async function notifyOrder(
       getNotificationSettings(),
       getSmsSettings(),
       getStoreSettings(),
-      actual === "advance_due" ? getPaymentSettings() : Promise.resolve(null),
+      actual === "advance_due"
+        ? getPaymentSettings().catch(() => ({ expiryHours: 0 }))
+        : Promise.resolve(null),
     ]);
 
     const data: MessageData = {
@@ -232,14 +236,28 @@ export async function resendNotification(
     });
     if (decision !== "send") return "failed_again";
 
-    const ok = await sendSms(row.phone, row.body, sms.senderId);
-    if (!ok) return "failed_again";
-    const { error: updateError } = await supabaseAdmin
+    // Claim atomically before sending so two concurrent clicks cannot both send.
+    const { data: claimed, error: claimError } = await supabaseAdmin
       .from("order_notifications")
       .update({ status: "sent" })
       .eq("id", row.id)
-      .eq("status", "failed");
-    if (updateError) console.error("notification update failed", updateError.code ?? "unknown");
+      .eq("status", "failed")
+      .select("id");
+    if (claimError) {
+      console.error("notification claim failed", claimError.code ?? "unknown");
+      return "failed_again";
+    }
+    if (!claimed || claimed.length === 0) return "not_failed";
+
+    const ok = await sendSms(row.phone, row.body, sms.senderId);
+    if (!ok) {
+      const { error: revertError } = await supabaseAdmin
+        .from("order_notifications")
+        .update({ status: "failed" })
+        .eq("id", row.id);
+      if (revertError) console.error("notification revert failed", revertError.code ?? "unknown");
+      return "failed_again";
+    }
     return "ok";
   } catch (e) {
     console.error("notification resend error", e instanceof Error ? e.name : "unknown");
