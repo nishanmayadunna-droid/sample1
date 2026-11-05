@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatPrice } from "@/lib/products";
+import { allSoldOut } from "@/lib/stock";
+import { absoluteUrl } from "@/lib/site";
+import { jsonLdScript, productJsonLd } from "@/lib/seo";
 import { deliveryChips } from "@/lib/product-page";
 import { withPricing } from "@/lib/promotions";
 import { getRunningPromotions, getStoreSettings } from "@/lib/storefront";
@@ -35,9 +38,13 @@ export async function generateMetadata({
   const { id } = await params;
   const product = await getProduct(id);
   if (!product) return { title: "Product not found" };
+  const description = product.description.trim();
+  const photo = product.gallery[0] ?? product.imageUrl;
   return {
     title: product.name,
-    description: product.description,
+    description: description.length > 160 ? `${description.slice(0, 157).trimEnd()}...` : description,
+    alternates: { canonical: `/products/${encodeURIComponent(product.id)}` },
+    openGraph: photo ? { images: [photo] } : undefined,
   };
 }
 
@@ -80,8 +87,22 @@ export default async function ProductPage({
     { key: "origin", label: <L si="නිෂ්පාදිත රට" en="Origin" />, value: product.spec.origin },
   ];
 
+  const jsonLd = productJsonLd({
+    name: product.name,
+    description: product.description,
+    url: absoluteUrl(`/products/${encodeURIComponent(product.id)}`),
+    images: product.gallery,
+    price: pricing.price,
+    inStock: !allSoldOut(product),
+    rating: product.rating,
+  });
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 pb-28 sm:px-6 sm:py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
+      />
       <nav className="mb-8 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted">
         <Link href="/products" className="hover:text-ink">
           <L si="සාප්පුව" en="Shop" />

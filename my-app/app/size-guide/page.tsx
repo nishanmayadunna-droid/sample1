@@ -6,7 +6,7 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Size guide",
-  description: "General body measurements in centimetres.",
+  description: "General body measurements in centimetres to help you choose a size.",
 };
 
 const tops = [

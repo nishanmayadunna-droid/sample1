@@ -8,7 +8,7 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Privacy",
-  description: "What information we collect and why.",
+  description: "What personal information Northbound collects and why.",
 };
 
 export default async function PrivacyPage() {

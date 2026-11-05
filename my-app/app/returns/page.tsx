@@ -8,7 +8,7 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Returns",
-  description: "Our returns policy.",
+  description: "Northbound's returns and exchange policy.",
 };
 
 export default async function ReturnsPage() {

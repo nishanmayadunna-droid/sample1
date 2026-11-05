@@ -9,10 +9,20 @@ import ProductGrid from "../components/ProductGrid";
 import L from "../components/L";
 import PromoBanner from "../components/PromoBanner";
 
-export const metadata: Metadata = {
-  title: "Shop all",
-  description: "Browse the full Northbound collection.",
-};
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Params>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const filtered = (["category", "view", "q", "promo"] as const).some((k) => params[k]);
+  return {
+    title: "Shop all",
+    description: "Browse the full Northbound collection.",
+    alternates: { canonical: "/products" },
+    ...(filtered ? { robots: { index: false, follow: true } } : {}),
+  };
+}
 
 const VIEW_TITLES: Record<ProductView, { si: string; en: string }> = {
   deals: { si: "⚡ Flash Deals", en: "⚡ Flash Deals" },

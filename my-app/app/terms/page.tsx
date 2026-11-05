@@ -6,7 +6,7 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Terms",
-  description: "The terms for shopping with us.",
+  description: "The terms for shopping with Northbound.",
 };
 
 export default function TermsPage() {

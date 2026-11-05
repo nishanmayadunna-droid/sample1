@@ -17,6 +17,7 @@ import { freeShippingThreshold } from "@/lib/promotions";
 import { getAllProducts, getCategories } from "@/lib/catalog";
 import { toShellProduct, type Category, type ShellProduct } from "@/lib/products";
 import { langBootScript } from "@/lib/i18n";
+import { siteUrl } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,12 +54,21 @@ const sinhalaBold = Noto_Sans_Sinhala({
 export const revalidate = 60;
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: {
     default: "Northbound — Hard-wearing field apparel",
     template: "%s · Northbound",
   },
   description:
     "Honest materials, quiet design, and hardware built to outlast the season. Field apparel for the cold miles.",
+  openGraph: {
+    type: "website",
+    siteName: "Northbound",
+    title: "Northbound — Hard-wearing field apparel",
+    description:
+      "Honest materials, quiet design, and hardware built to outlast the season. Field apparel for the cold miles.",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 /** Products for the search box and cart drawer; none if the catalog can't be read. */

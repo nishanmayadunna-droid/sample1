@@ -6,7 +6,7 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "About",
-  description: "Who we are and how we sell.",
+  description: "Who we are and how Northbound picks and sells hard-wearing apparel.",
 };
 
 export default function AboutPage() {

@@ -3,6 +3,9 @@ import { dealProducts, soonestDealEnd } from "@/lib/home-sections";
 import { freeShippingThreshold, withPricing } from "@/lib/promotions";
 import { getRunningPromotions, getVisiblePromises } from "@/lib/storefront";
 import { promiseItems } from "@/lib/storefront-form";
+import { getStoreContact } from "@/lib/store-contact-data";
+import { absoluteUrl, siteUrl } from "@/lib/site";
+import { jsonLdScript, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 import CategoryShelf from "./components/CategoryShelf";
 import DealsRow from "./components/DealsRow";
 import HomeHero from "./components/HomeHero";
@@ -27,8 +30,29 @@ export default async function Home() {
   const hasBanner = promotions.some((p) => p.banner.mode !== "none");
   const hero = products.find((p) => p.id === "field-jacket") ?? products.find((p) => p.featured);
 
+  let phone: string | undefined;
+  let email: string | undefined;
+  try {
+    const contact = await getStoreContact();
+    phone = contact.phone || undefined;
+    email = contact.email || undefined;
+  } catch {
+    // contact details are optional in the structured data
+  }
+  const structured = [
+    organizationJsonLd({ name: "Northbound", url: absoluteUrl("/"), phone, email }),
+    websiteJsonLd({ name: "Northbound", url: siteUrl() }),
+  ];
+
   return (
     <div>
+      {structured.map((data, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(data) }}
+        />
+      ))}
       <PromoBanners promotions={promotions} />
       {!hasBanner && <HomeHero hero={hero} />}
       <DealsRow deals={deals} endsAt={soonestDealEnd(deals, promotions)} />

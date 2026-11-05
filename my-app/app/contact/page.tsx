@@ -9,7 +9,7 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "How to reach us.",
+  description: "How to reach Northbound by phone, WhatsApp, email or in person.",
 };
 
 const linkClass = "text-blaze underline underline-offset-4";
