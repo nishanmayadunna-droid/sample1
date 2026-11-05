@@ -1,12 +1,12 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { signIn } from "next-auth/react";
-import { signUpAction, type SignUpState } from "./actions";
+import { requestPhoneCodeAction, signUpAction, type SignUpState } from "./actions";
 import { AUTH_MESSAGES, signInErrorMessage, type AuthMessage } from "@/lib/auth-messages";
 import L from "@/app/components/L";
 
-type Tab = "signin" | "signup";
+type Tab = "signin" | "signup" | "phone";
 
 function Message({ code }: { code: AuthMessage }) {
   return <L {...AUTH_MESSAGES[code]} />;
@@ -145,12 +145,125 @@ function SignUpPanel({ callbackUrl }: { callbackUrl: string }) {
   );
 }
 
+function PhonePanel({ callbackUrl }: { callbackUrl: string }) {
+  const [step, setStep] = useState<"phone" | "code">("phone");
+  const [phone, setPhone] = useState("");
+  const [message, setMessage] = useState<AuthMessage | null>(null);
+
+  const [, sendCode, sending] = useActionState(
+    async (_prev: null, formData: FormData) => {
+      const value = String(formData.get("phone") ?? phone);
+      setPhone(value);
+      const result = await requestPhoneCodeAction(value);
+      setMessage(result);
+      if (!result) setStep("code");
+      return null;
+    },
+    null,
+  );
+
+  const [, verify, verifying] = useActionState(
+    async (_prev: null, formData: FormData) => {
+      const code = String(formData.get("code") ?? "");
+      try {
+        const result = await signIn("phone", { phone, code, redirect: false });
+        if (!result || result.error) {
+          setMessage("codeInvalid");
+          return null;
+        }
+      } catch {
+        setMessage("codeInvalid");
+        return null;
+      }
+      window.location.assign(callbackUrl);
+      return null;
+    },
+    null,
+  );
+
+  const messageEl = message && (
+    <p className="mt-4 text-sm text-blaze">
+      <Message code={message} />
+    </p>
+  );
+
+  if (step === "phone") {
+    return (
+      <form action={sendCode}>
+        <Field
+          label={<L si="දුරකථන අංකය" en="Phone number" />}
+          name="phone"
+          type="tel"
+          autoComplete="tel"
+          inputMode="tel"
+          defaultValue={phone}
+          placeholder="07XXXXXXXX"
+          required
+        />
+        {messageEl}
+        <button type="submit" disabled={sending} className={submitClass}>
+          {sending ? <L si="යවමින්…" en="Sending…" /> : <L si="කේතය එවන්න" en="Send code" />}
+        </button>
+      </form>
+    );
+  }
+
+  return (
+    <form action={verify}>
+      <p className="mt-5 text-sm text-muted">
+        <L si={`කේතය ${phone} වෙත යැවිණි.`} en={`We sent a code to ${phone}.`} />
+      </p>
+      <Field
+        label={<L si="කේතය" en="Code" />}
+        name="code"
+        type="text"
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        maxLength={6}
+        pattern="[0-9]{6}"
+        required
+      />
+      {messageEl}
+      <button type="submit" disabled={verifying} className={submitClass}>
+        {verifying ? <L si="ඇතුළු වෙමින්…" en="Signing in…" /> : <L si="ඇතුළු වන්න" en="Sign in" />}
+      </button>
+      <div className="mt-4 flex justify-between text-sm">
+        <button
+          type="button"
+          disabled={sending}
+          onClick={() => {
+            const fd = new FormData();
+            fd.set("phone", phone);
+            setMessage(null);
+            startTransition(() => sendCode(fd));
+          }}
+          className="text-muted underline hover:text-ink disabled:opacity-60"
+        >
+          <L si="නැවත යවන්න" en="Send again" />
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setMessage(null);
+            setStep("phone");
+          }}
+          className="text-muted underline hover:text-ink"
+        >
+          <L si="අංකය වෙනස් කරන්න" en="Change number" />
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function SignInForm({
   callbackUrl,
   error,
+  phoneEnabled,
 }: {
   callbackUrl: string;
   error: string | null;
+  phoneEnabled: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("signin");
   const errorMessage = signInErrorMessage(error);
@@ -195,12 +308,25 @@ export default function SignInForm({
         >
           <L si="ගිණුමක් සාදන්න" en="Create account" />
         </button>
+        {phoneEnabled && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "phone"}
+            onClick={() => setTab("phone")}
+            className={tabClass("phone")}
+          >
+            <L si="දුරකථනය" en="Phone" />
+          </button>
+        )}
       </div>
 
-      {tab === "signin" ? (
-        <SignInPanel callbackUrl={callbackUrl} />
-      ) : (
+      {tab === "phone" && phoneEnabled ? (
+        <PhonePanel callbackUrl={callbackUrl} />
+      ) : tab === "signup" ? (
         <SignUpPanel callbackUrl={callbackUrl} />
+      ) : (
+        <SignInPanel callbackUrl={callbackUrl} />
       )}
     </div>
   );

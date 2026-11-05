@@ -9,6 +9,12 @@ describe("AUTH_MESSAGES", () => {
       expect(text.en.trim(), code).not.toBe("");
     }
   });
+
+  it("includes the phone sign-in messages", () => {
+    for (const code of ["invalidPhone", "codeInvalid", "codeTooSoon", "codeLimit", "smsUnavailable", "smsSendFailed"]) {
+      expect(AUTH_MESSAGES, code).toHaveProperty(code);
+    }
+  });
 });
 
 describe("validateSignUp error codes", () => {

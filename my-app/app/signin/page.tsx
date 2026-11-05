@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { safeCallbackUrl, signedInRedirect } from "@/lib/auth-rules";
 import { findUserById } from "@/lib/users";
+import { smsAvailable } from "@/lib/sms-data";
 import SignInForm from "./SignInForm";
 import L from "../components/L";
 
@@ -22,6 +23,8 @@ export default async function SignInPage({
   const signedInDestination = signedInRedirect(sessionUserId, account, destination);
   if (signedInDestination) redirect(signedInDestination);
 
+  const phoneEnabled = await smsAvailable();
+
   return (
     <div className="mx-auto w-full max-w-md px-4 py-12 sm:px-6">
       <p className="eyebrow text-muted">
@@ -31,7 +34,7 @@ export default async function SignInPage({
         <L si="ඇතුළු වන්න" en="Sign in" />
       </h1>
       <div className="measure mt-6 text-ink" />
-      <SignInForm callbackUrl={destination} error={error ?? null} />
+      <SignInForm callbackUrl={destination} error={error ?? null} phoneEnabled={phoneEnabled} />
     </div>
   );
 }

@@ -278,7 +278,8 @@ export async function isUserTrusted(userId: string): Promise<boolean> {
 export type AdminCustomer = {
   id: string;
   name: string | null;
-  email: string;
+  email: string | null;
+  phone: string | null;
   trusted: boolean;
   trustedSource: "advance" | "admin" | null;
   orderCount: number;
@@ -288,14 +289,15 @@ export type AdminCustomer = {
 export async function listCustomersForAdmin(): Promise<AdminCustomer[]> {
   const { data, error } = await supabaseAdmin
     .from("users")
-    .select("id, name, email, cod_trusted, cod_trusted_source, created_at")
+    .select("id, name, email, phone, cod_trusted, cod_trusted_source, created_at")
     .order("created_at", { ascending: false })
     .limit(200)
     .returns<
       {
         id: string;
         name: string | null;
-        email: string;
+        email: string | null;
+        phone: string | null;
         cod_trusted: boolean;
         cod_trusted_source: "advance" | "admin" | null;
         created_at: string;
@@ -321,6 +323,7 @@ export async function listCustomersForAdmin(): Promise<AdminCustomer[]> {
     id: user.id,
     name: user.name,
     email: user.email,
+    phone: user.phone,
     trusted: user.cod_trusted,
     trustedSource: user.cod_trusted_source,
     orderCount: counts.get(user.id) ?? 0,

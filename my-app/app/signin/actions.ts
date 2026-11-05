@@ -3,6 +3,7 @@
 import type { AuthMessage } from "@/lib/auth-messages";
 import { validateSignUp, type SignUpErrors } from "@/lib/auth-rules";
 import { createPasswordUser } from "@/lib/users";
+import { requestPhoneCode } from "@/lib/phone-auth";
 
 export type SignUpState = {
   ok: boolean;
@@ -40,4 +41,32 @@ export async function signUpAction(
     };
   }
   return { ok: true, errors: {}, formError: null };
+}
+
+// Step 1 of phone sign-in: texts a code. Returns a message code, or null when
+// the code was sent. Server Actions are public endpoints, so check the type.
+export async function requestPhoneCodeAction(
+  phone: string,
+): Promise<AuthMessage | null> {
+  if (typeof phone !== "string") return "invalidPhone";
+  try {
+    const result = await requestPhoneCode(phone);
+    switch (result) {
+      case "sent":
+        return null;
+      case "invalid_phone":
+        return "invalidPhone";
+      case "unavailable":
+        return "smsUnavailable";
+      case "too_soon":
+        return "codeTooSoon";
+      case "hourly_limit":
+      case "daily_cap":
+        return "codeLimit";
+      default:
+        return "smsSendFailed";
+    }
+  } catch {
+    return "smsSendFailed";
+  }
 }
