@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { formatPrice, type Product } from "@/lib/products";
 import type { DeliveryChip } from "@/lib/product-page";
@@ -65,10 +66,18 @@ export default function ProductPurchase({
 
       {!singleSize && (
         <div>
-          <span className="eyebrow mb-3 text-muted">
-            <L si="ප්‍රමාණය තෝරන්න" en="Select size" />
-            {size ? ` — ${size}` : ""}
-          </span>
+          <div className="mb-3 flex items-baseline justify-between gap-4">
+            <span className="eyebrow text-muted">
+              <L si="ප්‍රමාණය තෝරන්න" en="Select size" />
+              {size ? ` — ${size}` : ""}
+            </span>
+            <Link
+              href="/size-guide"
+              className="text-xs text-muted underline underline-offset-4 hover:text-ink"
+            >
+              <L si="ප්‍රමාණ මාර්ගෝපදේශය" en="Size guide" />
+            </Link>
+          </div>
           <div ref={pillsRef} className="flex flex-wrap gap-2">
             {product.sizes.map((s) => (
               <button
