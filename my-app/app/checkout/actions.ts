@@ -4,12 +4,14 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth-guards";
 import { getAllProducts, getCategories } from "@/lib/catalog";
 import { advanceFor, advanceRequired } from "@/lib/advance";
-import { createOrder, findOrderNumberByKey } from "@/lib/orders-data";
+import { createOrder, findOrderNumberByKey, setOrderDistrict } from "@/lib/orders-data";
 import type { PointsSettings } from "@/lib/points";
 import { getPointsBalance, getPointsSettings } from "@/lib/points-data";
 import { bankDetailsComplete, getPaymentSettings, isUserTrusted } from "@/lib/payments-data";
 import { planOrder } from "@/lib/order-plan";
 import { parseCheckoutDetails, type DetailsField, type OrderMessage } from "@/lib/orders";
+import { shippingFeeFor } from "@/lib/shipping";
+import { getZones } from "@/lib/shipping-data";
 import { getRunningPromotions, getStoreSettings } from "@/lib/storefront";
 
 export type PlaceOrderResult = {
@@ -70,11 +72,12 @@ export async function placeOrder(
     const placedAlready = await findOrderNumberByKey(user.id, key);
     if (placedAlready) return { message: "placed", orderNumber: placedAlready };
 
-    const [products, categories, promotions, settings] = await Promise.all([
+    const [products, categories, promotions, settings, zones] = await Promise.all([
       getAllProducts(),
       getCategories(),
       getRunningPromotions(),
       getStoreSettings(),
+      getZones(),
     ]);
     // Points are read on the server. If they can't be read they count as off: the
     // form's total then differs and the shopper is asked to review it (price_changed).
@@ -93,7 +96,8 @@ export async function placeOrder(
       lines,
       products,
       promotions,
-      shippingFee: settings.shippingFee,
+      // Decided here from the district; the browser's preview is never trusted.
+      shippingFee: shippingFeeFor(details.value.district, zones, settings.shippingFee),
       categories,
       expectedTotal,
       pointsRequested,
@@ -133,6 +137,13 @@ export async function placeOrder(
       if (result.error === "too_many_pending") return { message: "too_many_pending" };
       if (result.error === "not_enough_points") return { message: "points_changed" };
       return { message: "error" };
+    }
+
+    // The fee above already used the district; recording it must not undo the order.
+    try {
+      await setOrderDistrict(result.orderNumber, user.id, details.value.district);
+    } catch (error) {
+      console.error("setOrderDistrict failed", error);
     }
 
     // Stock changed: refresh everything that shows sizes, sold-out tags or ratings.

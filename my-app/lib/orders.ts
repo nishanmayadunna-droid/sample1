@@ -1,3 +1,5 @@
+import { isDistrict } from "./shipping";
+
 // Pure order rules: statuses, checkout details validation, totals. No I/O, so
 // they are shared by the Server Actions, the pages and the unit tests.
 
@@ -69,10 +71,11 @@ export type CheckoutDetails = {
   phone: string;
   address: string;
   city: string;
+  district: string;
   note: string | null;
 };
 
-export type DetailsField = "name" | "phone" | "address" | "city" | "note";
+export type DetailsField = "name" | "phone" | "address" | "city" | "district" | "note";
 
 // Newline and tab are fine in an address or note; other control characters are not.
 const CONTROL_CHARS = /[\u0000-\u0008\u000B-\u001F\u007F]/;
@@ -96,12 +99,15 @@ export function parseCheckoutDetails(
   const city = text(fields.city, 2, 60);
   if (city === null) errors.city = true;
 
+  const district = fields.district;
+  if (!isDistrict(district)) errors.district = true;
+
   const rawNote = (fields.note ?? "").trim();
   const note = rawNote === "" ? null : text(rawNote, 1, 500);
   if (rawNote !== "" && note === null) errors.note = true;
 
   if (Object.keys(errors).length > 0) return { ok: false, errors };
-  return { ok: true, value: { name: name!, phone: phone!, address: address!, city: city!, note } };
+  return { ok: true, value: { name: name!, phone: phone!, address: address!, city: city!, district: district!, note } };
 }
 
 export type OrderTotals = {

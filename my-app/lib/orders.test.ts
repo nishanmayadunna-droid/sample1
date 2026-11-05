@@ -58,14 +58,19 @@ describe("parseCheckoutDetails", () => {
     phone: "077 123 4567",
     address: "12 Temple Road",
     city: "Colombo",
+    district: "Colombo",
     note: "",
   };
 
   it("parses valid details, normalising the phone and blank note", () => {
     expect(parseCheckoutDetails(valid)).toEqual({
       ok: true,
-      value: { name: "Nimal Perera", phone: "0771234567", address: "12 Temple Road", city: "Colombo", note: null },
+      value: { name: "Nimal Perera", phone: "0771234567", address: "12 Temple Road", city: "Colombo", district: "Colombo", note: null },
     });
+  });
+
+  it("flags a missing district", () => {
+    expect(parseCheckoutDetails({ ...valid, district: undefined })).toEqual({ ok: false, errors: { district: true } });
   });
 
   it("keeps a note, trimmed", () => {
@@ -78,6 +83,9 @@ describe("parseCheckoutDetails", () => {
     ["phone", { phone: "12345" }],
     ["address", { address: "abc" }],
     ["city", { city: "" }],
+    ["district", { district: "" }],
+    ["district", { district: "Atlantis" }],
+    ["district", { district: "colombo" }],
     ["note", { note: "x".repeat(501) }],
     ["address", { address: "x\u0000y road" }],
   ] as const)("flags only %s", (field, override) => {

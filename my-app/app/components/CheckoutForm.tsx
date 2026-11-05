@@ -11,6 +11,7 @@ import { pointsToUse, type PointsSettings } from "@/lib/points";
 import { summarizeCart } from "@/lib/cart-summary";
 import { tr } from "@/lib/i18n";
 import type { DetailsField } from "@/lib/orders";
+import { DISTRICTS, shippingFeeFor, type Zone } from "@/lib/shipping";
 import { formatPrice, type Category, type Product } from "@/lib/products";
 import type { Promotion } from "@/lib/promotions";
 import { CartTotals } from "./CartTotals";
@@ -23,22 +24,26 @@ export default function CheckoutForm({
   products,
   promotions,
   shippingFee,
+  zones,
   categories,
   initialName,
   initialPhone,
   initialAddress,
   initialCity,
+  initialDistrict,
   advanceInfo,
   pointsInfo,
 }: {
   products: Product[];
   promotions: Promotion[];
   shippingFee: number;
+  zones: Zone[];
   categories: Category[];
   initialName: string;
   initialPhone: string;
   initialAddress: string;
   initialCity: string;
+  initialDistrict: string;
   /** Set when this customer must pay an advance (the server decides again on submit). */
   advanceInfo: AdvanceSettings | null;
   /** Set when the customer has points to spend (the server recomputes on submit). */
@@ -52,7 +57,10 @@ export default function CheckoutForm({
   // One key per checkout attempt: a double click or retry makes one order.
   const keyRef = useRef<string | null>(null);
 
-  const summary = summarizeCart(lines, products, promotions, shippingFee, categories);
+  const [district, setDistrict] = useState(DISTRICTS.some((d) => d.en === initialDistrict) ? initialDistrict : "");
+  // Preview only: placeOrder recomputes the fee on the server from the district.
+  const districtFee = shippingFeeFor(district === "" ? null : district, zones, shippingFee);
+  const summary = summarizeCart(lines, products, promotions, districtFee, categories);
   // Points pay for goods after promotions, before shipping; they are only used when ticked.
   const [usePoints, setUsePoints] = useState(false);
   const [pointsText, setPointsText] = useState("");
@@ -176,6 +184,26 @@ export default function CheckoutForm({
             <L si="නගරය" en="City" />
           </span>
           <input name="city" defaultValue={initialCity} autoComplete="address-level2" aria-invalid={bad.has("city")} className={inputClass} required />
+        </label>
+        <label className="block">
+          <span className="eyebrow text-muted">
+            <L si="දිස්ත්‍රික්කය" en="District" />
+          </span>
+          <select
+            name="district"
+            value={district}
+            onChange={(event) => setDistrict(event.target.value)}
+            aria-invalid={bad.has("district")}
+            className={inputClass}
+            required
+          >
+            <option value="">{tr(lang, "දිස්ත්‍රික්කය තෝරන්න", "Select your district")}</option>
+            {DISTRICTS.map((d) => (
+              <option key={d.en} value={d.en}>
+                {tr(lang, d.si, d.en)}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="block">
           <span className="eyebrow text-muted">
