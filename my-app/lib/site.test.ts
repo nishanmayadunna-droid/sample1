@@ -39,3 +39,35 @@ describe("isProductionDeploy", () => {
     expect(isProductionDeploy({ NODE_ENV: "development" })).toBe(false);
   });
 });
+
+describe("resolveSiteUrl edge cases", () => {
+  const L = "http://localhost:3000";
+  const r = (a?: string, b?: string) =>
+    resolveSiteUrl({ NEXT_PUBLIC_SITE_URL: a, VERCEL_PROJECT_PRODUCTION_URL: b });
+  it("falls through blank values", () => {
+    expect(r("   ", "v.app")).toBe("https://v.app");
+    expect(r("", undefined)).toBe(L);
+  });
+  it("uses localhost when both are invalid", () => {
+    expect(r("not a url", "also bad")).toBe(L);
+  });
+  it("cleans the Vercel value", () => {
+    expect(r(undefined, "https://v.app/x?y=1")).toBe("https://v.app");
+  });
+  it("handles protocol-relative, case and ports", () => {
+    expect(r("//shop.lk")).toBe("https://shop.lk");
+    expect(r("HTTPS://Shop.LK")).toBe("https://shop.lk");
+    expect(r("shop.lk:8080/path")).toBe("https://shop.lk:8080");
+  });
+  it("rejects non-http schemes and malformed ones", () => {
+    expect(r("javascript:alert(1)")).toBe(L);
+    expect(r("data:text/html,x")).toBe(L);
+    expect(r("ftp://shop.lk")).toBe(L);
+    expect(r("http:/shop.lk")).toBe(L);
+  });
+  it("uses http for protocol-less local hosts", () => {
+    expect(r("localhost:3000")).toBe("http://localhost:3000");
+    expect(r("localhost")).toBe("http://localhost");
+    expect(r("127.0.0.1:4000")).toBe("http://127.0.0.1:4000");
+  });
+});

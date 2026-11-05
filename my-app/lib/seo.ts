@@ -21,18 +21,20 @@ export function productJsonLd(input: {
     "@context": "https://schema.org",
     "@type": "Product",
     name: input.name,
-    description: input.description,
     url: input.url,
-    offers: {
+  };
+  if (input.description.trim() !== "") out.description = input.description;
+  if (Number.isFinite(input.price) && input.price >= 0) {
+    out.offers = {
       "@type": "Offer",
       url: input.url,
-      price: (input.price / 100).toFixed(2),
+      price: (Math.round(input.price) / 100).toFixed(2),
       priceCurrency: "LKR",
       availability: input.inStock
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
-    },
-  };
+    };
+  }
   if (input.images.length > 0) out.image = input.images;
   if (input.rating) {
     out.aggregateRating = {

@@ -4,7 +4,18 @@ const FALLBACK = "http://localhost:3000";
 function cleanOrigin(raw: string | undefined): string | null {
   const v = (raw ?? "").trim();
   if (v === "") return null;
-  const withProtocol = /^https?:\/\//i.test(v) ? v : `https://${v}`;
+  let withProtocol: string;
+  if (/^https?:\/\//i.test(v)) {
+    withProtocol = v;
+  } else if (v.startsWith("//")) {
+    withProtocol = `https:${v}`;
+  } else if (/^[a-z][a-z0-9+.-]*:/i.test(v) && !/^[^:/?#]+:\d/.test(v)) {
+    return null; // some other scheme (ftp:, javascript:, http:/x) - not a host:port
+  } else if (/^(localhost|127\.0\.0\.1)(:\d+)?([/?#]|$)/i.test(v)) {
+    withProtocol = `http://${v}`;
+  } else {
+    withProtocol = `https://${v}`;
+  }
   try {
     const u = new URL(withProtocol);
     if (!/^[a-z0-9.-]+$/i.test(u.hostname)) return null;
