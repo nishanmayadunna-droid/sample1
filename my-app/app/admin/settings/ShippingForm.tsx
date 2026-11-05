@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useTransition } from "react";
 import type { ShippingSettingsState } from "./actions";
 
@@ -41,7 +42,12 @@ export default function ShippingForm({
         )}
       </label>
       <p className="mt-2 max-w-prose text-sm text-muted">
-        Charged on every order unless a running promotion gives free shipping (see Promotions).
+        Charged on every order unless a running promotion gives free shipping (see Promotions). This
+        fee only applies to districts that are in no zone; set per-district fees on the{" "}
+        <Link href="/admin/shipping" className="text-blaze underline underline-offset-4">
+          Shipping zones page
+        </Link>
+        .
       </p>
       {state.errors.form && <p className="mt-4 text-sm text-blaze">{state.errors.form}</p>}
       {state.saved && !pending && (

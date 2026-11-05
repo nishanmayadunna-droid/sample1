@@ -6,6 +6,7 @@ import { getLatestDetailsForUser } from "@/lib/orders-data";
 import { getPointsBalance, getPointsSettings } from "@/lib/points-data";
 import type { PointsSettings } from "@/lib/points";
 import { getPaymentSettings, isUserTrusted } from "@/lib/payments-data";
+import { getZones } from "@/lib/shipping-data";
 import { getRunningPromotions, getStoreSettings } from "@/lib/storefront";
 import CheckoutForm from "../components/CheckoutForm";
 import L from "../components/L";
@@ -15,11 +16,12 @@ export const metadata: Metadata = { title: "Checkout" };
 // Per-user (it reads the session), so unlike the catalog pages it is dynamic.
 export default async function CheckoutPage() {
   const user = await requireUser("/checkout");
-  const [products, categories, promotions, settings, initialDetails, advanceInfo, pointsInfo] = await Promise.all([
+  const [products, categories, promotions, settings, zones, initialDetails, advanceInfo, pointsInfo] = await Promise.all([
     getAllProducts(),
     getCategories(),
     getRunningPromotions(),
     getStoreSettings(),
+    getZones(),
     getLatestDetailsForUser(user.id).catch((error) => {
       console.error("latest order details failed", error);
       return null;
@@ -51,11 +53,13 @@ export default async function CheckoutPage() {
         products={products}
         promotions={promotions}
         shippingFee={settings.shippingFee}
+        zones={zones}
         categories={categories}
         initialName={initialDetails?.name ?? user.name ?? ""}
         initialPhone={initialDetails?.phone ?? ""}
         initialAddress={initialDetails?.address ?? ""}
         initialCity={initialDetails?.city ?? ""}
+        initialDistrict={initialDetails?.district ?? ""}
         advanceInfo={advanceInfo}
         pointsInfo={pointsInfo}
       />

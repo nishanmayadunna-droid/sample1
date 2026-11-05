@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth-guards";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/orders";
 import { changeOrderStatus } from "@/lib/orders-data";
-import { cancelStaleOrders, waiveAdvance } from "@/lib/orders-data";
+import { cancelStaleOrders, saveShipment, waiveAdvance } from "@/lib/orders-data";
+import { parseShipment } from "@/lib/shipping";
+import { listCouriers } from "@/lib/shipping-data";
 import { reviewSlip } from "@/lib/payments-data";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -12,6 +14,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 // their own and can be called without going through the /admin pages.
 
 export type OrderRowState = { error: string | null };
+export type ShipmentState = { errors: Record<string, string | true>; saved: boolean };
 
 const SOMETHING_WRONG = "Something went wrong, please try again.";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -122,4 +125,38 @@ export async function waiveAdvanceAction(orderId: string): Promise<OrderRowState
     return { error: SOMETHING_WRONG };
   }
   return { error: null };
+}
+
+/** Records the courier and tracking number on a confirmed or shipped order. */
+export async function saveShipmentAction(
+  orderNumber: string,
+  _prev: ShipmentState,
+  formData: FormData,
+): Promise<ShipmentState> {
+  await requireAdmin("/admin/orders");
+  if (typeof orderNumber !== "string" || !/^NB-\d{4,}$/.test(orderNumber)) {
+    return { errors: { form: SOMETHING_WRONG }, saved: false };
+  }
+  const courierId = formData.get("courierId");
+  const trackingNumber = formData.get("trackingNumber");
+  const parsed = parseShipment({
+    courierId: typeof courierId === "string" ? courierId : "",
+    trackingNumber: typeof trackingNumber === "string" ? trackingNumber : "",
+  });
+  if (!parsed.ok) return { errors: parsed.errors, saved: false };
+  try {
+    const courier = (await listCouriers()).find((c) => c.id === parsed.value.courierId && c.active);
+    if (!courier) return { errors: { courierId: true }, saved: false };
+    const outcome = await saveShipment(orderNumber, courier, parsed.value.trackingNumber);
+    if (outcome === "not_found") return { errors: { form: "That order no longer exists." }, saved: false };
+    if (outcome === "bad_state") {
+      return { errors: { form: "Shipment details can only be set on a confirmed or shipped order." }, saved: false };
+    }
+    revalidatePath(`/admin/orders/${orderNumber}`);
+    revalidatePath(`/orders/${orderNumber}`);
+  } catch (error) {
+    console.error("saveShipmentAction failed", error);
+    return { errors: { form: SOMETHING_WRONG }, saved: false };
+  }
+  return { errors: {}, saved: true };
 }
