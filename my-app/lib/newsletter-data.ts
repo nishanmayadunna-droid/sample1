@@ -98,7 +98,10 @@ export async function listSubscribers(
   };
 }
 
+const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function deleteSubscriber(id: string): Promise<void> {
+  if (!UUID_SHAPE.test(id)) throw new Error("Invalid subscriber id.");
   const { error } = await supabaseAdmin.from("newsletter_subscribers").delete().eq("id", id);
   if (error) {
     console.error("newsletter delete failed", error.code ?? "unknown");
@@ -107,15 +110,24 @@ export async function deleteSubscriber(id: string): Promise<void> {
 }
 
 export async function exportSubscribers(): Promise<Subscriber[]> {
-  const { data, error } = await supabaseAdmin
-    .from("newsletter_subscribers")
-    .select(COLUMNS)
-    .order("created_at", { ascending: false })
-    .limit(EXPORT_CAP)
-    .returns<Row[]>();
-  if (error) {
-    console.error("newsletter export failed", error.code ?? "unknown");
-    throw new Error("Could not export subscribers.");
+  const PAGE = 1000;
+  const out: Subscriber[] = [];
+  while (out.length < EXPORT_CAP) {
+    const from = out.length;
+    const { data, error } = await supabaseAdmin
+      .from("newsletter_subscribers")
+      .select(COLUMNS)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true })
+      .range(from, from + PAGE - 1)
+      .returns<Row[]>();
+    if (error) {
+      console.error("newsletter export failed", error.code ?? "unknown");
+      throw new Error("Could not export subscribers.");
+    }
+    const rows = data ?? [];
+    out.push(...rows.map(toSubscriber));
+    if (rows.length < PAGE) break;
   }
-  return (data ?? []).map(toSubscriber);
+  return out.slice(0, EXPORT_CAP);
 }
