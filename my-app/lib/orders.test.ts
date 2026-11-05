@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ORDER_STATUSES,
   canCustomerCancel,
+  collectOnDelivery,
   cancelReasonLabel,
   nextStatuses,
   normalizePhone,
@@ -123,5 +124,16 @@ describe("cancelReasonLabel", () => {
   it("explains an expired advance in both languages", () => {
     expect(cancelReasonLabel("advance_expired").en).not.toBe("");
     expect(cancelReasonLabel("advance_expired").si).not.toBe("");
+  });
+});
+
+describe("collectOnDelivery", () => {
+  it("subtracts the advance only once it is paid", () => {
+    expect(collectOnDelivery({ total: 500000, advanceAmount: 100000, paymentStatus: "advance_paid" })).toBe(400000);
+    expect(collectOnDelivery({ total: 500000, advanceAmount: 100000, paymentStatus: "advance_due" })).toBe(500000);
+    expect(collectOnDelivery({ total: 500000, advanceAmount: 0, paymentStatus: "unpaid" })).toBe(500000);
+  });
+  it("never goes below zero", () => {
+    expect(collectOnDelivery({ total: 100000, advanceAmount: 150000, paymentStatus: "advance_paid" })).toBe(0);
   });
 });

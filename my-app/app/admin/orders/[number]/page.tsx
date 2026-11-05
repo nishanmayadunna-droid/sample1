@@ -68,6 +68,13 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
         {order.advanceWaivedAt ? " · Advance waived" : ""}
         {order.cancelReason ? ` · ${cancelReasonLabel(order.cancelReason).en}` : ""}
       </p>
+      <Link
+        href={`/admin/orders/${order.orderNumber}/print`}
+        target="_blank"
+        className="mt-3 inline-block text-sm text-blaze underline underline-offset-4"
+      >
+        Print slip
+      </Link>
       <div className="measure mt-6 text-ink" />
 
       <div className="mt-6">

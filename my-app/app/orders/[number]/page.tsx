@@ -191,6 +191,29 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
         </div>
       </div>
 
+      {order.courierName && order.trackingNumber && (
+        <section className="mt-8">
+          <h2 className="eyebrow text-muted">
+            <L si="බෙදාහැරීම" en="Shipment" />
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed">
+            <L si="Courier" en="Courier" />: {order.courierName}
+            <br />
+            <L si="Tracking අංකය" en="Tracking number" />: <span className="font-mono">{order.trackingNumber}</span>
+          </p>
+          {order.trackingUrl && (
+            <a
+              href={order.trackingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-block text-sm text-blaze underline underline-offset-4"
+            >
+              <L si="ඔබේ පාර්සලය හඹා යන්න" en="Track your parcel" />
+            </a>
+          )}
+        </section>
+      )}
+
       {payment && (
         <PaymentPanel
           orderNumber={order.orderNumber}

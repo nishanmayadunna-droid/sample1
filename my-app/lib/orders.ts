@@ -146,3 +146,9 @@ const CANCEL_REASONS: Record<CancelReason, { si: string; en: string }> = {
 export function cancelReasonLabel(reason: CancelReason): { si: string; en: string } {
   return CANCEL_REASONS[reason];
 }
+
+/** What the courier collects at the door: the total, less the advance once that is paid. */
+export function collectOnDelivery(order: { total: number; advanceAmount: number; paymentStatus: string }): number {
+  const paid = order.paymentStatus === "advance_paid" ? order.advanceAmount : 0;
+  return Math.max(order.total - paid, 0);
+}
