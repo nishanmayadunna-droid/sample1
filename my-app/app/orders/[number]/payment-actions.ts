@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth-guards";
 import { isValidSlipPath, MAX_SLIPS, SLIP_MAX_BYTES, SLIP_TYPES, slipPathFor } from "@/lib/advance";
 import { getOrderForUser, type Order } from "@/lib/orders-data";
+import { alertOwner } from "@/lib/owner-alerts-data";
 import { attachSlip, createSlipUpload, listSlipsForOrder, objectExists } from "@/lib/payments-data";
 
 // Both actions load the order with the session user's id, so another
@@ -65,6 +66,8 @@ export async function attachPaymentSlip(
     const outcome = await attachSlip(order.id, user.id, path);
     if (outcome === "too_many") return { message: "too_many" };
     if (outcome !== "ok") return { message: "not_allowed" };
+    // Tell the owner a slip is waiting (one alert per uploaded file; never throws).
+    await alertOwner({ event: "new_slip", orderNumber: order.orderNumber }, `${order.id}:${path}`);
     revalidatePath(`/orders/${orderNumber}`);
     revalidatePath("/admin/orders");
     revalidatePath(`/admin/orders/${orderNumber}`);

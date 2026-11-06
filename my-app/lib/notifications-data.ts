@@ -9,6 +9,7 @@ import { getStoreSettings } from "@/lib/storefront";
 import { getPaymentSettings } from "@/lib/payments-data";
 import { advanceDeadline } from "@/lib/advance";
 import { getOrderForAdmin, type Order } from "@/lib/orders-data";
+import { alertOwner } from "@/lib/owner-alerts-data";
 import {
   DEFAULT_NOTIFICATION_SETTINGS,
   NOTIFICATION_EVENTS,
@@ -172,6 +173,9 @@ export async function notifyOrder(
         .update({ status: "sent" })
         .eq("id", row.id);
       if (updateError) console.error("notification update failed", updateError.code ?? "unknown");
+    } else {
+      // The customer did not get their message: tell the owner (never throws; one per message).
+      await alertOwner({ event: "sms_failed", orderNumber: order.orderNumber, customerEvent: actual }, row.id);
     }
   } catch (e) {
     console.error("notification error", e instanceof Error ? e.name : "unknown");

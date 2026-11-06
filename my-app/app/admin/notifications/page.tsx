@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-guards";
 import { getNotificationSettings, listNotifications, type NotificationRow } from "@/lib/notifications-data";
+import { getOwnerAlertSettings, listOwnerAlerts, type OwnerAlertRow } from "@/lib/owner-alerts-data";
+import { OWNER_EVENT_LABELS } from "@/lib/owner-alerts";
 import { smsTokenSet } from "@/lib/sms";
 import AdminTabs from "../AdminTabs";
+import OwnerAlertsForm from "./OwnerAlertsForm";
 import NotificationSettingsForm from "./NotificationSettingsForm";
 import ResendButton from "./ResendButton";
 import { EVENT_LABELS } from "./labels";
@@ -18,9 +21,11 @@ const timeFormat = new Intl.DateTimeFormat("en-GB", {
 
 export default async function AdminNotificationsPage() {
   await requireAdmin("/admin/notifications");
-  const [settings, log] = await Promise.all([
+  const [settings, log, ownerSettings, ownerLog] = await Promise.all([
     getNotificationSettings(),
     listNotifications(100).catch((): NotificationRow[] => []),
+    getOwnerAlertSettings(),
+    listOwnerAlerts(50).catch((): OwnerAlertRow[] => []),
   ]);
   const tokenSet = smsTokenSet();
 
@@ -51,6 +56,40 @@ export default async function AdminNotificationsPage() {
       <section className="mt-8">
         <h2 className="display text-2xl">Settings</h2>
         <NotificationSettingsForm settings={settings} />
+      </section>
+
+      <section className="mt-10">
+        <h2 className="display text-2xl">Alerts to you</h2>
+        <p className="mt-2 max-w-prose text-sm text-muted">
+          A short SMS to your own phone for new orders, payment slips, low stock and customer messages that failed.
+          It uses the same token and sender ID. At most 40 alerts are sent in 24 hours, low stock repeats once per
+          size per day, and everything is English to keep each SMS to one or two parts.
+        </p>
+        <div className="mt-4">
+          <OwnerAlertsForm settings={ownerSettings} />
+        </div>
+        {ownerLog.length > 0 && (
+          <table className="mt-6 w-full max-w-2xl text-left text-sm">
+            <thead>
+              <tr className="eyebrow text-muted">
+                <th className="py-2 pr-4 font-normal">Time (Colombo)</th>
+                <th className="py-2 pr-4 font-normal">Alert</th>
+                <th className="py-2 pr-4 font-normal">Status</th>
+                <th className="py-2 font-normal">SMS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ownerLog.map((row) => (
+                <tr key={row.id} className="border-t border-line align-top">
+                  <td className="py-2 pr-4 font-mono">{timeFormat.format(new Date(row.createdAt))}</td>
+                  <td className="py-2 pr-4">{OWNER_EVENT_LABELS[row.event] ?? row.event}</td>
+                  <td className="py-2 pr-4 font-mono">{row.status}</td>
+                  <td className="py-2 font-mono">{row.segments}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
 
       <section className="mt-10">

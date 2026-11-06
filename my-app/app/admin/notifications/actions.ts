@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth-guards";
 import { parseNotificationSettings } from "@/lib/notifications";
 import { resendNotification, saveNotificationSettings } from "@/lib/notifications-data";
+import { saveOwnerAlertSettings } from "@/lib/owner-alerts-data";
+import { parseOwnerAlertSettings } from "@/lib/owner-alerts";
 import { smsTokenSet } from "@/lib/sms";
 
 // Every action re-checks admin access first: Server Actions are endpoints of
@@ -33,6 +35,27 @@ export async function saveNotificationSettingsAction(
   }
   try {
     await saveNotificationSettings(settings);
+  } catch {
+    return { errors: { form: SOMETHING_WRONG }, saved: false };
+  }
+  revalidatePath("/admin/notifications");
+  return { errors: {}, saved: true };
+}
+
+export type OwnerAlertSettingsState = { errors: Record<string, string>; saved: boolean };
+
+export async function saveOwnerAlertSettingsAction(
+  _prev: OwnerAlertSettingsState,
+  formData: FormData,
+): Promise<OwnerAlertSettingsState> {
+  await requireAdmin("/admin/notifications");
+  const parsed = parseOwnerAlertSettings(formFields(formData));
+  if (!parsed.ok) return { errors: parsed.errors, saved: false };
+  if (parsed.value.enabled && !smsTokenSet()) {
+    return { errors: { enabled: "Set TEXTLK_API_TOKEN on the server first" }, saved: false };
+  }
+  try {
+    await saveOwnerAlertSettings(parsed.value);
   } catch {
     return { errors: { form: SOMETHING_WRONG }, saved: false };
   }

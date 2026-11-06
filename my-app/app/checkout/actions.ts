@@ -6,6 +6,7 @@ import { getAllProducts, getCategories } from "@/lib/catalog";
 import { advanceFor, advanceRequired } from "@/lib/advance";
 import { createOrder, findOrderNumberByKey, getOrderForUser, setOrderDistrict } from "@/lib/orders-data";
 import { notifyOrder } from "@/lib/notifications-data";
+import { alertLowStock, alertNewOrder } from "@/lib/owner-alerts-data";
 import type { PointsSettings } from "@/lib/points";
 import { getPointsBalance, getPointsSettings } from "@/lib/points-data";
 import { bankDetailsComplete, getPaymentSettings, isUserTrusted } from "@/lib/payments-data";
@@ -165,7 +166,12 @@ export async function placeOrder(
     // Read after the district is recorded so the SMS sees the final order.
     try {
       const placed = await getOrderForUser(result.orderNumber, user.id);
-      if (placed) await notifyOrder(placed, "placed");
+      if (placed) {
+        await notifyOrder(placed, "placed");
+        // Owner alerts never throw; they are no-ops while the admin switch is off.
+        await alertNewOrder(placed);
+        await alertLowStock(placed.items);
+      }
     } catch (error) {
       console.error("placed notification failed", error instanceof Error ? error.name : "unknown");
     }
