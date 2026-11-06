@@ -12,74 +12,28 @@ import L from "./L";
 // the session. It is never put in a URL, logged or shown; only a short
 // fingerprint is kept in localStorage to notice when FCM rotates it.
 
+import {
+  REFRESH_AFTER_MS,
+  fingerprint,
+  firebaseConfig,
+  getFcmToken,
+  readState,
+  writeState,
+} from "./push-client";
+
 type ActionResult = "ok" | "invalid" | "too_many" | "error";
 
 type Support = "checking" | "ok" | "no-config" | "ios-install" | "unsupported";
 type Status = "off" | "on" | "denied";
 type Message = "denied" | "unsupported" | "too_many" | "error" | null;
 
-const FLAG_KEY = "nb_push_state"; // JSON: { fp, at } — a fingerprint of the token, never the token
-const REFRESH_AFTER_MS = 7 * 24 * 3600_000;
-
-function firebaseConfig() {
-  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "";
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "";
-  const messagingSenderId = process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "";
-  const appId = process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? "";
-  const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY ?? "";
-  if (![apiKey, projectId, messagingSenderId, appId, vapidKey].every((v) => v.trim() !== "")) return null;
-  const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || undefined;
-  return { app: { apiKey, projectId, messagingSenderId, appId, authDomain }, vapidKey };
-}
-
-function readState(): { fp: string; at: number } | null {
-  try {
-    const raw = window.localStorage.getItem(FLAG_KEY);
-    const parsed = raw ? (JSON.parse(raw) as { fp?: unknown; at?: unknown }) : null;
-    return parsed && typeof parsed.fp === "string" && typeof parsed.at === "number" ? { fp: parsed.fp, at: parsed.at } : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeState(value: { fp: string; at: number } | null) {
-  try {
-    if (value) window.localStorage.setItem(FLAG_KEY, JSON.stringify(value));
-    else window.localStorage.removeItem(FLAG_KEY);
-  } catch {
-    // Storage can be blocked (private window): the feature still works, it just re-registers more often.
-  }
-}
-
-/** First 16 hex characters of SHA-256: enough to notice a changed token without keeping the token. */
-async function fingerprint(token: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
-  return Array.from(new Uint8Array(digest))
-    .slice(0, 8)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-/** The FCM token of this browser, registering the service worker first. Null when FCM cannot give one. */
-async function getFcmToken(): Promise<{ token: string; unsupported: boolean }> {
-  const config = firebaseConfig();
-  if (!config) return { token: "", unsupported: true };
-  const [{ getApp, getApps, initializeApp }, { getMessaging, getToken, isSupported }] = await Promise.all([
-    import("firebase/app"),
-    import("firebase/messaging"),
-  ]);
-  if (!(await isSupported())) return { token: "", unsupported: true };
-  const app = getApps().length > 0 ? getApp() : initializeApp(config.app);
-  const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js", { scope: "/" });
-  await navigator.serviceWorker.ready;
-  const token = await getToken(getMessaging(app), { vapidKey: config.vapidKey, serviceWorkerRegistration: registration });
-  return { token, unsupported: false };
-}
-
 export default function PushToggle({
+  userKey,
   register,
   unregister,
 }: {
+  /** A short non-secret key of the signed-in user: the saved "on" belongs to this person, not to the browser. */
+  userKey: string;
   register: (token: string, platform: string) => Promise<ActionResult>;
   unregister: (token: string) => Promise<ActionResult>;
 }) {
@@ -103,7 +57,7 @@ export default function PushToggle({
       }
       setSupport("ok");
       if (Notification.permission === "denied") return setStatus("denied");
-      const saved = readState();
+      const saved = readState(userKey);
       if (Notification.permission !== "granted" || !saved) return;
       setStatus("on");
       // Token refresh: FCM can rotate a token. Ask for the current one (no prompt: permission is already
@@ -113,7 +67,7 @@ export default function PushToggle({
         if (cancelled || unsupported || token === "") return;
         const fp = await fingerprint(token);
         if (fp !== saved.fp || Date.now() - saved.at > REFRESH_AFTER_MS) {
-          if ((await register(token, "web")) === "ok") writeState({ fp, at: Date.now() });
+          if ((await register(token, "web")) === "ok") writeState({ fp, at: Date.now(), uid: userKey });
         }
       } catch {
         // A failed silent refresh changes nothing; the next visit tries again.
@@ -123,7 +77,7 @@ export default function PushToggle({
     return () => {
       cancelled = true;
     };
-  }, [register]);
+  }, [register, userKey]);
 
   function enable() {
     setMessage(null);
@@ -141,7 +95,7 @@ export default function PushToggle({
         if (token === "") return setMessage("error");
         const result = await register(token, "web");
         if (result === "ok") {
-          writeState({ fp: await fingerprint(token), at: Date.now() });
+          writeState({ fp: await fingerprint(token), at: Date.now(), uid: userKey });
           setStatus("on");
         } else {
           setMessage(result === "too_many" ? "too_many" : "error");

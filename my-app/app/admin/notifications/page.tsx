@@ -5,6 +5,7 @@ import { getNotificationSettings, listNotifications, type NotificationRow } from
 import { getOwnerAlertSettings, listOwnerAlerts, type OwnerAlertRow } from "@/lib/owner-alerts-data";
 import { OWNER_EVENT_LABELS } from "@/lib/owner-alerts";
 import { pushAvailable } from "@/lib/push-data";
+import { maskUserId } from "@/lib/push";
 import { smsTokenSet } from "@/lib/sms";
 import PushToggle from "../../components/PushToggle";
 import { registerAdminPushAction, unregisterAdminPushAction } from "../push/actions";
@@ -23,7 +24,7 @@ const timeFormat = new Intl.DateTimeFormat("en-GB", {
 });
 
 export default async function AdminNotificationsPage() {
-  await requireAdmin("/admin/notifications");
+  const admin = await requireAdmin("/admin/notifications");
   const [settings, log, ownerSettings, ownerLog] = await Promise.all([
     getNotificationSettings(),
     listNotifications(100).catch((): NotificationRow[] => []),
@@ -73,7 +74,7 @@ export default async function AdminNotificationsPage() {
             .
           </p>
           <div className="mt-4">
-            <PushToggle register={registerAdminPushAction} unregister={unregisterAdminPushAction} />
+            <PushToggle userKey={maskUserId(admin.id)} register={registerAdminPushAction} unregister={unregisterAdminPushAction} />
           </div>
         </section>
       )}

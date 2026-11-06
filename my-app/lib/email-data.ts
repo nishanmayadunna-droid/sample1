@@ -8,6 +8,7 @@
 // message bodies and full addresses are never logged.
 import "server-only";
 import { createHmac } from "node:crypto";
+import { after } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { absoluteUrl } from "@/lib/site";
 import { isValidNewPassword } from "@/lib/auth-rules";
@@ -230,7 +231,16 @@ export async function requestPasswordReset(rawEmail: string, ip: string): Promis
   try {
     const user = await findUserByEmail(email);
     if (!user?.email || !user.passwordHash) return "ok";
-    await sendTokenEmail("reset", user.id, user.email);
+    const { id, email: to } = user;
+    // The token and the email are made AFTER the response is sent, so how long this answer takes
+    // is the same for a known and an unknown address (the slow part never delays the reply).
+    after(async () => {
+      try {
+        await sendTokenEmail("reset", id, to);
+      } catch (e) {
+        console.error("password reset send error", e instanceof Error ? e.name : "unknown");
+      }
+    });
   } catch (e) {
     console.error("password reset request error", e instanceof Error ? e.name : "unknown");
   }

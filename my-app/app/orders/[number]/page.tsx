@@ -204,6 +204,14 @@ export default async function OrderPage({
           )}
         </p>
       )}
+      {order.status === "cancelled" && order.paymentStatus === "online_paid" && (
+        <p className="mt-4 text-sm text-muted">
+          <L
+            si={`ඔබ ඔන්ලයින් ගෙවූ ${formatPrice(order.onlinePaidAmount)} ආපහු ලබා දෙනු ඇත.`}
+            en={`The ${formatPrice(order.onlinePaidAmount)} you paid online will be refunded to you.`}
+          />
+        </p>
+      )}
       {order.status === "cancelled" && order.pointsUsed > 0 && (
         <p className="mt-4 text-sm text-muted">
           <L si={`භාවිතා කළ points ${order.pointsUsed}ක් ආපහු ලැබුණා.`} en={`${order.pointsUsed} points returned.`} />

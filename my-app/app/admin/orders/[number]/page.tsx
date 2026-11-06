@@ -57,7 +57,11 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
     return [];
   });
   const onlineStuck = onlinePayments.filter(
-    (p) => (p.status === "paid" && order.paymentStatus !== "online_paid") || p.status === "overpaid" || p.status === "chargedback",
+    (p) =>
+      (p.status === "paid" && (order.paymentStatus !== "online_paid" || order.status === "cancelled")) ||
+      p.status === "overpaid" ||
+      p.status === "chargedback" ||
+      p.status === "mismatch",
   );
 
   const canShip = order.status === "confirmed" || order.status === "shipped";

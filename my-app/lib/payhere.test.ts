@@ -133,10 +133,14 @@ describe("outcomeForCode", () => {
 describe("canPayOnline", () => {
   it("allows open, unpaid and advance-pending orders", () => {
     for (const status of ["pending", "confirmed"] as const) {
-      for (const paymentStatus of ["unpaid", "advance_due", "slip_uploaded"] as const) {
+      for (const paymentStatus of ["unpaid", "advance_due"] as const) {
         expect(canPayOnline({ status, paymentStatus })).toBe(true);
       }
     }
+  });
+  it("refuses while a bank slip is under review (the transfer would be lost)", () => {
+    expect(canPayOnline({ status: "pending", paymentStatus: "slip_uploaded" })).toBe(false);
+    expect(canPayOnline({ status: "confirmed", paymentStatus: "slip_uploaded" })).toBe(false);
   });
   it("refuses paid, shipped, delivered and cancelled orders", () => {
     expect(canPayOnline({ status: "pending", paymentStatus: "advance_paid" })).toBe(false);

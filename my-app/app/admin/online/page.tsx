@@ -14,9 +14,13 @@ const timeFormat = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Colombo", 
 /** Money that arrived but that the order did not take, or that was taken back: needs a person. */
 function needsAttention(row: PaymentRow): string | null {
   if (row.status === "overpaid") return "Paid twice: refund this one in PayHere";
-  if (row.status === "chargedback") return "Charged back by the customer's bank";
+  if (row.status === "chargedback") return "Charged back by the customer's bank: the order is back to cash on delivery";
+  if (row.status === "mismatch") return "PayHere reported a different amount than expected: check it in PayHere";
   if (row.status === "paid" && row.orderPaymentStatus !== "online_paid") {
-    return "Paid, but the order could not take it (cancelled or already paid): refund in PayHere";
+    return "Paid, but the order could not take it (cancelled, shipped, or a bank slip or advance already in): refund in PayHere";
+  }
+  if (row.status === "paid" && row.orderStatus === "cancelled") {
+    return "The order was cancelled after payment: refund in PayHere";
   }
   return null;
 }

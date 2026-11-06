@@ -11,6 +11,7 @@ import { expiryPicture, nextTier } from "@/lib/points-v2";
 import { getExpiryDays, getLedgerForExpiry, getLoyaltyStanding } from "@/lib/points-v2-data";
 import { emailAvailable } from "@/lib/email-data";
 import { pushAvailable } from "@/lib/push-data";
+import { maskUserId } from "@/lib/push";
 import { smsAvailable } from "@/lib/sms-data";
 import { isEmailVerified } from "@/lib/users";
 import PhoneSection from "./PhoneSection";
@@ -112,7 +113,7 @@ export default async function AccountPage() {
             />
           </p>
           <div className="mt-3">
-            <PushToggle register={registerCustomerPushAction} unregister={unregisterCustomerPushAction} />
+            <PushToggle userKey={maskUserId(user.id)} register={registerCustomerPushAction} unregister={unregisterCustomerPushAction} />
           </div>
         </section>
       )}

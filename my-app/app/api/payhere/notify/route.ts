@@ -49,8 +49,9 @@ export async function POST(request: Request): Promise<Response> {
       });
       if (result === "unknown_ref") return text("unknown", 400);
       if (result === "amount_mismatch") {
+        // Recorded on the attempt (status "mismatch", listed under Needs attention): answer 200 so
+        // PayHere stops retrying a notification that will never match.
         console.error("payhere notify: amount mismatch for an attempt");
-        return text("invalid", 400);
       }
       if (result === "overpaid" || result === "paid_no_order") {
         // Money arrived that the order could not take: the admin page lists it.

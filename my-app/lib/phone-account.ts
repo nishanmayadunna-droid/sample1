@@ -9,6 +9,7 @@ import { checkPhoneCode, requestPhoneCode, type RequestResult } from "@/lib/phon
 import { confirmMessage, type SetPhoneResult } from "@/lib/phone-change";
 import type { AuthMessage } from "@/lib/auth-messages";
 import { smsAvailable } from "@/lib/sms-data";
+import { allowRequest } from "@/lib/email-data";
 import { findUserById, findUserByPhone } from "@/lib/users";
 
 /**
@@ -25,6 +26,12 @@ export async function requestPhoneChangeCode(userId: string, rawPhone: string): 
   const user = await findUserById(userId);
   if (!user) return "unavailable";
   if (user.phone === phone) return "same_phone";
+
+  // The same per-number limits apply whether or not another account owns the number, so a second
+  // try within a minute (or a sixth in an hour) answers the same way for every number and the
+  // answer cannot be used to find out which numbers have accounts.
+  if (!(await allowRequest("pc-60s", phone, 1, 60))) return "too_soon";
+  if (!(await allowRequest("pc-1h", phone, 5, 3600))) return "hourly_limit";
 
   const owner = await findUserByPhone(phone);
   if (owner && owner.id !== userId) return "sent";

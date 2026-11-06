@@ -1,7 +1,9 @@
 "use client";
 
 import { signOut } from "next-auth/react";
+import { unregisterCustomerPushAction } from "@/app/account/push-actions";
 import { prepareCartForSignOut } from "./CartSync";
+import { unregisterThisBrowser } from "./push-client";
 import L from "./L";
 
 // Client-side sign-out does a full navigation, so the Header's session state
@@ -11,6 +13,8 @@ import L from "./L";
 export default function SignOutButton() {
   async function handleSignOut() {
     await prepareCartForSignOut();
+    // Stop this browser getting the signed-out person's order pushes (a no-op unless push was enabled here).
+    await unregisterThisBrowser(unregisterCustomerPushAction);
     await signOut({ redirectTo: "/" });
   }
 

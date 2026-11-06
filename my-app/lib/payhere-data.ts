@@ -154,7 +154,7 @@ export type PaymentRow = {
   orderPaymentStatus: string;
   amount: number;
   discount: number;
-  status: "pending" | "paid" | "failed" | "cancelled" | "chargedback" | "overpaid";
+  status: "pending" | "paid" | "failed" | "cancelled" | "chargedback" | "overpaid" | "mismatch";
   method: string | null;
   paymentId: string | null;
   createdAt: string;

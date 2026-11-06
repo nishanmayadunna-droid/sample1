@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/auth-guards";
-import { PUSH_DAILY_CAP } from "@/lib/push";
+import { PUSH_DAILY_CAP, maskUserId } from "@/lib/push";
 import {
   countOwnerDevices,
   firebaseWebConfigured,
@@ -19,7 +19,7 @@ export const metadata: Metadata = { title: "Admin" };
 const timeFormat = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Colombo", dateStyle: "medium", timeStyle: "short" });
 
 export default async function AdminPushPage() {
-  await requireAdmin("/admin/push");
+  const admin = await requireAdmin("/admin/push");
   const [settings, log, devices] = await Promise.all([
     getPushSettings(),
     listPushLog(100).catch((): PushLogRow[] => []),
@@ -75,7 +75,7 @@ export default async function AdminPushPage() {
           the site is added to the Home Screen.
         </p>
         <div className="mt-4">
-          <PushToggle register={registerAdminPushAction} unregister={unregisterAdminPushAction} />
+          <PushToggle userKey={maskUserId(admin.id)} register={registerAdminPushAction} unregister={unregisterAdminPushAction} />
         </div>
       </section>
 

@@ -141,11 +141,15 @@ export function paymentRef(orderNumber: string, suffix: string): string {
   return `${orderNumber}-${suffix}`;
 }
 
-/** An order can be paid online while it is open and not already paid or advance-paid. */
+/**
+ * An order can be paid online while it is open and nothing has been paid yet. Not while a
+ * bank slip is under review ("slip_uploaded"): the customer's transfer would be lost, so they
+ * wait for the admin's decision first. Mirrors confirm_online_payment in the database.
+ */
 export function canPayOnline(order: { status: OrderStatus; paymentStatus: PaymentStatus }): boolean {
   return (
     (order.status === "pending" || order.status === "confirmed") &&
-    (order.paymentStatus === "unpaid" || order.paymentStatus === "advance_due" || order.paymentStatus === "slip_uploaded")
+    (order.paymentStatus === "unpaid" || order.paymentStatus === "advance_due")
   );
 }
 
