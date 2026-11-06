@@ -35,4 +35,5 @@ Sign up, sign in (email and Google), add to cart, checkout (COD and, if on, adva
 - [ ] Free uptime monitor (e.g. UptimeRobot) on `https://<domain>/api/health` (expects HTTP 200 and `{"ok":true}`); alert to your phone/email.
 - [ ] Optional: Vercel Firewall rate limit on `/api/health` (it is unauthenticated and reads the database).
 - [ ] Share a product link in WhatsApp and Facebook and check the preview card (title, photo).
-- [ ] Previews are never indexed (robots disallows everything outside production) -- only the production domain should appear in Google.
+- [ ] Previews are never indexed (robots.txt disallows everything outside production, and Vercel adds a noindex header to preview URLs) -- only the production domain should appear in Google.
+- [ ] Promote only production builds; to ship a preview, merge or redeploy (an API-promoted preview build would serve Disallow: / to Google).

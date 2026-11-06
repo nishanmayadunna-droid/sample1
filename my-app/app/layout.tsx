@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+import AnalyticsGate from "./components/AnalyticsGate";
 import { Geist, Geist_Mono, Anton, Noto_Sans_Sinhala } from "next/font/google";
 import "./globals.css";
 import Footer from "./components/Footer";
@@ -66,6 +65,8 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Northbound",
+    locale: "si_LK",
+    alternateLocale: ["en_US"],
     title: "Northbound — Hard-wearing field apparel",
     description:
       "Honest materials, quiet design, and hardware built to outlast the season. Field apparel for the cold miles.",
@@ -143,8 +144,7 @@ export default async function RootLayout({
           promises={promises}
           freeShippingThreshold={shippingThreshold}
         />
-        <Analytics />
-        <SpeedInsights />
+        <AnalyticsGate />
       </body>
     </html>
   );

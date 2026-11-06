@@ -44,7 +44,13 @@ export async function generateMetadata({
     title: product.name,
     description: description.length > 160 ? `${description.slice(0, 157).trimEnd()}...` : description,
     alternates: { canonical: `/products/${encodeURIComponent(product.id)}` },
-    openGraph: photo ? { images: [photo] } : undefined,
+    // Always an object: a key set to undefined would wipe the root openGraph block.
+    openGraph: {
+      type: "website",
+      siteName: "Northbound",
+      url: absoluteUrl(`/products/${encodeURIComponent(product.id)}`),
+      images: photo ? [photo] : undefined,
+    },
   };
 }
 

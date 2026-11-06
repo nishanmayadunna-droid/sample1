@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isProductionDeploy, resolveSiteUrl } from "./site";
+import { isLocalFallback, isProductionDeploy, resolveSiteUrl } from "./site";
 
 describe("resolveSiteUrl", () => {
   it("strips a trailing slash", () => {
@@ -69,5 +69,12 @@ describe("resolveSiteUrl edge cases", () => {
     expect(r("localhost:3000")).toBe("http://localhost:3000");
     expect(r("localhost")).toBe("http://localhost");
     expect(r("127.0.0.1:4000")).toBe("http://127.0.0.1:4000");
+  });
+});
+
+describe("isLocalFallback", () => {
+  it("detects the localhost fallback only", () => {
+    expect(isLocalFallback(resolveSiteUrl({}))).toBe(true);
+    expect(isLocalFallback(resolveSiteUrl({ NEXT_PUBLIC_SITE_URL: "shop.lk" }))).toBe(false);
   });
 });

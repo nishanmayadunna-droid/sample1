@@ -36,11 +36,23 @@ export function resolveSiteUrl(env: {
   );
 }
 
+/** True when the resolved origin is the localhost fallback. */
+export function isLocalFallback(url: string): boolean {
+  return url === FALLBACK;
+}
+
+let warnedFallback = false;
+
 export function siteUrl(): string {
-  return resolveSiteUrl({
+  const url = resolveSiteUrl({
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     VERCEL_PROJECT_PRODUCTION_URL: process.env.VERCEL_PROJECT_PRODUCTION_URL,
   });
+  if (!warnedFallback && isLocalFallback(url) && isProductionDeploy()) {
+    warnedFallback = true;
+    console.warn("site url falls back to localhost; set NEXT_PUBLIC_SITE_URL");
+  }
+  return url;
 }
 
 /** `path` starts with "/". */

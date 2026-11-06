@@ -49,6 +49,12 @@ export default async function PrivacyPage() {
           <li>
             <L si="ඔබ දායක වන්නේ නම් පුවත්පත් ඊමේල් ලිපිනය." en="Your email for the newsletter, if you subscribe." />
           </li>
+          <li>
+            <L
+              si="නිර්නාමික අඩවි සංචාර සංඛ්‍යාලේඛන: නරඹන පිටු, පැමිණි ස්ථානය, උපාංග වර්ගය, බ්‍රවුසරය, රට සහ පිටු වේගය. කුකීස් භාවිතා නොකරන අතර ඔබව හඳුනා නොගනී."
+              en="Anonymous visit statistics: pages viewed, referrer, device type, browser, country and page speed. No cookies are used and visitors are not identified."
+            />
+          </li>
         </Bullets>
         <p>
           <L
@@ -88,8 +94,8 @@ export default async function PrivacyPage() {
       <Section title={<L si="සේවා සපයන්නන්" en="Services we use" />}>
         <p>
           <L
-            si="දත්ත ගබඩා කිරීම සහ වෙබ් අඩවිය ධාවනය සඳහා Supabase සහ Vercel, SMS සඳහා Text.lk, සහ ලොගින් සඳහා Google භාවිතා කෙරේ."
-            en="We use Supabase and Vercel to store data and run the site, Text.lk for SMS, and Google for sign-in."
+            si="දත්ත ගබඩා කිරීම සහ වෙබ් අඩවිය ධාවනය සඳහා Supabase සහ Vercel, SMS සඳහා Text.lk, ලොගින් සඳහා Google, සහ නිර්නාමික සංචාර සංඛ්‍යාලේඛන සඳහා Vercel Web Analytics සහ Speed Insights භාවිතා කෙරේ."
+            en="We use Supabase and Vercel to store data and run the site, Text.lk for SMS, Google for sign-in, and Vercel Web Analytics and Speed Insights for anonymous visit statistics."
           />
         </p>
       </Section>
