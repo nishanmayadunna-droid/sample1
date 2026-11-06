@@ -9,8 +9,8 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 /** Why an order was cancelled by the system rather than by a person. */
 export type CancelReason = "advance_expired";
 
-export type PaymentMethod = "cod" | "cod_advance";
-export type PaymentStatus = "unpaid" | "advance_due" | "slip_uploaded" | "advance_paid";
+export type PaymentMethod = "cod" | "cod_advance" | "online";
+export type PaymentStatus = "unpaid" | "advance_due" | "slip_uploaded" | "advance_paid" | "online_paid";
 
 /** Codes the checkout Server Action returns; the UI turns them into text. */
 export type OrderMessage =
@@ -43,7 +43,7 @@ export function nextStatuses(status: OrderStatus): OrderStatus[] {
 export function canCustomerCancel(status: OrderStatus, paymentStatus?: PaymentStatus): boolean {
   // Once a slip is uploaded or the advance is paid, money is involved: the shop
   // cancels (and refunds by hand), so it can't be lost track of.
-  if (paymentStatus === "slip_uploaded" || paymentStatus === "advance_paid") return false;
+  if (paymentStatus === "slip_uploaded" || paymentStatus === "advance_paid" || paymentStatus === "online_paid") return false;
   return status === "pending";
 }
 
@@ -149,6 +149,8 @@ export function cancelReasonLabel(reason: CancelReason): { si: string; en: strin
 
 /** What the courier collects at the door: the total, less the advance once that is paid. */
 export function collectOnDelivery(order: { total: number; advanceAmount: number; paymentStatus: string }): number {
+  // Paid in full online: the courier collects nothing.
+  if (order.paymentStatus === "online_paid") return 0;
   const paid = order.paymentStatus === "advance_paid" ? order.advanceAmount : 0;
   return Math.max(order.total - paid, 0);
 }

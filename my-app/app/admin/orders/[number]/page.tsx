@@ -10,6 +10,7 @@ import { isUserTrusted, listSlipsForOrder, slipSignedUrl } from "@/lib/payments-
 import { formatPrice } from "@/lib/products";
 import { canRefund, refundMethodLabel, refundSummary } from "@/lib/refunds";
 import { listRefundsForOrder } from "@/lib/refunds-data";
+import { listPaymentsForOrder } from "@/lib/payhere-data";
 import AdminTabs from "../../AdminTabs";
 import PaymentReview from "../PaymentReview";
 import RefundForm from "../RefundForm";
@@ -50,6 +51,15 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
   const refunds = refundable ? await listRefundsForOrder(order.id) : [];
   const refundInfo = refundSummary(order.advanceAmount, refunds);
 
+  // Online (PayHere) payments for this order, to show what was paid and any that need a refund.
+  const onlinePayments = await listPaymentsForOrder(order.id).catch((error) => {
+    console.error("online payments lookup failed", error);
+    return [];
+  });
+  const onlineStuck = onlinePayments.filter(
+    (p) => (p.status === "paid" && order.paymentStatus !== "online_paid") || p.status === "overpaid" || p.status === "chargedback",
+  );
+
   const canShip = order.status === "confirmed" || order.status === "shipped";
   const couriers = canShip
     ? (
@@ -70,7 +80,9 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
       <p className="mt-2 font-mono text-xs text-muted">
         {new Date(order.createdAt).toLocaleString("en-LK", { timeZone: "Asia/Colombo" })} ·{" "}
         <span className={order.status === "pending" ? "text-blaze" : ""}>{statusLabel(order.status).en}</span> ·
-        {order.advanceAmount > 0
+        {order.paymentStatus === "online_paid"
+          ? `Paid online ${formatPrice(order.onlinePaidAmount)}`
+          : order.advanceAmount > 0
           ? `Advance ${formatPrice(order.advanceAmount)} (${paymentStatusLabel(order.paymentStatus).en})`
           : "Cash on delivery (unpaid)"}
         {order.advanceWaivedAt ? " · Advance waived" : ""}
@@ -90,7 +102,9 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
           orderId={order.id}
           status={order.status}
           advanceUnpaid={order.advanceAmount > 0 && order.paymentStatus !== "advance_paid"}
-          advancePaid={order.advanceAmount > 0 && order.paymentStatus === "advance_paid"}
+          advancePaid={
+            (order.advanceAmount > 0 && order.paymentStatus === "advance_paid") || order.paymentStatus === "online_paid"
+          }
         />
       </div>
 
@@ -137,6 +151,33 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
               ))}
             </ul>
           )}
+        </section>
+      )}
+
+      {(order.paymentStatus === "online_paid" || onlinePayments.length > 0) && (
+        <section className="mt-8">
+          <h2 className="eyebrow text-muted">Online payment</h2>
+          {order.paymentStatus === "online_paid" && (
+            <p className="mt-2 text-sm">
+              Paid online {formatPrice(order.onlinePaidAmount)}
+              {order.onlinePaidAt && ` on ${new Date(order.onlinePaidAt).toLocaleString("en-LK", { timeZone: "Asia/Colombo" })}`}
+              {order.onlineDiscount > 0 && ` · customer saved ${formatPrice(order.onlineDiscount)}`}. The courier collects nothing.
+              {order.onlineGift && <span className="block text-blaze">Gift to include: {order.onlineGift}</span>}
+            </p>
+          )}
+          {onlineStuck.length > 0 && (
+            <ul className="mt-2 text-sm text-blaze">
+              {onlineStuck.map((p) => (
+                <li key={p.id}>
+                  {formatPrice(p.amount)} ({p.status}): refund this in the PayHere dashboard
+                  {p.paymentId && <span className="font-mono text-xs"> (payment {p.paymentId})</span>}.
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-2 text-xs text-muted">
+            {onlinePayments.length} attempt{onlinePayments.length === 1 ? "" : "s"}. Refunds are made in PayHere, not here.
+          </p>
         </section>
       )}
 

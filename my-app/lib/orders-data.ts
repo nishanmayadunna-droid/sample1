@@ -40,6 +40,11 @@ export type Order = {
   pointsUsed: number;
   pointsDiscount: number;
   pointsToEarn: number;
+  /** Paid online with PayHere: the discount that earned, what was charged (cents), when, and the gift promised. */
+  onlineDiscount: number;
+  onlinePaidAmount: number;
+  onlinePaidAt: string | null;
+  onlineGift: string | null;
   customerName: string;
   phone: string;
   address: string;
@@ -79,6 +84,10 @@ type OrderRow = {
   points_used: number;
   points_discount: number;
   points_to_earn: number;
+  online_discount: number;
+  online_paid_amount: number;
+  online_paid_at: string | null;
+  online_gift: string | null;
   customer_name: string;
   phone: string;
   address: string;
@@ -97,7 +106,7 @@ type OrderRow = {
 };
 
 const COLUMNS =
-  "id, order_number, user_id, status, payment_method, payment_status, cancel_reason, advance_waived_at, advance_amount, points_used, points_discount, points_to_earn, customer_name, phone, address, city, note, district, courier_name, tracking_number, tracking_url, subtotal, discount, shipping, total, created_at, order_items(product_id, product_name, size, quantity, unit_price, compare_at)";
+  "id, order_number, user_id, status, payment_method, payment_status, cancel_reason, advance_waived_at, advance_amount, points_used, points_discount, points_to_earn, online_discount, online_paid_amount, online_paid_at, online_gift, customer_name, phone, address, city, note, district, courier_name, tracking_number, tracking_url, subtotal, discount, shipping, total, created_at, order_items(product_id, product_name, size, quantity, unit_price, compare_at)";
 
 function toOrder(row: OrderRow): Order {
   return {
@@ -113,6 +122,10 @@ function toOrder(row: OrderRow): Order {
     pointsUsed: row.points_used,
     pointsDiscount: row.points_discount,
     pointsToEarn: row.points_to_earn,
+    onlineDiscount: row.online_discount,
+    onlinePaidAmount: row.online_paid_amount,
+    onlinePaidAt: row.online_paid_at,
+    onlineGift: row.online_gift,
     customerName: row.customer_name,
     phone: row.phone,
     address: row.address,

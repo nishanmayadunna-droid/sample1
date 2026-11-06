@@ -9,7 +9,10 @@ import { getPaymentSettings, listQrCodes, listSlipsForOrder, qrSignedUrls } from
 import { formatPrice } from "@/lib/products";
 import { canRefund, refundSummary } from "@/lib/refunds";
 import { listRefundsForOrder } from "@/lib/refunds-data";
+import { canPayOnline, giftText, onlineAmounts } from "@/lib/payhere";
+import { onlinePaymentAvailable } from "@/lib/payhere-data";
 import CancelOrderButton from "../../components/CancelOrderButton";
+import PayOnlineButton from "../../components/PayOnlineButton";
 import L from "../../components/L";
 import OrderStatusSteps from "../../components/OrderStatusSteps";
 import PaymentPanel from "../../components/PaymentPanel";
@@ -17,8 +20,15 @@ import PaymentPanel from "../../components/PaymentPanel";
 export const metadata: Metadata = { title: "Your order" };
 
 // Per-user, so dynamic. Someone else's order number is a plain 404.
-export default async function OrderPage({ params }: { params: Promise<{ number: string }> }) {
+export default async function OrderPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ number: string }>;
+  searchParams: Promise<{ paid?: string }>;
+}) {
   const { number } = await params;
+  const { paid: returnedFromPayhere } = await searchParams;
   const user = await requireUser(`/orders/${number}`);
   const order = await getOrderForUser(number, user.id);
   if (!order) notFound();
@@ -49,6 +59,15 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
         })
       : [],
   );
+  // Online payment (PayHere): offered while the order is open and unpaid, when the admin has it on.
+  const online = canPayOnline(order)
+    ? await onlinePaymentAvailable().catch((error) => {
+        console.error("online payment lookup failed", error);
+        return null;
+      })
+    : null;
+  const onlineOffer = online?.available ? onlineAmounts(order, online.settings) : null;
+  const onlineGiftLine = online?.available ? giftText(online.settings, "en") : null;
   const remaining = Math.max(order.total - order.advanceAmount, 0);
   // The deadline only applies while no slip is waiting for review; a rejection restarts the clock.
   const deadline =
@@ -211,7 +230,29 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
           <h2 className="eyebrow text-muted">
             <L si="ගෙවීම" en="Payment" />
           </h2>
-          {order.advanceAmount > 0 ? (
+          {order.paymentStatus === "online_paid" ? (
+            <p className="mt-2 text-sm leading-relaxed">
+              <L
+                si={`ඔන්ලයින් ගෙවා ඇත: ${formatPrice(order.onlinePaidAmount)}. බඩු ලැබෙන විට ගෙවීමක් නැත.`}
+                en={`Paid online: ${formatPrice(order.onlinePaidAmount)}. Nothing to pay on delivery.`}
+              />
+              {order.onlineDiscount > 0 && (
+                <>
+                  <br />
+                  <L
+                    si={`ඔන්ලයින් ගෙවීමෙන් ඔබ ${formatPrice(order.onlineDiscount)}ක් ඉතිරි කළා.`}
+                    en={`You saved ${formatPrice(order.onlineDiscount)} by paying online.`}
+                  />
+                </>
+              )}
+              {order.onlineGift && (
+                <>
+                  <br />
+                  <L si={`දීමනාව: ${order.onlineGift}`} en={`Your gift: ${order.onlineGift}`} />
+                </>
+              )}
+            </p>
+          ) : order.advanceAmount > 0 ? (
             <p className="mt-2 text-sm leading-relaxed">
               <L si={`Advance ${formatPrice(order.advanceAmount)}`} en={`Advance ${formatPrice(order.advanceAmount)}`} />:{" "}
               <L si={paymentStatusLabel(order.paymentStatus).si} en={paymentStatusLabel(order.paymentStatus).en} />
@@ -246,6 +287,47 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
               <L si="ඔබේ පාර්සලය හඹා යන්න" en="Track your parcel" />
             </a>
           )}
+        </section>
+      )}
+
+      {returnedFromPayhere && order.paymentStatus !== "online_paid" && (
+        <p role="status" className="mt-8 rounded-md border border-line px-4 py-3 text-sm">
+          <L
+            si="ඔබේ ගෙවීම තහවුරු කරමින් සිටිමු. තත්පර කීපයකින් මෙම පිටුව නැවත පූරණය කරන්න."
+            en="We're confirming your payment. Refresh this page in a few seconds."
+          />
+        </p>
+      )}
+      {onlineOffer && (
+        <section className="mt-8 rounded-md border border-line p-4">
+          <h2 className="eyebrow text-muted">
+            <L si="කාඩ්පතකින් ඔන්ලයින් ගෙවන්න" en="Pay online by card" />
+          </h2>
+          <p className="mt-2 text-sm">
+            <L
+              si={`ගෙවිය යුතු මුදල: ${formatPrice(onlineOffer.payable)}`}
+              en={`You pay: ${formatPrice(onlineOffer.payable)}`}
+            />
+            {onlineOffer.discount > 0 && (
+              <span className="text-blaze">
+                {" "}
+                <L si={`(${formatPrice(onlineOffer.discount)}ක් ඉතිරියි)`} en={`(save ${formatPrice(onlineOffer.discount)})`} />
+              </span>
+            )}
+          </p>
+          {onlineGiftLine && (
+            <p className="mt-1 text-sm text-blaze">
+              <L si={`ඔන්ලයින් ගෙවන්නන්ට දීමනාවක්: ${onlineGiftLine}`} en={`A gift when you pay online: ${onlineGiftLine}`} />
+            </p>
+          )}
+          {order.advanceAmount > 0 && (
+            <p className="mt-1 text-sm text-muted">
+              <L si="ඔන්ලයින් ගෙවුවොත් bank advance එක අවශ්‍ය නැත." en="Paying online replaces the bank advance." />
+            </p>
+          )}
+          <div className="mt-3">
+            <PayOnlineButton orderNumber={order.orderNumber} />
+          </div>
         </section>
       )}
 

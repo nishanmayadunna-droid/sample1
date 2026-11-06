@@ -153,6 +153,7 @@ const PAYMENT_LABELS: Record<PaymentStatus, { si: string; en: string }> = {
   advance_due: { si: "advance ගෙවීම අවශ්‍යයි", en: "Advance due" },
   slip_uploaded: { si: "slip එක පරීක්ෂා කරමින්", en: "Slip being checked" },
   advance_paid: { si: "advance ගෙවා ඇත", en: "Advance paid" },
+  online_paid: { si: "ඔන්ලයින් ගෙවා ඇත", en: "Paid online" },
 };
 
 export function paymentStatusLabel(status: PaymentStatus): { si: string; en: string } {

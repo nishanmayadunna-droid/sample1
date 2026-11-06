@@ -37,7 +37,7 @@ export default function StatusButtons({
         status === "shipped"
           ? "Cancel this shipped order? Its stock is NOT put back automatically: adjust it in the product once the parcel is really back."
           : "Cancel this order? Its stock goes back on the shelf.";
-      const refund = advancePaid ? " The advance was paid: refund it by hand." : "";
+      const refund = advancePaid ? " The customer has already paid: refund it by hand." : "";
       if (!window.confirm(text + refund)) return;
     }
     startTransition(async () => {
