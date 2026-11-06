@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth-guards";
-import { validateCourier, validateZones } from "@/lib/shipping";
+import { validateCourier, validateZones, type ZoneInput } from "@/lib/shipping";
 import { deleteCourier, saveCourier, saveZones } from "@/lib/shipping-data";
 
 // Every action re-checks admin access first: Server Actions are endpoints of
@@ -20,18 +20,31 @@ function revalidateShipping() {
   revalidatePath("/checkout");
 }
 
-function readZones(raw: FormDataEntryValue | null): { name: string; fee: string; districts: string[] }[] | null {
-  if (typeof raw !== "string" || raw.length > 20000) return null;
+function readZones(raw: FormDataEntryValue | null): ZoneInput[] | null {
+  if (typeof raw !== "string" || raw.length > 40000) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return null;
-    const zones: { name: string; fee: string; districts: string[] }[] = [];
+    const zones: ZoneInput[] = [];
     for (const item of parsed) {
       if (typeof item !== "object" || item === null) return null;
-      const { name, fee, districts } = item as Record<string, unknown>;
+      const { name, fee, districts, bands, extraPerKg } = item as Record<string, unknown>;
       if (typeof name !== "string" || typeof fee !== "string") return null;
       if (!Array.isArray(districts) || districts.some((d) => typeof d !== "string")) return null;
-      zones.push({ name, fee, districts: districts as string[] });
+      if (extraPerKg !== undefined && typeof extraPerKg !== "string") return null;
+      let readBands: { upToGrams: string; fee: string }[] = [];
+      if (bands !== undefined) {
+        if (!Array.isArray(bands)) return null;
+        for (const band of bands) {
+          if (typeof band !== "object" || band === null) return null;
+          const { upToGrams, fee: bandFee } = band as Record<string, unknown>;
+          if (typeof upToGrams !== "string" || typeof bandFee !== "string") return null;
+          readBands.push({ upToGrams, fee: bandFee });
+        }
+      } else {
+        readBands = [];
+      }
+      zones.push({ name, fee, districts: districts as string[], bands: readBands, extraPerKg });
     }
     return zones;
   } catch {

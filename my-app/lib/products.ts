@@ -43,6 +43,8 @@ export type Product = {
   stock: StockMap;
   /** Average of approved reviews; null when there are none. */
   rating: RatingSummary | null;
+  /** Weight of one unit in grams; null/absent = unknown (the flat shipping fee applies). */
+  weightGrams?: number | null;
   featured?: boolean;
   /** When the product was added (ISO timestamp); drives "New In". */
   createdAt: string;

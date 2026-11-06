@@ -3,7 +3,7 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import type { Zone } from "@/lib/shipping";
+import type { Zone, ZoneValue } from "@/lib/shipping";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,14 +11,22 @@ const supabase = createClient(
   { auth: { persistSession: false } },
 );
 
-type ZoneRow = { id: string; name: string; fee: number; districts: string[]; sort_order: number };
+type ZoneRow = {
+  id: string;
+  name: string;
+  fee: number;
+  districts: string[];
+  sort_order: number;
+  bands: { upToGrams: number; fee: number }[] | null;
+  extra_per_kg: number | null;
+};
 
 /** Shipping zones in display order; none (so the default fee applies) on any error. */
 export async function getZones(): Promise<Zone[]> {
   try {
     const { data, error } = await supabase
       .from("shipping_zones")
-      .select("id, name, fee, districts, sort_order")
+      .select("id, name, fee, districts, sort_order, bands, extra_per_kg")
       .order("sort_order")
       .returns<ZoneRow[]>();
     if (error || !data) {
@@ -31,6 +39,8 @@ export async function getZones(): Promise<Zone[]> {
       fee: row.fee,
       districts: row.districts ?? [],
       sortOrder: row.sort_order,
+      bands: Array.isArray(row.bands) ? row.bands : [],
+      extraPerKg: row.extra_per_kg ?? 0,
     }));
   } catch (error) {
     console.error("shipping zones query failed", error instanceof Error ? error.name : "unknown");
@@ -77,7 +87,7 @@ export async function listCouriers(): Promise<Courier[]> {
 
 /** Replaces every zone in one database transaction (all or nothing). Fees are cents. */
 export async function saveZones(
-  zones: { name: string; fee: number; districts: string[] }[],
+  zones: ZoneValue[],
 ): Promise<void> {
   const { error } = await supabaseAdmin.rpc("save_shipping_zones", { p_zones: zones });
   if (error) {

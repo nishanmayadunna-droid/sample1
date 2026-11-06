@@ -327,6 +327,19 @@ export default function ProductForm({
         </Field>
       </div>
 
+      <Field label="Weight of one item in grams (optional)" error={errors.weightGrams}>
+        <input
+          name="weightGrams"
+          inputMode="numeric"
+          defaultValue={product?.weightGrams ?? ""}
+          placeholder="e.g. 250"
+          className={inputClass}
+        />
+        <span className="mt-1 block text-sm text-muted">
+          Used for weight-based shipping fees. If any item in an order has no weight, the zone&apos;s flat fee is charged.
+        </span>
+      </Field>
+
       <div className="grid gap-x-4 sm:grid-cols-2">
         <Field label="Sort order" error={errors.sortOrder}>
           <input

@@ -11,6 +11,7 @@ export type FieldName =
   | "description"
   | "sizes"
   | "stock"
+  | "weightGrams"
   | "material"
   | "construction"
   | "origin"
@@ -28,6 +29,8 @@ export type ProductInput = {
   sizes: string[];
   /** Units per size; null = not tracked. */
   stock: Record<string, number> | null;
+  /** Grams per unit; null = unknown. */
+  weight_grams: number | null;
   material: string;
   construction: string;
   origin: string;
@@ -121,6 +124,16 @@ export function parseProductForm(
     else errors.stock = "Stock must be whole numbers from 0 to 9999.";
   }
 
+  // Optional: blank means unknown (the flat shipping fee applies).
+  const rawWeight = (fields.weightGrams ?? "").trim();
+  let weightGrams: number | null = null;
+  if (rawWeight !== "") {
+    weightGrams = /^\d{1,6}$/.test(rawWeight) ? Number(rawWeight) : Number.NaN;
+    if (!(weightGrams >= 1 && weightGrams <= 100000)) {
+      errors.weightGrams = "Enter the weight in whole grams (1 to 100000), or leave it empty.";
+    }
+  }
+
   const spec = {} as Record<"material" | "construction" | "origin", string>;
   for (const field of ["material", "construction", "origin"] as const) {
     const value = text(fields[field], 200);
@@ -153,6 +166,7 @@ export function parseProductForm(
       description: description!,
       sizes: sizes!,
       stock,
+      weight_grams: weightGrams,
       material: spec.material,
       construction: spec.construction,
       origin: spec.origin,

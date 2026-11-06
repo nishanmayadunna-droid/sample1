@@ -13,7 +13,8 @@ import { getEarnBonusPercent } from "@/lib/points-v2-data";
 import { bankDetailsComplete, getPaymentSettings, isUserTrusted } from "@/lib/payments-data";
 import { planOrder } from "@/lib/order-plan";
 import { parseCheckoutDetails, type DetailsField, type OrderMessage } from "@/lib/orders";
-import { shippingFeeFor } from "@/lib/shipping";
+import { sanitizeCartLines } from "@/lib/cart-rules";
+import { orderWeightGrams, shippingFeeFor } from "@/lib/shipping";
 import { getZones } from "@/lib/shipping-data";
 import { getRunningPromotions, getStoreSettings } from "@/lib/storefront";
 
@@ -120,7 +121,12 @@ export async function placeOrder(
       products,
       promotions,
       // Decided here from the district; the browser's preview is never trusted.
-      shippingFee: shippingFeeFor(details.value.district, zones, settings.shippingFee),
+      shippingFee: shippingFeeFor(
+        details.value.district,
+        zones,
+        settings.shippingFee,
+        orderWeightGrams(sanitizeCartLines(lines), products),
+      ),
       categories,
       expectedTotal,
       pointsRequested,

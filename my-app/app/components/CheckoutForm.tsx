@@ -11,7 +11,7 @@ import { pointsToUse, type PointsSettings } from "@/lib/points";
 import { summarizeCart } from "@/lib/cart-summary";
 import { tr } from "@/lib/i18n";
 import type { DetailsField } from "@/lib/orders";
-import { DISTRICTS, shippingFeeFor, type Zone } from "@/lib/shipping";
+import { DISTRICTS, orderWeightGrams, shippingFeeFor, type Zone } from "@/lib/shipping";
 import { formatPrice, type Category, type Product } from "@/lib/products";
 import type { Promotion } from "@/lib/promotions";
 import { CartTotals } from "./CartTotals";
@@ -59,7 +59,12 @@ export default function CheckoutForm({
 
   const [district, setDistrict] = useState(DISTRICTS.some((d) => d.en === initialDistrict) ? initialDistrict : "");
   // Preview only: placeOrder recomputes the fee on the server from the district.
-  const districtFee = shippingFeeFor(district === "" ? null : district, zones, shippingFee);
+  const districtFee = shippingFeeFor(
+    district === "" ? null : district,
+    zones,
+    shippingFee,
+    orderWeightGrams(lines, products),
+  );
   const summary = summarizeCart(lines, products, promotions, districtFee, categories);
   // Points pay for goods after promotions, before shipping; they are only used when ticked.
   const [usePoints, setUsePoints] = useState(false);

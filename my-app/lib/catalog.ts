@@ -34,12 +34,13 @@ export type ProductRow = {
   /** Embedded photo rows; null when the table is empty for this product. */
   product_images: { path: string; sort_order: number }[] | null;
   stock: Record<string, number> | null;
+  weight_grams?: number | null;
   /** Embedded approved reviews (RLS and the select filter hide the rest). */
   reviews: { rating: number }[] | null;
 };
 
 export const COLUMNS =
-  "id, name, price, sale_price, category, description, sizes, material, construction, origin, swatch, image_url, featured, created_at, product_images(path, sort_order), stock, reviews(rating)";
+  "id, name, price, sale_price, category, description, sizes, material, construction, origin, swatch, image_url, featured, created_at, product_images(path, sort_order), stock, weight_grams, reviews(rating)";
 
 export function toProduct(row: ProductRow, categories: Category[]): Product {
   return {
@@ -64,6 +65,7 @@ export function toProduct(row: ProductRow, categories: Category[]): Product {
       row.image_url,
     ),
     stock: row.stock ?? null,
+    weightGrams: row.weight_grams ?? null,
     rating: summarizeRatings((row.reviews ?? []).map((r) => r.rating)),
     featured: row.featured,
     createdAt: row.created_at,

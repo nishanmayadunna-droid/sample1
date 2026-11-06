@@ -36,38 +36,111 @@ export function isDistrict(value: unknown): value is string {
   return typeof value === "string" && DISTRICT_NAMES.has(value);
 }
 
+/** One weight band: orders up to `upToGrams` pay `fee` cents (the bands are ascending). */
+export type WeightBand = { upToGrams: number; fee: number };
+
 export type Zone = {
   id: string;
   name: string;
-  fee: number; // cents
+  fee: number; // cents; the flat fee, and the fee when the weight is unknown
   districts: string[];
   sortOrder: number;
+  /** Weight bands (cents). Empty or absent = the flat fee always. */
+  bands?: WeightBand[];
+  /** Cents added per started kilogram above the last band. */
+  extraPerKg?: number;
 };
 
-/** Fee in cents: the first zone containing the district, else the default. */
+/**
+ * What one zone charges for a parcel of `weightGrams`. No bands, or a weight
+ * that is unknown (some item has no weight), means the flat zone fee. Within
+ * the bands the first band that fits wins; above the last band it is the last
+ * band's fee plus `extraPerKg` for every started kilogram over it.
+ */
+export function feeForWeight(zone: Zone, weightGrams: number | null | undefined): number {
+  const bands = zone.bands ?? [];
+  if (bands.length === 0 || weightGrams == null || !Number.isFinite(weightGrams) || weightGrams < 0) {
+    return zone.fee;
+  }
+  const hit = bands.find((band) => weightGrams <= band.upToGrams);
+  if (hit) return hit.fee;
+  const last = bands[bands.length - 1];
+  const extraKg = Math.ceil((weightGrams - last.upToGrams) / 1000);
+  return last.fee + extraKg * (zone.extraPerKg ?? 0);
+}
+
+/**
+ * Total grams of an order, or null when it can't be known: no lines, or any
+ * line whose product has no weight (then the flat zone fee applies).
+ */
+export function orderWeightGrams(
+  lines: { id: string; quantity: number }[],
+  products: { id: string; weightGrams?: number | null }[],
+): number | null {
+  if (lines.length === 0) return null;
+  const weights = new Map(products.map((p) => [p.id, p.weightGrams]));
+  let total = 0;
+  for (const line of lines) {
+    const grams = weights.get(line.id);
+    if (typeof grams !== "number" || !Number.isFinite(grams) || grams <= 0) return null;
+    total += grams * line.quantity;
+  }
+  return total;
+}
+
+/** Fee in cents: the first zone containing the district (by weight if it has bands), else the default. */
 export function shippingFeeFor(
   district: string | null,
   zones: Zone[],
   defaultFee: number,
+  weightGrams?: number | null,
 ): number {
   if (district === null) return defaultFee;
-  return zones.find((z) => z.districts.includes(district))?.fee ?? defaultFee;
+  const zone = zones.find((z) => z.districts.includes(district));
+  return zone ? feeForWeight(zone, weightGrams) : defaultFee;
 }
 
 const ZONE_MAX = 10;
 const ZONE_NAME_MAX = 40;
 const ZONE_FEE_MAX_RUPEES = 100000;
 
+const BAND_MAX = 6;
+const BAND_MAX_GRAMS = 100000;
+
+export type ZoneInput = {
+  name: string;
+  fee: string | number;
+  districts: string[];
+  /** Weight bands in rupees: orders up to `upToGrams` pay `fee`. */
+  bands?: { upToGrams: string | number; fee: string | number }[];
+  /** Rupees per started kilogram above the last band. */
+  extraPerKg?: string | number;
+};
+
+export type ZoneValue = {
+  name: string;
+  fee: number;
+  districts: string[];
+  /** Only present when the zone has weight bands. */
+  bands?: WeightBand[];
+  extraPerKg?: number;
+};
+
+/** A whole number from a plain digits string or an integer, else NaN. */
+function wholeNumber(raw: string | number | undefined): number {
+  const value = typeof raw === "string" ? raw.trim() : raw;
+  if (typeof value === "string") return /^\d+$/.test(value) ? Number(value) : Number.NaN;
+  return typeof value === "number" && Number.isInteger(value) ? value : Number.NaN;
+}
+
 export function validateZones(
-  zones: { name: string; fee: string | number; districts: string[] }[],
-):
-  | { ok: true; value: { name: string; fee: number; districts: string[] }[] }
-  | { ok: false; errors: string[] } {
+  zones: ZoneInput[],
+): { ok: true; value: ZoneValue[] } | { ok: false; errors: string[] } {
   const errors: string[] = [];
   if (zones.length > ZONE_MAX) errors.push(`At most ${ZONE_MAX} zones.`);
 
   const seen = new Set<string>();
-  const value: { name: string; fee: number; districts: string[] }[] = [];
+  const value: ZoneValue[] = [];
   zones.forEach((zone, i) => {
     const label = `Zone ${i + 1}`;
     const name = (zone.name ?? "").trim();
@@ -91,7 +164,44 @@ export function validateZones(
       seen.add(district);
     }
 
-    value.push({ name, fee: rupees * 100, districts: [...zone.districts] });
+    const entry: ZoneValue = { name, fee: rupees * 100, districts: [...zone.districts] };
+
+    const rawBands = zone.bands ?? [];
+    if (rawBands.length > BAND_MAX) errors.push(`${label}: at most ${BAND_MAX} weight bands.`);
+    const bands: WeightBand[] = [];
+    let previous = 0;
+    rawBands.forEach((band, j) => {
+      const bandLabel = `${label}, band ${j + 1}`;
+      const grams = wholeNumber(band.upToGrams);
+      const fee = wholeNumber(band.fee);
+      if (!(grams >= 1 && grams <= BAND_MAX_GRAMS)) {
+        errors.push(`${bandLabel}: weight must be a whole number of grams from 1 to ${BAND_MAX_GRAMS}.`);
+      } else if (grams <= previous) {
+        errors.push(`${bandLabel}: each band must be heavier than the one before it.`);
+      } else {
+        previous = grams;
+      }
+      if (!(fee >= 0 && fee <= ZONE_FEE_MAX_RUPEES)) {
+        errors.push(`${bandLabel}: fee must be a whole number from 0 to ${ZONE_FEE_MAX_RUPEES}.`);
+      }
+      bands.push({ upToGrams: grams, fee: fee * 100 });
+    });
+
+    const rawExtra = zone.extraPerKg;
+    const hasExtra = rawExtra !== undefined && String(rawExtra).trim() !== "";
+    const extra = hasExtra ? wholeNumber(rawExtra) : 0;
+    if (hasExtra && !(extra >= 0 && extra <= ZONE_FEE_MAX_RUPEES)) {
+      errors.push(`${label}: the fee per extra kilogram must be a whole number from 0 to ${ZONE_FEE_MAX_RUPEES}.`);
+    }
+    if (bands.length === 0 && extra > 0) {
+      errors.push(`${label}: add weight bands before setting a fee per extra kilogram.`);
+    }
+
+    if (bands.length > 0) {
+      entry.bands = bands;
+      entry.extraPerKg = extra * 100;
+    }
+    value.push(entry);
   });
 
   if (errors.length > 0) return { ok: false, errors };

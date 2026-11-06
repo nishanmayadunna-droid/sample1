@@ -62,6 +62,7 @@ describe("parseProductForm", () => {
         origin: "x",
         swatch: ["#aabbcc", "#112233"],
         stock: null,
+        weight_grams: null,
         featured: true,
         sort_order: 0,
       },
@@ -72,6 +73,16 @@ describe("parseProductForm", () => {
     expect(result.ok && result.value.stock).toEqual({ M: 4, L: 0 });
   });
 
+  it("parses the optional weight in grams", () => {
+    const parse = (weightGrams?: string) => parseProductForm({ ...valid, weightGrams }, "create", SLUGS);
+    expect(parse(undefined).ok && (parse(undefined) as { value: { weight_grams: number | null } }).value.weight_grams).toBeNull();
+    expect(parse("").ok && (parse("") as { value: { weight_grams: number | null } }).value.weight_grams).toBeNull();
+    expect((parse(" 250 ") as { value: { weight_grams: number | null } }).value.weight_grams).toBe(250);
+  });
+  it.each(["0", "-5", "100001", "2.5", "abc", "1e3"])("rejects weight %j", (weightGrams) =>
+    expect(errorsFor({ weightGrams }).weightGrams).toBe(
+      "Enter the weight in whole grams (1 to 100000), or leave it empty.",
+    ));
   it.each(['{"M":-1}', '{"XL":2}', "nope"])("rejects stock %j", (stock) =>
     expect(errorsFor({ sizes: "M, L", stock }).stock).toBe("Stock must be whole numbers from 0 to 9999."));
 

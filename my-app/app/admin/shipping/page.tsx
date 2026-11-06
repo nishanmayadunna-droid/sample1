@@ -32,7 +32,13 @@ export default async function AdminShippingPage() {
       <section className="mt-8">
         <h2 className="display text-2xl">Zones</h2>
         <ZonesEditor
-          zones={zones.map((zone) => ({ name: zone.name, fee: String(zone.fee / 100), districts: zone.districts }))}
+          zones={zones.map((zone) => ({
+            name: zone.name,
+            fee: String(zone.fee / 100),
+            districts: zone.districts,
+            bands: (zone.bands ?? []).map((band) => ({ upToGrams: String(band.upToGrams), fee: String(band.fee / 100) })),
+            extraPerKg: (zone.extraPerKg ?? 0) > 0 ? String((zone.extraPerKg ?? 0) / 100) : "",
+          }))}
         />
       </section>
 
