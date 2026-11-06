@@ -19,6 +19,11 @@ export const AUTH_MESSAGES = {
   codeTooSoon: { si: "කරුණාකර මද වෙලාවක් රැඳී නැවත උත්සාහ කරන්න.", en: "Please wait a moment before asking for another code." },
   codeLimit: { si: "කේත ඉල්ලීම් ගණන සීමාව ඉක්මවා ඇත. පසුව උත්සාහ කරන්න.", en: "Too many code requests. Please try again later." },
   smsUnavailable: { si: "දුරකථනයෙන් ඇතුළු වීම දැනට ලබාගත නොහැක.", en: "Phone sign-in isn't available right now." },
+  phoneSame: { si: "මෙය දැනටමත් ඔබේ දුරකථන අංකයයි.", en: "That is already your phone number." },
+  phoneChangeTooSoon: {
+    si: "දුරකථන අංකය වෙනස් කළ හැක්කේ දිනකට වරක් පමණි. පසුව උත්සාහ කරන්න.",
+    en: "You can change your phone number once a day. Please try again later.",
+  },
   smsSendFailed: { si: "කේතය යැවීමට නොහැකි විය. නැවත උත්සාහ කරන්න.", en: "We couldn't send the code. Please try again." },
 } satisfies Record<string, { si: string; en: string }>;
 

@@ -9,6 +9,8 @@ import { getPointsBalance, getPointsSettings, listLedgerForUser } from "@/lib/po
 import { formatPrice } from "@/lib/products";
 import { expiryPicture, nextTier } from "@/lib/points-v2";
 import { getExpiryDays, getLedgerForExpiry, getLoyaltyStanding } from "@/lib/points-v2-data";
+import { smsAvailable } from "@/lib/sms-data";
+import PhoneSection from "./PhoneSection";
 import SignOutButton from "../components/SignOutButton";
 import L from "../components/L";
 
@@ -31,6 +33,8 @@ export default async function AccountPage() {
     console.error("points read failed", error);
     return null;
   });
+  // The phone section only shows while SMS sign-in is switched on; a failed read hides it.
+  const phoneAvailable = await smsAvailable().catch(() => false);
   // Tier, running bonus and expiry: a failed read just hides these lines.
   const extras = points?.[0].enabled
     ? await Promise.all([getLoyaltyStanding(user.id), getExpiryDays(), getLedgerForExpiry(user.id)]).catch((error) => {
@@ -83,6 +87,7 @@ export default async function AccountPage() {
           </div>
         ))}
       </dl>
+      {phoneAvailable && <PhoneSection phone={user.phone} />}
       {points && (points[0].enabled || points[2].length > 0) && (
         <section className="mt-10">
           <h2 className="eyebrow text-muted">

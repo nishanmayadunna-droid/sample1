@@ -47,14 +47,14 @@ export async function requestPhoneCode(rawPhone: string): Promise<RequestResult>
   return "sent";
 }
 
-export async function verifyPhoneCode(
-  rawPhone: string,
-  rawCode: string,
-): Promise<AppUser | null> {
-  const phone = normalizePhone(rawPhone);
+/**
+ * Checks a code for an already-normalised phone and uses it up when right.
+ * The database counts every guess, so this is safe to call with user input.
+ */
+export async function checkPhoneCode(phone: string, rawCode: string): Promise<boolean> {
   const code = rawCode.trim();
-  if (!phone || !isValidCodeInput(code)) return null;
-  if (!(await smsAvailable())) return null;
+  if (!isValidCodeInput(code)) return false;
+  if (!(await smsAvailable())) return false;
 
   const { data, error } = await supabaseAdmin.rpc("verify_phone_code", {
     p_phone: phone,
@@ -62,8 +62,17 @@ export async function verifyPhoneCode(
   });
   if (error) {
     console.error("verify_phone_code failed", error.code ?? "unknown");
-    return null;
+    return false;
   }
-  if (data !== "ok") return null;
+  return data === "ok";
+}
+
+export async function verifyPhoneCode(
+  rawPhone: string,
+  rawCode: string,
+): Promise<AppUser | null> {
+  const phone = normalizePhone(rawPhone);
+  if (!phone) return null;
+  if (!(await checkPhoneCode(phone, rawCode))) return null;
   return (await findUserByPhone(phone)) ?? (await createPhoneUser(phone));
 }
