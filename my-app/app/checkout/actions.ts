@@ -9,6 +9,7 @@ import { notifyOrder } from "@/lib/notifications-data";
 import { alertLowStock, alertNewOrder } from "@/lib/owner-alerts-data";
 import type { PointsSettings } from "@/lib/points";
 import { getPointsBalance, getPointsSettings } from "@/lib/points-data";
+import { getEarnBonusPercent } from "@/lib/points-v2-data";
 import { bankDetailsComplete, getPaymentSettings, isUserTrusted } from "@/lib/payments-data";
 import { planOrder } from "@/lib/order-plan";
 import { parseCheckoutDetails, type DetailsField, type OrderMessage } from "@/lib/orders";
@@ -109,6 +110,11 @@ export async function placeOrder(
         return 0;
       }),
     ]);
+    // Tier + running bonus: worked out here per customer and only ever used to
+    // raise what the order earns (the browser never sends it).
+    const earnSettings: PointsSettings = pointsSettings.enabled
+      ? { ...pointsSettings, bonusPercent: await getEarnBonusPercent(user.id) }
+      : pointsSettings;
     const plan = planOrder({
       lines,
       products,
@@ -119,7 +125,7 @@ export async function placeOrder(
       expectedTotal,
       pointsRequested,
       pointsBalance,
-      pointsSettings,
+      pointsSettings: earnSettings,
     });
     if (!plan.ok) {
       if (plan.error === "empty") return { message: "empty" };

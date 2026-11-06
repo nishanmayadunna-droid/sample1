@@ -12,9 +12,14 @@ export type PointsSettings = {
   pointValue: number;
   /** The most of an order's goods points may pay for, 1 to 100. */
   maxPercent: number;
+  /**
+   * Extra points on what an order earns, in percent (tier + running bonus, see
+   * lib/points-v2.ts). Worked out on the server per customer; absent means 0.
+   */
+  bonusPercent?: number;
 };
 
-export type LedgerKind = "earn" | "redeem" | "refund" | "adjust";
+export type LedgerKind = "earn" | "redeem" | "refund" | "adjust" | "expire";
 
 const usable = (value: number) => Number.isFinite(value) && value > 0;
 
@@ -40,7 +45,9 @@ export function pointsToUse(
 /** The points an order earns once delivered; `goods` is after every discount, before shipping. */
 export function pointsToEarn(goods: number, s: PointsSettings): number {
   if (!s.enabled || !usable(goods) || !usable(s.earnPer)) return 0;
-  return Math.floor(goods / s.earnPer);
+  const bonus = Number.isFinite(s.bonusPercent) && s.bonusPercent! > 0 ? Math.floor(s.bonusPercent!) : 0;
+  // Integer arithmetic, one rounding down at the end: no bonus is ever rounded up.
+  return Math.floor((goods * (100 + bonus)) / (s.earnPer * 100));
 }
 
 const MIN_EARN_PER = 100; // Rs 1
@@ -75,6 +82,7 @@ const LEDGER_LABELS: Record<LedgerKind, { si: string; en: string }> = {
   redeem: { si: "ඇණවුමට භාවිතා කළා", en: "Used on an order" },
   refund: { si: "ආපසු ලැබුණා", en: "Returned" },
   adjust: { si: "සකස් කිරීම", en: "Adjustment" },
+  expire: { si: "කල් ඉකුත් වුණා", en: "Expired" },
 };
 
 export function ledgerKindLabel(kind: LedgerKind): { si: string; en: string } {

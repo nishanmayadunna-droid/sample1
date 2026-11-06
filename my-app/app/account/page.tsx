@@ -7,6 +7,8 @@ import { isUserTrusted } from "@/lib/payments-data";
 import { ledgerKindLabel } from "@/lib/points";
 import { getPointsBalance, getPointsSettings, listLedgerForUser } from "@/lib/points-data";
 import { formatPrice } from "@/lib/products";
+import { expiryPicture, nextTier } from "@/lib/points-v2";
+import { getExpiryDays, getLedgerForExpiry, getLoyaltyStanding } from "@/lib/points-v2-data";
 import SignOutButton from "../components/SignOutButton";
 import L from "../components/L";
 
@@ -29,6 +31,16 @@ export default async function AccountPage() {
     console.error("points read failed", error);
     return null;
   });
+  // Tier, running bonus and expiry: a failed read just hides these lines.
+  const extras = points?.[0].enabled
+    ? await Promise.all([getLoyaltyStanding(user.id), getExpiryDays(), getLedgerForExpiry(user.id)]).catch((error) => {
+        console.error("points v2 read failed", error);
+        return null;
+      })
+    : null;
+  const standing = extras?.[0] ?? null;
+  const expiry = extras ? expiryPicture(extras[2], extras[1], new Date()) : null;
+  const upNext = standing ? nextTier(standing.spend, standing.tiers) : null;
   const orders = await listOrdersForUser(user.id).catch((error) => {
     console.error("orders list failed", error);
     return [];
@@ -82,6 +94,41 @@ export default async function AccountPage() {
               <L si="points" en="points" /> ≈ {formatPrice(points[1] * points[0].pointValue)}
             </span>
           </p>
+          {standing?.tier && (
+            <p className="mt-2 text-sm">
+              <L si="ඔබේ level එක" en="Your level" />: <strong>{standing.tier.name}</strong>
+              {standing.tier.bonusPercent > 0 && (
+                <span className="text-muted">
+                  {" "}
+                  (<L si={`points ${standing.tier.bonusPercent}% වැඩියෙන්`} en={`+${standing.tier.bonusPercent}% points`} />)
+                </span>
+              )}
+            </p>
+          )}
+          {upNext && (
+            <p className="mt-1 text-sm text-muted">
+              <L
+                si={`${upNext.tier.name} වෙන්න තව ${formatPrice(upNext.remaining)}ක් ඇණවුම් කරන්න.`}
+                en={`Spend ${formatPrice(upNext.remaining)} more on delivered orders to reach ${upNext.tier.name}.`}
+              />
+            </p>
+          )}
+          {standing?.bonus && (
+            <p className="mt-1 text-sm text-blaze">
+              <L
+                si={`${standing.bonus.name}: දැන් ඇණවුම් කරන විට points ${standing.bonus.bonusPercent}% වැඩියෙන්!`}
+                en={`${standing.bonus.name}: orders placed now earn ${standing.bonus.bonusPercent}% more points!`}
+              />
+            </p>
+          )}
+          {expiry && expiry.soon > 0 && expiry.nextAt && (
+            <p className="mt-1 text-sm text-muted">
+              <L
+                si={`points ${expiry.soon}ක් ${expiry.nextAt.toLocaleDateString("en-LK", { timeZone: "Asia/Colombo", day: "numeric", month: "short" })} වන විට කල් ඉකුත් වේ.`}
+                en={`${expiry.soon} points expire by ${expiry.nextAt.toLocaleDateString("en-LK", { timeZone: "Asia/Colombo", day: "numeric", month: "short" })}.`}
+              />
+            </p>
+          )}
           {points[2].length > 0 && (
             <ul className="mt-3 divide-y divide-line border-y border-line">
               {points[2].map((entry) => {
