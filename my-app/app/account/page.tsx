@@ -10,9 +10,12 @@ import { formatPrice } from "@/lib/products";
 import { expiryPicture, nextTier } from "@/lib/points-v2";
 import { getExpiryDays, getLedgerForExpiry, getLoyaltyStanding } from "@/lib/points-v2-data";
 import { emailAvailable } from "@/lib/email-data";
+import { pushAvailable } from "@/lib/push-data";
 import { smsAvailable } from "@/lib/sms-data";
 import { isEmailVerified } from "@/lib/users";
 import PhoneSection from "./PhoneSection";
+import PushToggle from "../components/PushToggle";
+import { registerCustomerPushAction, unregisterCustomerPushAction } from "./push-actions";
 import VerifyEmailBanner from "./VerifyEmailBanner";
 import SignOutButton from "../components/SignOutButton";
 import L from "../components/L";
@@ -36,6 +39,8 @@ export default async function AccountPage() {
     console.error("points read failed", error);
     return null;
   });
+  // Offer push only while it is switched on with keys; a failed read hides the button.
+  const pushOffered = (await pushAvailable().catch(() => ({ available: false }))).available;
   // Ask to confirm the address only when email can actually be sent; a failed read hides the banner.
   const showVerifyBanner =
     user.email !== null && !isEmailVerified(user) && (await emailAvailable().catch(() => false));
@@ -95,6 +100,22 @@ export default async function AccountPage() {
       </dl>
       {showVerifyBanner && <VerifyEmailBanner />}
       {phoneAvailable && <PhoneSection phone={user.phone} />}
+      {pushOffered && (
+        <section className="mt-8">
+          <h2 className="eyebrow text-muted">
+            <L si="දැනුම්දීම්" en="Order alerts" />
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            <L
+              si="ඔබේ ඇණවුම් ගැන දැනුම්දීම් මෙම උපාංගයට ලබාගන්න. SMS සහ ඊමේල් වලට අමතරවයි."
+              en="Get updates about your orders on this device, in addition to SMS and email."
+            />
+          </p>
+          <div className="mt-3">
+            <PushToggle register={registerCustomerPushAction} unregister={unregisterCustomerPushAction} />
+          </div>
+        </section>
+      )}
       {points && (points[0].enabled || points[2].length > 0) && (
         <section className="mt-10">
           <h2 className="eyebrow text-muted">

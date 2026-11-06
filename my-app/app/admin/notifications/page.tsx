@@ -4,7 +4,10 @@ import { requireAdmin } from "@/lib/auth-guards";
 import { getNotificationSettings, listNotifications, type NotificationRow } from "@/lib/notifications-data";
 import { getOwnerAlertSettings, listOwnerAlerts, type OwnerAlertRow } from "@/lib/owner-alerts-data";
 import { OWNER_EVENT_LABELS } from "@/lib/owner-alerts";
+import { pushAvailable } from "@/lib/push-data";
 import { smsTokenSet } from "@/lib/sms";
+import PushToggle from "../../components/PushToggle";
+import { registerAdminPushAction, unregisterAdminPushAction } from "../push/actions";
 import AdminTabs from "../AdminTabs";
 import OwnerAlertsForm from "./OwnerAlertsForm";
 import NotificationSettingsForm from "./NotificationSettingsForm";
@@ -28,6 +31,7 @@ export default async function AdminNotificationsPage() {
     listOwnerAlerts(50).catch((): OwnerAlertRow[] => []),
   ]);
   const tokenSet = smsTokenSet();
+  const push = await pushAvailable().catch(() => ({ available: false }));
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
@@ -57,6 +61,22 @@ export default async function AdminNotificationsPage() {
         <h2 className="display text-2xl">Settings</h2>
         <NotificationSettingsForm settings={settings} />
       </section>
+
+      {push.available && (
+        <section className="mt-10">
+          <h2 className="display text-2xl">Push alerts on this device</h2>
+          <p className="mt-2 max-w-prose text-sm text-muted">
+            Get the owner alerts as a push notification on this browser or phone. Which events are sent is set under{" "}
+            <a href="/admin/push" className="underline">
+              Push
+            </a>
+            .
+          </p>
+          <div className="mt-4">
+            <PushToggle register={registerAdminPushAction} unregister={unregisterAdminPushAction} />
+          </div>
+        </section>
+      )}
 
       <section className="mt-10">
         <h2 className="display text-2xl">Alerts to you</h2>

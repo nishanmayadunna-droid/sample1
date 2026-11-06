@@ -3,6 +3,7 @@
 // owner's number or the token.
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { pushOwnerAlert, pushOwnerEventOn } from "@/lib/push-data";
 import { sendSms, smsTokenSet } from "@/lib/sms";
 import { readSmsSettings } from "@/lib/sms-data";
 import { segmentCount } from "@/lib/notifications";
@@ -88,6 +89,8 @@ async function underOwnerCap(): Promise<boolean> {
  * before sending, so a repeated call for the same subject is a no-op. Never throws.
  */
 export async function alertOwner(data: OwnerMessageData, subject: string, day?: string): Promise<void> {
+  // The owner's phone/browser gets a push too, independent of the SMS switch (never throws).
+  await pushOwnerAlert(data, subject, day);
   try {
     const [settings, sms] = await Promise.all([getOwnerAlertSettings(), readSmsSettings()]);
     const decision = shouldSendOwner({
@@ -148,7 +151,9 @@ const colomboDay = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Colombo" }
 export async function alertLowStock(items: Order["items"]): Promise<void> {
   try {
     const settings = await getOwnerAlertSettings();
-    if (!settings.enabled || !settings.events.low_stock) return;
+    // Work out low stock when the owner wants it by SMS or by push; each channel then decides for itself.
+    const smsWanted = settings.enabled && settings.events.low_stock;
+    if (!smsWanted && !(await pushOwnerEventOn("low_stock"))) return;
     const ids = [...new Set(items.flatMap((item) => (item.productId ? [item.productId] : [])))];
     if (ids.length === 0) return;
     const { data, error } = await supabaseAdmin
