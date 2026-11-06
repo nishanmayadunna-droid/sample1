@@ -370,6 +370,21 @@ export async function listAwaitingAdvanceOrders(): Promise<{ order: Order; lastR
   return orders.map((order) => ({ order, lastReviewedAt: latest.get(order.id) ?? null }));
 }
 
+/** Cancelled orders whose advance was approved: the ones that may owe a refund, newest first. */
+export async function listRefundCandidates(): Promise<Order[]> {
+  const { data, error } = await supabaseAdmin
+    .from("orders")
+    .select(COLUMNS)
+    .eq("status", "cancelled")
+    .eq("payment_status", "advance_paid")
+    .gt("advance_amount", 0)
+    .order("created_at", { ascending: false })
+    .limit(300)
+    .returns<OrderRow[]>();
+  if (error) fail(error);
+  return data.map(toOrder);
+}
+
 /** Cancels every stale advance order (what the schedule runs). Returns how many. */
 export async function cancelStaleOrders(): Promise<number> {
   const { data, error } = await supabaseAdmin.rpc("cancel_stale_advance_orders");

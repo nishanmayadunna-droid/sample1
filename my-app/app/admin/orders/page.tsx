@@ -3,7 +3,9 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth-guards";
 import { advanceDeadline, isAdvanceStale } from "@/lib/advance";
 import { ORDER_STATUSES, statusLabel, type OrderStatus } from "@/lib/orders";
-import { listAwaitingAdvanceOrders, listOrdersForAdmin } from "@/lib/orders-data";
+import { listAwaitingAdvanceOrders, listOrdersForAdmin, listRefundCandidates } from "@/lib/orders-data";
+import { refundSummary } from "@/lib/refunds";
+import { refundedTotals } from "@/lib/refunds-data";
 import { getPaymentSettings } from "@/lib/payments-data";
 import { formatPrice } from "@/lib/products";
 import AdminTabs from "../AdminTabs";
@@ -19,6 +21,7 @@ export default async function AdminOrdersPage({
   await requireAdmin("/admin/orders");
   const { status: rawStatus, view } = await searchParams;
   if (view === "advance") return <AwaitingAdvanceView />;
+  if (view === "refunds") return <RefundsView />;
   const status = ORDER_STATUSES.find((s) => s === rawStatus);
   const orders = await listOrdersForAdmin(status);
   const pendingCount = status ? null : orders.filter((order) => order.status === "pending").length;
@@ -56,6 +59,12 @@ export default async function AdminOrdersPage({
         >
           Awaiting advance
         </Link>
+        <Link
+          href="/admin/orders?view=refunds"
+          className="rounded-full border border-line px-3 py-1 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted hover:text-ink"
+        >
+          Refunds
+        </Link>
       </div>
 
       {orders.length === 0 ? (
@@ -88,6 +97,66 @@ export default async function AdminOrdersPage({
                   {statusLabel(order.status).en}
                 </span>
                 <span className="font-mono text-sm">{formatPrice(order.total)}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** Cancelled orders with an approved advance, owed ones first. */
+async function RefundsView() {
+  const candidates = await listRefundCandidates();
+  const totals = await refundedTotals(candidates.map((order) => order.id));
+  const rows = candidates
+    .map((order) => ({ order, info: refundSummary(order.advanceAmount, [{ amount: totals.get(order.id) ?? 0 }]) }))
+    .sort((a, b) => Number(b.info.remaining > 0) - Number(a.info.remaining > 0));
+  const owedCount = rows.filter((row) => row.info.remaining > 0).length;
+
+  return (
+    <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
+      <AdminTabs active="orders" />
+      <Link href="/admin/orders" className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted hover:text-ink">
+        ← All orders
+      </Link>
+      <h1 className="display mt-3 text-5xl">Refunds</h1>
+      <div className="measure mt-6 text-ink" />
+      <p className="mt-6 max-w-prose text-sm text-muted">
+        Cancelled orders whose advance was approved. Send the money back yourself, then record it on the order.
+        {owedCount > 0 ? ` ${owedCount} still owed.` : ""}
+      </p>
+      {rows.length === 0 ? (
+        <p className="mt-8 text-muted">No cancelled orders with a paid advance.</p>
+      ) : (
+        <ul className="mt-8 divide-y divide-line border-y border-line">
+          {rows.map(({ order, info }) => (
+            <li key={order.id}>
+              <Link
+                href={`/admin/orders/${order.orderNumber}`}
+                className="flex flex-wrap items-center justify-between gap-4 py-4 hover:bg-surface"
+              >
+                <span className="min-w-40">
+                  <span className="font-mono text-sm">{order.orderNumber}</span>
+                  <span className="block font-mono text-xs text-muted">
+                    {new Date(order.createdAt).toLocaleString("en-LK", { timeZone: "Asia/Colombo" })}
+                  </span>
+                </span>
+                <span className="min-w-40 flex-1 text-sm">
+                  {order.customerName}
+                  <span className="block font-mono text-xs text-muted">{order.phone}</span>
+                </span>
+                <span className="font-mono text-xs text-muted">
+                  advance {formatPrice(order.advanceAmount)} · refunded {formatPrice(info.refunded)}
+                </span>
+                <span
+                  className={`font-mono text-[0.7rem] uppercase tracking-[0.14em] ${
+                    info.remaining > 0 ? "text-blaze" : "text-muted"
+                  }`}
+                >
+                  {info.remaining > 0 ? `owed ${formatPrice(info.remaining)}` : "done"}
+                </span>
               </Link>
             </li>
           ))}

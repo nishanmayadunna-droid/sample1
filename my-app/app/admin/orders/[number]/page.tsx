@@ -8,8 +8,11 @@ import { getOrderForAdmin } from "@/lib/orders-data";
 import { listCouriers } from "@/lib/shipping-data";
 import { isUserTrusted, listSlipsForOrder, slipSignedUrl } from "@/lib/payments-data";
 import { formatPrice } from "@/lib/products";
+import { canRefund, refundMethodLabel, refundSummary } from "@/lib/refunds";
+import { listRefundsForOrder } from "@/lib/refunds-data";
 import AdminTabs from "../../AdminTabs";
 import PaymentReview from "../PaymentReview";
+import RefundForm from "../RefundForm";
 import ShipmentForm from "../ShipmentForm";
 import StatusButtons from "../StatusButtons";
 import WaiveAdvanceButton from "../WaiveAdvanceButton";
@@ -41,6 +44,11 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
           (await listSlipsForOrder(order.id)).map(async (slip) => ({ ...slip, url: await slipSignedUrl(slip.path) })),
         )
       : [];
+
+  // A cancelled order whose advance was approved: the money is owed back.
+  const refundable = canRefund(order);
+  const refunds = refundable ? await listRefundsForOrder(order.id) : [];
+  const refundInfo = refundSummary(order.advanceAmount, refunds);
 
   const canShip = order.status === "confirmed" || order.status === "shipped";
   const couriers = canShip
@@ -129,6 +137,40 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ num
               ))}
             </ul>
           )}
+        </section>
+      )}
+
+      {refundable && (
+        <section className="mt-8">
+          <h2 className="eyebrow text-muted">Refund</h2>
+          <p className="mt-2 text-sm">
+            Advance paid {formatPrice(order.advanceAmount)} · refunded {formatPrice(refundInfo.refunded)} ·{" "}
+            <span className={refundInfo.remaining > 0 ? "text-blaze" : ""}>
+              {refundInfo.remaining > 0 ? `still owed ${formatPrice(refundInfo.remaining)}` : "fully refunded"}
+            </span>
+          </p>
+          {refunds.length > 0 && (
+            <ul className="mt-3 divide-y divide-line border-y border-line">
+              {refunds.map((refund) => (
+                <li key={refund.id} className="flex flex-wrap items-baseline justify-between gap-2 py-3 text-sm">
+                  <span>
+                    {formatPrice(refund.amount)} · {refundMethodLabel(refund.method).en}
+                    {refund.reference && <span className="ml-2 font-mono text-xs text-muted">{refund.reference}</span>}
+                    {refund.note && <span className="block text-xs text-muted">{refund.note}</span>}
+                  </span>
+                  <span className="font-mono text-xs text-muted">
+                    {new Date(refund.createdAt).toLocaleString("en-LK", { timeZone: "Asia/Colombo" })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {refundInfo.remaining > 0 && (
+            <RefundForm key={refunds.length} orderId={order.id} remaining={refundInfo.remaining} />
+          )}
+          <p className="mt-2 text-xs text-muted">
+            This only records a refund you have already sent. Nothing is paid from here.
+          </p>
         </section>
       )}
 

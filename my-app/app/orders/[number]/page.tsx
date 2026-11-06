@@ -7,6 +7,8 @@ import { cancelReasonLabel, canCustomerCancel } from "@/lib/orders";
 import { getOrderForUser } from "@/lib/orders-data";
 import { getPaymentSettings, listQrCodes, listSlipsForOrder, qrSignedUrls } from "@/lib/payments-data";
 import { formatPrice } from "@/lib/products";
+import { canRefund, refundSummary } from "@/lib/refunds";
+import { listRefundsForOrder } from "@/lib/refunds-data";
 import CancelOrderButton from "../../components/CancelOrderButton";
 import L from "../../components/L";
 import OrderStatusSteps from "../../components/OrderStatusSteps";
@@ -36,6 +38,17 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
         return null;
       })
     : null;
+  // Cancelled with an approved advance: tell the customer where their money is.
+  const refundable = canRefund(order);
+  const refundInfo = refundSummary(
+    order.advanceAmount,
+    refundable
+      ? await listRefundsForOrder(order.id).catch((error) => {
+          console.error("refunds lookup failed", error);
+          return [];
+        })
+      : [],
+  );
   const remaining = Math.max(order.total - order.advanceAmount, 0);
   // The deadline only applies while no slip is waiting for review; a rejection restarts the clock.
   const deadline =
@@ -148,6 +161,28 @@ export default async function OrderPage({ params }: { params: Promise<{ number: 
             si="advance එක අවශ්‍ය නැත. මුළු මුදල බඩු ලැබෙන විට ගෙවන්න."
             en="The advance was waived: pay the whole amount on delivery."
           />
+        </p>
+      )}
+      {refundable && (
+        <p className="mt-4 text-sm text-muted">
+          {refundInfo.state === "none" && (
+            <L
+              si={`ඔබේ advance ${formatPrice(order.advanceAmount)} ආපහු ලබා දෙනු ඇත.`}
+              en={`Your advance of ${formatPrice(order.advanceAmount)} will be returned to you.`}
+            />
+          )}
+          {refundInfo.state === "partial" && (
+            <L
+              si={`advance එකෙන් ${formatPrice(refundInfo.refunded)}ක් ආපහු ලැබුණා. ඉතිරි ${formatPrice(refundInfo.remaining)} ඉක්මනින් ලැබේ.`}
+              en={`${formatPrice(refundInfo.refunded)} of your advance has been returned. The remaining ${formatPrice(refundInfo.remaining)} will follow.`}
+            />
+          )}
+          {refundInfo.state === "full" && (
+            <L
+              si={`advance එක (${formatPrice(refundInfo.refunded)}) ආපහු ලැබුණා.`}
+              en={`Your advance (${formatPrice(refundInfo.refunded)}) has been refunded.`}
+            />
+          )}
         </p>
       )}
       {order.status === "cancelled" && order.pointsUsed > 0 && (

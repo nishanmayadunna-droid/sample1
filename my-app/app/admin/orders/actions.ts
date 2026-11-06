@@ -10,6 +10,8 @@ import { cancelStaleOrders, saveShipment, waiveAdvance } from "@/lib/orders-data
 import { parseShipment } from "@/lib/shipping";
 import { listCouriers } from "@/lib/shipping-data";
 import { reviewSlip } from "@/lib/payments-data";
+import { canRefund, parseRefundForm, refundSummary } from "@/lib/refunds";
+import { listRefundsForOrder, recordRefund } from "@/lib/refunds-data";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 // Every action re-checks admin access first: Server Actions are endpoints of
@@ -158,6 +160,50 @@ export async function waiveAdvanceAction(orderId: string): Promise<OrderRowState
     return { error: SOMETHING_WRONG };
   }
   return { error: null };
+}
+
+export type RefundState = { errors: Record<string, string | true>; saved: boolean };
+
+/** Records a refund of the advance on a cancelled order (the shop sends the money itself). */
+export async function recordRefundAction(
+  orderId: string,
+  key: string,
+  _prev: RefundState,
+  formData: FormData,
+): Promise<RefundState> {
+  await requireAdmin("/admin/orders");
+  if (typeof orderId !== "string" || !UUID.test(orderId) || typeof key !== "string" || !/^[0-9a-f-]{36}$/i.test(key)) {
+    return { errors: { form: SOMETHING_WRONG }, saved: false };
+  }
+  const field = (name: string) => {
+    const value = formData.get(name);
+    return typeof value === "string" ? value : "";
+  };
+  try {
+    const order = await getOrderById(orderId);
+    if (!order || !canRefund(order)) {
+      return { errors: { form: "This order has no advance to refund." }, saved: false };
+    }
+    const { remaining } = refundSummary(order.advanceAmount, await listRefundsForOrder(orderId));
+    const parsed = parseRefundForm(
+      { amount: field("amount"), method: field("method"), reference: field("reference"), note: field("note") },
+      remaining,
+    );
+    if (!parsed.ok) return { errors: parsed.errors, saved: false };
+    const outcome = await recordRefund(orderId, parsed.value, key);
+    if (outcome === "not_found") return { errors: { form: "That order no longer exists." }, saved: false };
+    if (outcome === "bad_state") return { errors: { form: "This order has no advance to refund." }, saved: false };
+    if (outcome === "over_refund") {
+      return { errors: { amount: "That is more than is still owed. Refresh the page." }, saved: false };
+    }
+    revalidatePath("/admin/orders");
+    revalidatePath(`/admin/orders/${order.orderNumber}`);
+    revalidatePath(`/orders/${order.orderNumber}`);
+  } catch (error) {
+    console.error("recordRefundAction failed", error);
+    return { errors: { form: SOMETHING_WRONG }, saved: false };
+  }
+  return { errors: {}, saved: true };
 }
 
 /** Records the courier and tracking number on a confirmed or shipped order. */
