@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { subscribeNewsletter } from "../newsletter-actions";
 import L from "./L";
 
-type Status = "idle" | "done" | "invalid" | "busy" | "error";
+type Status = "idle" | "done" | "invalid" | "busy" | "unavailable" | "error";
 
 export default function Newsletter() {
   const [status, setStatus] = useState<Status>("idle");
@@ -16,7 +16,7 @@ export default function Newsletter() {
     startTransition(async () => {
       try {
         const result = await subscribeNewsletter(formData);
-        setStatus(result.message === "subscribed" ? "done" : result.message);
+        setStatus(result.message === "confirm" ? "done" : result.message);
       } catch {
         setStatus("error");
       }
@@ -47,10 +47,13 @@ export default function Newsletter() {
         {status === "done" ? (
           <div className="rounded-xl border border-white/15 p-6">
             <p className="display text-xl text-blaze">
-              <L si="ඔබ ලැයිස්තුවට එක් වුණා" en="You're on the list" />
+              <L si="ඔබේ ඊමේල් එක පරීක්ෂා කරන්න" en="Check your email" />
             </p>
             <p className="mt-2 text-panelmuted">
-              <L si="අපි ඔබව සම්බන්ධ කර ගන්නෙමු." en="We'll be in touch." />
+              <L
+                si="තහවුරු කරන සබැඳියක් යැව්වා. එය ක්ලික් කළ පසු ඔබ ලැයිස්තුවට එක් වේ."
+                en="We sent a link to confirm. You join the list once you click it."
+              />
             </p>
           </div>
         ) : (
@@ -99,6 +102,11 @@ export default function Newsletter() {
             {status === "busy" && (
               <p role="alert" className="mt-2 font-mono text-xs text-blaze">
                 <L si="දැන් ඉතා කාර්යබහුලයි. පසුව නැවත උත්සාහ කරන්න." en="We're busy right now. Please try again later." />
+              </p>
+            )}
+            {status === "unavailable" && (
+              <p role="alert" className="mt-2 font-mono text-xs text-blaze">
+                <L si="දැනට ලියාපදිංචි වීම විවෘත නැත. පසුව බලන්න." en="Sign-ups aren't open yet. Please check back soon." />
               </p>
             )}
             {status === "error" && (

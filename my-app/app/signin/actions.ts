@@ -4,6 +4,7 @@ import type { AuthMessage } from "@/lib/auth-messages";
 import { validateSignUp, type SignUpErrors } from "@/lib/auth-rules";
 import { createPasswordUser } from "@/lib/users";
 import { requestPhoneCode } from "@/lib/phone-auth";
+import { sendVerification } from "@/lib/email-data";
 
 export type SignUpState = {
   ok: boolean;
@@ -33,6 +34,8 @@ export async function signUpAction(
         formError: null,
       };
     }
+    // Best effort: a missing or switched-off email service never blocks sign-up.
+    await sendVerification(created.id);
   } catch {
     return {
       ok: false,

@@ -19,6 +19,8 @@ export type AppUser = {
   googleId: string | null;
   role: Role;
   createdAt: string;
+  /** When the owner of the address confirmed it by email; Google accounts count as verified. */
+  emailVerifiedAt: string | null;
 };
 
 type UserRow = {
@@ -31,9 +33,10 @@ type UserRow = {
   google_id: string | null;
   role: Role;
   created_at: string;
+  email_verified_at: string | null;
 };
 
-const COLUMNS = "id, email, phone, name, image, password_hash, google_id, role, created_at";
+const COLUMNS = "id, email, phone, name, image, password_hash, google_id, role, created_at, email_verified_at";
 const BCRYPT_COST = 12;
 // Postgres unique_violation: another row already has this email.
 const UNIQUE_VIOLATION = "23505";
@@ -49,6 +52,7 @@ function toAppUser(row: UserRow): AppUser {
     googleId: row.google_id,
     role: row.role,
     createdAt: row.created_at,
+    emailVerifiedAt: row.email_verified_at,
   };
 }
 
@@ -162,4 +166,30 @@ export async function getUserRole(id: string): Promise<Role | null> {
     .maybeSingle<{ role: Role }>();
   if (error) fail(error);
   return data?.role ?? null;
+}
+
+/** True when the account's email is confirmed (Google confirms it itself). */
+export function isEmailVerified(user: Pick<AppUser, "emailVerifiedAt" | "googleId">): boolean {
+  return user.emailVerifiedAt !== null || user.googleId !== null;
+}
+
+/** Sets a new password hash (the caller hashed it with the same cost as sign-up). */
+export async function setPassword(userId: string, password: string): Promise<void> {
+  const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
+  const { error } = await supabaseAdmin
+    .from("users")
+    // Resetting by email proves the owner reads this inbox, so the address counts as verified.
+    .update({ password_hash: passwordHash, email_verified_at: new Date().toISOString() })
+    .eq("id", userId)
+    .not("password_hash", "is", null);
+  if (error) fail(error);
+}
+
+export async function markEmailVerified(userId: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("users")
+    .update({ email_verified_at: new Date().toISOString() })
+    .eq("id", userId)
+    .is("email_verified_at", null);
+  if (error) fail(error);
 }

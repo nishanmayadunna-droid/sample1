@@ -52,6 +52,13 @@ export function validateSignUp(raw: {
   return { ok: true, value: { email, password, name: trimmedName || null } };
 }
 
+/** True for a password of 8 to 72 bytes (what sign-up accepts; bcrypt ignores anything past 72). */
+export function isValidNewPassword(password: unknown): password is string {
+  if (typeof password !== "string") return false;
+  const bytes = new TextEncoder().encode(password).length;
+  return bytes >= PASSWORD_MIN_BYTES && bytes <= PASSWORD_MAX_BYTES;
+}
+
 /** The bits of a stored user that matter for Google account linking. */
 export type ExistingAccount = { googleId: string | null; hasPassword: boolean } | null;
 

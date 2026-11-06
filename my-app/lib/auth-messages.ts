@@ -19,6 +19,16 @@ export const AUTH_MESSAGES = {
   codeTooSoon: { si: "කරුණාකර මද වෙලාවක් රැඳී නැවත උත්සාහ කරන්න.", en: "Please wait a moment before asking for another code." },
   codeLimit: { si: "කේත ඉල්ලීම් ගණන සීමාව ඉක්මවා ඇත. පසුව උත්සාහ කරන්න.", en: "Too many code requests. Please try again later." },
   smsUnavailable: { si: "දුරකථනයෙන් ඇතුළු වීම දැනට ලබාගත නොහැක.", en: "Phone sign-in isn't available right now." },
+  resetRequested: {
+    si: "එම ඊමේල් ලිපිනයට මුරපද ගිණුමක් ඇත්නම්, මුරපදය යළි සකසන සබැඳියක් යැව්වා.",
+    en: "If that email has a password account, we've sent a link to reset it.",
+  },
+  linkInvalid: { si: "මෙම සබැඳිය වලංගු නැත හෝ කල් ඉකුත් වී ඇත.", en: "This link is invalid or has expired." },
+  passwordChanged: { si: "මුරපදය වෙනස් කළා. දැන් ඇතුළු විය හැක.", en: "Your password was changed. You can sign in now." },
+  emailUnavailable: { si: "ඊමේල් යැවීම දැනට ලබාගත නොහැක.", en: "Email isn't available right now." },
+  tooManyRequests: { si: "ඉල්ලීම් වැඩියි. පසුව උත්සාහ කරන්න.", en: "Too many requests. Please try again later." },
+  verificationSent: { si: "තහවුරු කරන සබැඳියක් ඔබේ ඊමේල් එකට යැව්වා.", en: "We sent a confirmation link to your email." },
+  emailVerified: { si: "ඔබේ ඊමේල් එක තහවුරු කළා.", en: "Your email is confirmed." },
   phoneSame: { si: "මෙය දැනටමත් ඔබේ දුරකථන අංකයයි.", en: "That is already your phone number." },
   phoneChangeTooSoon: {
     si: "දුරකථන අංකය වෙනස් කළ හැක්කේ දිනකට වරක් පමණි. පසුව උත්සාහ කරන්න.",

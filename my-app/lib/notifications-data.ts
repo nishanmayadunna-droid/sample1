@@ -10,6 +10,7 @@ import { getPaymentSettings } from "@/lib/payments-data";
 import { advanceDeadline } from "@/lib/advance";
 import { getOrderForAdmin, type Order } from "@/lib/orders-data";
 import { alertOwner } from "@/lib/owner-alerts-data";
+import { emailOrderEvent } from "@/lib/email-data";
 import {
   DEFAULT_NOTIFICATION_SETTINGS,
   NOTIFICATION_EVENTS,
@@ -129,6 +130,9 @@ export async function notifyOrder(
       systemCancelled: order.cancelReason === "advance_expired",
       rejectReason: opts.rejectReason,
     };
+    // The customer's email (if email is on) is independent of the SMS switch; it never throws
+    // and has its own dedupe, so a repeated call sends nothing twice.
+    await emailOrderEvent(order, actual, data, opts.slipId);
     const body = buildMessage(actual, data, store.defaultLang);
 
     const decision = shouldSend({

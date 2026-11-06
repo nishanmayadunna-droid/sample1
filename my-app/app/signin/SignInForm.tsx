@@ -73,6 +73,11 @@ function SignInPanel({ callbackUrl }: { callbackUrl: string }) {
         autoComplete="current-password"
         required
       />
+      <p className="mt-2 text-sm">
+        <a href="/forgot-password" className="text-blaze underline underline-offset-4">
+          <L si="මුරපදය අමතකද?" en="Forgot your password?" />
+        </a>
+      </p>
       {message && (
         <p className="mt-4 text-sm text-blaze">
           <Message code={message} />

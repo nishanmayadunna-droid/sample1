@@ -23,8 +23,9 @@ export default async function AdminNewsletterPage() {
       <h1 className="display mt-2 text-5xl">Newsletter</h1>
       <div className="measure mt-6 text-ink" />
       <p className="mt-6 max-w-prose text-sm text-muted">
-        Emails collected from the signup form in the footer. No emails are sent from here yet; export the list as CSV
-        when you are ready to use it.
+        Emails collected from the signup form in the footer. Each person confirms by clicking a link in an email
+        (double opt-in); only confirmed addresses count as active and are exported. No campaigns are sent from here
+        yet; export the list as CSV when you are ready to use it.
       </p>
 
       {list === null ? (
@@ -37,6 +38,10 @@ export default async function AdminNewsletterPage() {
             <div className="rounded-md border border-line px-4 py-3">
               <dt className="eyebrow text-muted">Active</dt>
               <dd className="mt-1 font-mono">{list.active}</dd>
+            </div>
+            <div className="rounded-md border border-line px-4 py-3">
+              <dt className="eyebrow text-muted">Waiting for confirmation</dt>
+              <dd className="mt-1 font-mono">{list.pending}</dd>
             </div>
             <div className="rounded-md border border-line px-4 py-3">
               <dt className="eyebrow text-muted">Unsubscribed</dt>
@@ -75,7 +80,7 @@ export default async function AdminNewsletterPage() {
                         <td className="py-2 pr-4 font-mono">{row.email}</td>
                         <td className="py-2 pr-4">{row.source}</td>
                         <td className="py-2 pr-4 font-mono">{timeFormat.format(new Date(row.createdAt))}</td>
-                        <td className="py-2 pr-4 font-mono">{row.unsubscribedAt ? "unsubscribed" : "active"}</td>
+                        <td className="py-2 pr-4 font-mono">{row.unsubscribedAt ? "unsubscribed" : row.confirmedAt ? "active" : "waiting"}</td>
                         <td className="py-2">
                           {row.unsubscribedAt ? null : <DeleteSubscriberButton id={row.id} />}
                         </td>

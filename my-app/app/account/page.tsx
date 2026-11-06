@@ -9,8 +9,11 @@ import { getPointsBalance, getPointsSettings, listLedgerForUser } from "@/lib/po
 import { formatPrice } from "@/lib/products";
 import { expiryPicture, nextTier } from "@/lib/points-v2";
 import { getExpiryDays, getLedgerForExpiry, getLoyaltyStanding } from "@/lib/points-v2-data";
+import { emailAvailable } from "@/lib/email-data";
 import { smsAvailable } from "@/lib/sms-data";
+import { isEmailVerified } from "@/lib/users";
 import PhoneSection from "./PhoneSection";
+import VerifyEmailBanner from "./VerifyEmailBanner";
 import SignOutButton from "../components/SignOutButton";
 import L from "../components/L";
 
@@ -33,6 +36,9 @@ export default async function AccountPage() {
     console.error("points read failed", error);
     return null;
   });
+  // Ask to confirm the address only when email can actually be sent; a failed read hides the banner.
+  const showVerifyBanner =
+    user.email !== null && !isEmailVerified(user) && (await emailAvailable().catch(() => false));
   // The phone section only shows while SMS sign-in is switched on; a failed read hides it.
   const phoneAvailable = await smsAvailable().catch(() => false);
   // Tier, running bonus and expiry: a failed read just hides these lines.
@@ -87,6 +93,7 @@ export default async function AccountPage() {
           </div>
         ))}
       </dl>
+      {showVerifyBanner && <VerifyEmailBanner />}
       {phoneAvailable && <PhoneSection phone={user.phone} />}
       {points && (points[0].enabled || points[2].length > 0) && (
         <section className="mt-10">
