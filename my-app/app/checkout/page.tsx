@@ -6,6 +6,7 @@ import { getLatestDetailsForUser } from "@/lib/orders-data";
 import { getPointsBalance, getPointsSettings } from "@/lib/points-data";
 import type { PointsSettings } from "@/lib/points";
 import { getPaymentSettings, isUserTrusted } from "@/lib/payments-data";
+import { onlinePaymentAvailable } from "@/lib/payhere-data";
 import { getZones } from "@/lib/shipping-data";
 import { getRunningPromotions, getStoreSettings } from "@/lib/storefront";
 import CheckoutForm from "../components/CheckoutForm";
@@ -16,7 +17,7 @@ export const metadata: Metadata = { title: "Checkout" };
 // Per-user (it reads the session), so unlike the catalog pages it is dynamic.
 export default async function CheckoutPage() {
   const user = await requireUser("/checkout");
-  const [products, categories, promotions, settings, zones, initialDetails, advanceInfo, pointsInfo] = await Promise.all([
+  const [products, categories, promotions, settings, zones, initialDetails, advanceInfo, pointsInfo, onlineAvailable] = await Promise.all([
     getAllProducts(),
     getCategories(),
     getRunningPromotions(),
@@ -42,6 +43,13 @@ export default async function CheckoutPage() {
         console.error("points info failed", error);
         return null;
       }),
+    // Only decides whether the Card option is shown; the order page re-checks it.
+    onlinePaymentAvailable()
+      .then((online) => online.available)
+      .catch((error) => {
+        console.error("online payment lookup failed", error);
+        return false;
+      }),
   ]);
 
   return (
@@ -62,6 +70,7 @@ export default async function CheckoutPage() {
         initialDistrict={initialDetails?.district ?? ""}
         advanceInfo={advanceInfo}
         pointsInfo={pointsInfo}
+        onlineAvailable={onlineAvailable}
       />
     </div>
   );

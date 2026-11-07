@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { outcomeForCode, parseAmountToCents, parseNotify, PAYHERE_CURRENCY, verifyNotify } from "@/lib/payhere";
+import { changeOrderStatus, getOrderForAdmin } from "@/lib/orders-data";
 import { confirmPayment, orderNumberForRef, payhereCredentials, setPaymentStatus } from "@/lib/payhere-data";
 
 // PayHere's server-to-server payment notification (the "notify_url"). It is a
@@ -52,6 +53,18 @@ export async function POST(request: Request): Promise<Response> {
         // Recorded on the attempt (status "mismatch", listed under Needs attention): answer 200 so
         // PayHere stops retrying a notification that will never match.
         console.error("payhere notify: amount mismatch for an attempt");
+      }
+      if (result === "paid") {
+        // Money is in, signed by PayHere: confirm the order so the shop can pack it.
+        // Best effort and only from "pending"; a failure must not make PayHere retry a
+        // payment that is already recorded.
+        try {
+          const number = await orderNumberForRef(fields.orderId);
+          const order = number ? await getOrderForAdmin(number) : null;
+          if (order && order.status === "pending") await changeOrderStatus(order.id, "confirmed");
+        } catch (error) {
+          console.error("payhere auto-confirm failed", error instanceof Error ? error.name : "unknown");
+        }
       }
       if (result === "overpaid" || result === "paid_no_order") {
         // Money arrived that the order could not take: the admin page lists it.

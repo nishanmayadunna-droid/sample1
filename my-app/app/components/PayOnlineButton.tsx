@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { startOnlinePayment } from "@/app/orders/[number]/online-actions";
 import L from "./L";
 
@@ -15,9 +15,26 @@ const MESSAGES = {
  * Asks the server for a signed PayHere form, then posts it from the browser.
  * The browser never chooses the amount: it only sends the order number.
  */
-export default function PayOnlineButton({ orderNumber }: { orderNumber: string }) {
+export default function PayOnlineButton({
+  orderNumber,
+  autoStart = false,
+}: {
+  orderNumber: string;
+  /** The customer chose "Pay by card" at checkout: go to PayHere once, without another click. */
+  autoStart?: boolean;
+}) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<keyof typeof MESSAGES | null>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    // Once per page view; a failure leaves the normal button to try again.
+    if (autoStart && !started.current) {
+      started.current = true;
+      pay();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart]);
 
   function pay() {
     setMessage(null);

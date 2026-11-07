@@ -25,10 +25,10 @@ export default async function OrderPage({
   searchParams,
 }: {
   params: Promise<{ number: string }>;
-  searchParams: Promise<{ paid?: string }>;
+  searchParams: Promise<{ paid?: string; pay?: string }>;
 }) {
   const { number } = await params;
-  const { paid: returnedFromPayhere } = await searchParams;
+  const { paid: returnedFromPayhere, pay: payParam } = await searchParams;
   const user = await requireUser(`/orders/${number}`);
   const order = await getOrderForUser(number, user.id);
   if (!order) notFound();
@@ -334,7 +334,7 @@ export default async function OrderPage({
             </p>
           )}
           <div className="mt-3">
-            <PayOnlineButton orderNumber={order.orderNumber} />
+            <PayOnlineButton orderNumber={order.orderNumber} autoStart={payParam === "online" && !returnedFromPayhere} />
           </div>
         </section>
       )}

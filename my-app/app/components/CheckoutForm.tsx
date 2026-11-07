@@ -33,6 +33,7 @@ export default function CheckoutForm({
   initialDistrict,
   advanceInfo,
   pointsInfo,
+  onlineAvailable,
 }: {
   products: Product[];
   promotions: Promotion[];
@@ -48,6 +49,8 @@ export default function CheckoutForm({
   advanceInfo: AdvanceSettings | null;
   /** Set when the customer has points to spend (the server recomputes on submit). */
   pointsInfo: { settings: PointsSettings; balance: number } | null;
+  /** Show the Card option (PayHere is on and has keys). Choosing it only changes where we go next. */
+  onlineAvailable: boolean;
 }) {
   const router = useRouter();
   const lang = useLang();
@@ -78,6 +81,10 @@ export default function CheckoutForm({
       : { points: 0, discount: 0 };
   const total = summary.total - applied.discount;
   const advance = advanceInfo ? advanceFor(total, advanceInfo) : 0;
+  // "card" only decides the page we open after placing; the order is the same and
+  // the order page re-checks everything before PayHere is ever contacted.
+  const [payChoice, setPayChoice] = useState<"later" | "card">("later");
+  const payByCard = onlineAvailable && payChoice === "card";
 
   // Between clearing the cart and arriving at the order page.
   if (result?.message === "placed") {
@@ -132,7 +139,7 @@ export default function CheckoutForm({
       setResult(outcome);
       if (outcome.message === "placed" && outcome.orderNumber) {
         clear();
-        router.push(`/orders/${outcome.orderNumber}`);
+        router.push(`/orders/${outcome.orderNumber}${payByCard ? "?pay=online" : ""}`);
       } else if (
         outcome.message === "price_changed" ||
         outcome.message === "advance_changed" ||
@@ -266,7 +273,34 @@ export default function CheckoutForm({
         <h2 className="eyebrow mt-2 text-muted">
           <L si="ගෙවීම" en="Payment" />
         </h2>
-        {advance > 0 ? (
+        {onlineAvailable && (
+          <fieldset className="flex flex-col gap-2 text-sm">
+            <label className="flex items-center gap-3 rounded-md border border-line px-4 py-3">
+              <input type="radio" name="pay_choice" checked={payChoice === "later"} onChange={() => setPayChoice("later")} />
+              <span>
+                {advance > 0 ? (
+                  <L si="බැංකු මාරුව (advance) / බඩු ලැබෙන විට ගෙවන්න" en="Bank transfer advance / pay on delivery" />
+                ) : (
+                  <L si="බඩු ලැබෙන විට ගෙවන්න (COD)" en="Cash on delivery" />
+                )}
+              </span>
+            </label>
+            <label className="flex items-center gap-3 rounded-md border border-line px-4 py-3">
+              <input type="radio" name="pay_choice" checked={payChoice === "card"} onChange={() => setPayChoice("card")} />
+              <span>
+                <L si="කාඩ්පතකින් ගෙවන්න (PayHere)" en="Pay by card (PayHere)" />
+              </span>
+            </label>
+          </fieldset>
+        )}
+        {payByCard ? (
+          <p className="rounded-md border border-line px-4 py-3 text-sm leading-relaxed">
+            <L
+              si="ඇණවුම ස්ථාපනය කළ පසු ආරක්ෂිත PayHere පිටුවට යයි. ගෙවීම සාර්ථක වූ විට ඇණවුම ස්වයංක්‍රීයව තහවුරු වේ."
+              en="After you place the order you go straight to the secure PayHere page. When the payment succeeds, the order is confirmed automatically."
+            />
+          </p>
+        ) : advance > 0 ? (
           <p className="rounded-md border border-line px-4 py-3 text-sm leading-relaxed">
             <L
               si={`අලුත් ගනුදෙනුකරුවන් ඇණවුම සඳහා කුඩා advance එකක් බැංකු මාරුවකින් ගෙවිය යුතුයි: ${formatPrice(advance)}. ඇණවුම ස්ථාපනය කළ පසු ඊළඟ පිටුවේ බැංකු විස්තර සහ slip එක upload කිරීම පෙන්වයි. ඉතිරි ${formatPrice(Math.max(total - advance, 0))} බඩු ලැබෙන විට ගෙවන්න.`}
