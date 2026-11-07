@@ -15,7 +15,9 @@ import { getAllProducts } from "./catalog";
 import { getRunningPromotions, getStoreSettings } from "./storefront";
 import { getStoreContact } from "./store-contact-data";
 import { freeShippingThreshold } from "./promotions";
-import { parseChatSettings, parseTopicRow, type ChatConfig, type ChatFacts, type ChatTopic } from "./chat";
+import { getBrand } from "./brand-data";
+import { resolveTheme } from "./brand";
+import { chatAccent, parseChatSettings, parseTopicRow, type ChatConfig, type ChatFacts, type ChatTopic } from "./chat";
 import { DEFAULT_TOPICS } from "./chat-defaults";
 
 const supabase = createClient(
@@ -120,7 +122,7 @@ export const getChatConfig = cache(async (): Promise<ChatConfig | null> => {
       mascotUrl: settings.mascotPath ? mascotPublicUrl(settings.mascotPath) : null,
       greeting: settings.greeting,
       firstMessage: settings.firstMessage,
-      accent: settings.accent,
+      accent: chatAccent(settings.accent, resolveTheme(await getBrand()).light.accent),
       showBubble: settings.showBubble,
       trust: settings.trust,
       topics,

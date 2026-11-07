@@ -90,6 +90,11 @@ export const DEFAULT_FIRST_MESSAGE: Bi = {
   en: "Hi! What would you like to know?",
 };
 
+/** The chat's accent: the shop's accent unless the owner picked a colour of their own for the chat. */
+export function chatAccent(chatSetting: string, shopAccent: string): string {
+  return /^#[0-9a-fA-F]{6}$/.test(chatSetting) && chatSetting.toLowerCase() !== DEFAULT_ACCENT ? chatSetting : shopAccent;
+}
+
 /** Internal paths a topic (or the AI, by id) may link to. Nothing else is ever rendered as a link. */
 export const LINK_ALLOWLIST: readonly string[] = [
   "/cart",

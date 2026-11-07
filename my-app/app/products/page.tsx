@@ -177,7 +177,7 @@ function FilterPill({
       href={href}
       className={`rounded-full border px-4 py-1.5 font-mono text-[0.7rem] uppercase tracking-[0.14em] transition-colors ${
         active
-          ? "border-blaze bg-blaze text-white"
+          ? "border-blaze bg-blaze text-onaccent"
           : "border-line text-muted hover:border-ink hover:text-ink"
       }`}
     >

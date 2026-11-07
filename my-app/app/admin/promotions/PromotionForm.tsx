@@ -235,7 +235,7 @@ export default function PromotionForm({
             aria-checked={banner.mode === m}
             onClick={() => set({ mode: m })}
             className={`rounded-full border px-4 py-2 text-sm ${
-              banner.mode === m ? "border-blaze bg-blaze text-white" : "border-line hover:border-ink"
+              banner.mode === m ? "border-blaze bg-blaze text-onaccent" : "border-line hover:border-ink"
             }`}
           >
             {m === "none" ? "No banner" : m === "template" ? "Template" : "Own image"}

@@ -15,18 +15,33 @@ function walk(dir: string, ext: RegExp, out: string[] = []): string[] {
 }
 
 const root = process.cwd();
-const STRING_LITERAL = /"([^"\n]*)"|'([^'\n]*)'|`([^`]*)`/g;
 
 describe("accent colour", () => {
-  it("no element puts text-white on the accent colour (use text-onaccent, which follows the theme)", () => {
-    const offenders: string[] = [];
+  // White text is only right on a fixed dark surface (a photo overlay, the black chat header).
+  // On the shop's accent colour the text colour follows the theme (text-onaccent), so any other
+  // text-white is a bug waiting for a light accent. Counted per file so a new one is noticed.
+  const ALLOWED_WHITE: Record<string, number> = {
+    "/app/components/ProductImage.tsx": 2,
+    "/app/components/ChatWindow.tsx": 1,
+  };
+
+  it("text-white appears only on fixed dark surfaces (use text-onaccent on the accent colour)", () => {
+    const found: Record<string, number> = {};
     for (const file of walk(join(root, "app"), /\.tsx$/)) {
-      const source = readFileSync(file, "utf8");
-      for (const match of source.matchAll(STRING_LITERAL)) {
-        const text = match[1] ?? match[2] ?? match[3] ?? "";
-        if (/(^|[\s:])bg-blaze(?=$|[\s/])/.test(text) && /(^|[\s:])text-white(?=$|[\s/])/.test(text)) {
+      const count = (readFileSync(file, "utf8").match(/(^|[^\w-])text-white(?![\w-])/g) ?? []).length;
+      if (count > 0) found[file.replace(root, "").replaceAll("\\", "/")] = count;
+    }
+    expect(found).toEqual(ALLOWED_WHITE);
+  });
+});
+
+describe("source hygiene", () => {
+  it("has no raw control characters (git would treat the file as binary); write them as escapes", () => {
+    const offenders: string[] = [];
+    for (const dir of ["app", "lib"]) {
+      for (const file of walk(join(root, dir), /\.(ts|tsx)$/)) {
+        if (/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(readFileSync(file, "utf8"))) {
           offenders.push(file.replace(root, "").replaceAll("\\", "/"));
-          break;
         }
       }
     }

@@ -102,6 +102,15 @@ describe("parseBrandRow", () => {
     expect(b.name).toBe("Northbound");
     expect(parseBrandRow(null)).toEqual(DEFAULT_BRAND);
   });
+  it("does not treat Object.prototype keys as a preset or font pair", () => {
+    for (const key of ["constructor", "__proto__", "toString", "hasOwnProperty"]) {
+      const b = parseBrandRow({ theme_id: key, font_pair: key });
+      expect(b.themeId, key).toBe("northbound");
+      expect(b.fontPair, key).toBe("northbound");
+      expect(() => resolveTheme(b)).not.toThrow();
+      expect(() => resolveTheme({ ...DEFAULT_BRAND, themeId: key })).not.toThrow();
+    }
+  });
   it("reads good values", () => {
     const b = parseBrandRow({
       logo_text: "Ka·de",
@@ -163,9 +172,19 @@ describe("validateBrandForm", () => {
       if (!r.ok) expect(r.errors).toContain(code);
     }
   });
+  it("refuses a preset or font id that is an Object.prototype key", () => {
+    for (const key of ["constructor", "__proto__"]) {
+      const a = validateBrandForm(form({ theme_id: key }));
+      expect(a.ok, key).toBe(false);
+      if (!a.ok) expect(a.errors).toContain("theme_id");
+      const b = validateBrandForm(form({ font_pair: key }));
+      expect(b.ok, key).toBe(false);
+      if (!b.ok) expect(b.errors).toContain("font_pair");
+    }
+  });
   it("refuses control characters in the names (they could break a line in an email subject)", () => {
     for (const field of ["name", "short_name", "sender_name", "logo_text"]) {
-      const r = validateBrandForm(form({ [field]: "KadeShop" }));
+      const r = validateBrandForm(form({ [field]: "Kade\x07Shop" }));
       expect(r.ok, field).toBe(false);
       if (!r.ok) expect(r.errors).toContain(field);
     }

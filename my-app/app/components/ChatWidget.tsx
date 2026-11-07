@@ -8,6 +8,7 @@ import { useLang } from "@/app/context/LangContext";
 import { chatVisibleOn, type ChatConfig } from "@/lib/chat";
 import { pageContext } from "@/lib/chat-guided";
 import { tr } from "@/lib/i18n";
+import { pickOnAccent } from "@/lib/brand";
 import MayaMascot from "./MayaMascot";
 
 // The window (and its engine code) loads on first open, so ordinary pages stay light.
@@ -55,7 +56,7 @@ export default function ChatWidget({
   return (
     <div
       className={`fixed right-4 z-40 flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:right-6 ${lift}`}
-      style={{ ["--maya-accent" as string]: config.accent }}
+      style={{ ["--maya-accent" as string]: config.accent, ["--maya-on-accent" as string]: pickOnAccent(config.accent) }}
       ref={(node) => {
         // Runs once on the client after mount.
         if (node && !decided) {

@@ -103,7 +103,7 @@ function resolveMode(preset: PresetTokens, accent: string | null, overrides: Par
 
 /** Preset, then the owner's accent, then their per-token overrides. An unknown preset is Northbound. */
 export function resolveTheme(brand: Brand): Theme {
-  const preset = PRESETS[brand.themeId] ?? PRESETS.northbound;
+  const preset = Object.hasOwn(PRESETS, brand.themeId) ? PRESETS[brand.themeId] : PRESETS.northbound;
   return {
     light: resolveMode(preset.light, brand.accent, brand.themeOverrides.light),
     dark: resolveMode(preset.dark, brand.accent, brand.themeOverrides.dark),
@@ -225,10 +225,10 @@ export function parseBrandRow(input: unknown): Brand {
     logoDarkPath: path(row.logo_dark_path),
     faviconPath: path(row.favicon_path),
     shareImagePath: path(row.share_image_path),
-    themeId: typeof row.theme_id === "string" && row.theme_id in PRESETS ? row.theme_id : d.themeId,
+    themeId: typeof row.theme_id === "string" && Object.hasOwn(PRESETS, row.theme_id) ? row.theme_id : d.themeId,
     accent: isHex(row.accent) ? row.accent.toLowerCase() : null,
     themeOverrides: parseOverrides(row.theme_overrides),
-    fontPair: typeof row.font_pair === "string" && row.font_pair in FONT_PAIRS ? row.font_pair : d.fontPair,
+    fontPair: typeof row.font_pair === "string" && Object.hasOwn(FONT_PAIRS, row.font_pair) ? row.font_pair : d.fontPair,
   };
 }
 
@@ -262,7 +262,7 @@ export function validateBrandForm(fd: FormData): { ok: true; value: BrandRow } |
   const logoTextValue = field(fd, "logo_text", 30);
   // A control character (a line break, say) could break a line in an email subject or an SMS.
   for (const [code, value] of [["name", name], ["short_name", shortName], ["logo_text", logoTextValue], ["sender_name", field(fd, "sender_name", 24)]] as const) {
-    if (/[ -]/.test(value) && !errors.includes(code)) errors.push(code);
+    if (/[\x00-\x1f\x7f]/.test(value) && !errors.includes(code)) errors.push(code);
   }
   if (logoTextValue.length > 30) errors.push("logo_text");
   const senderNameValue = field(fd, "sender_name", 24);
@@ -276,9 +276,9 @@ export function validateBrandForm(fd: FormData): { ok: true; value: BrandRow } |
   if (seoDescription.length > 200) errors.push("seo_description");
 
   const themeId = field(fd, "theme_id", 20);
-  if (!(themeId in PRESETS)) errors.push("theme_id");
+  if (!Object.hasOwn(PRESETS, themeId)) errors.push("theme_id");
   const fontPair = field(fd, "font_pair", 20);
-  if (!(fontPair in FONT_PAIRS)) errors.push("font_pair");
+  if (!Object.hasOwn(FONT_PAIRS, fontPair)) errors.push("font_pair");
   const accentRaw = field(fd, "accent", 7);
   if (accentRaw !== "" && !isHex(accentRaw)) errors.push("accent");
 

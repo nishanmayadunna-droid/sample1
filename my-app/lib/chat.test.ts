@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   CHAT_FEATURES,
+  DEFAULT_ACCENT,
+  chatAccent,
   DEFAULT_AI_SETTINGS,
   chatVisibleOn,
   isAllowedLink,
@@ -39,6 +41,14 @@ describe("isAllowedLink", () => {
 describe("features", () => {
   it("separates order SMS, SMS sign-in and any-notification flags", () => {
     for (const f of ["sms", "smsLogin", "notify"]) expect(CHAT_FEATURES).toContain(f);
+  });
+});
+
+describe("chatAccent", () => {
+  it("follows the shop accent unless the owner chose a chat colour of their own", () => {
+    expect(chatAccent(DEFAULT_ACCENT, "#0b6fa8")).toBe("#0b6fa8");
+    expect(chatAccent("#112233", "#0b6fa8")).toBe("#112233");
+    expect(chatAccent("not a colour", "#0b6fa8")).toBe("#0b6fa8");
   });
 });
 

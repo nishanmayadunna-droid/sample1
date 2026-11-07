@@ -14,43 +14,12 @@ import {
   type Mode,
   type OverrideKey,
 } from "@/lib/brand";
+import { brandErrorMessage } from "@/lib/brand-errors";
 import { saveBrandAction, type BrandFormState } from "./actions";
 import ThemePreview from "./ThemePreview";
 
 const initialState: BrandFormState = { errors: [], saved: false };
 const input = "mt-2 w-full rounded-md border border-line bg-bg px-3 py-2 outline-none focus:border-ink";
-
-const RULE_TEXT: Record<string, string> = {
-  text_bg: "the main text is too hard to read on the background",
-  muted_bg: "the secondary text is too faint on the background",
-  panelink_panel: "the text on the dark panel (footer) is too hard to read",
-  panelmuted_panel: "the secondary text on the dark panel is too faint",
-  onaccent_accent: "text on the accent colour (buttons) is too hard to read",
-  accent_bg: "the accent colour is too hard to see on the background",
-  accent_surface: "the accent colour is too hard to see on cards",
-};
-
-const MESSAGES: Record<string, string> = {
-  name: "The shop name is required, 40 characters at most, with no line breaks.",
-  short_name: "The short name is required, 24 characters at most, with no line breaks.",
-  logo_text: "The logo text can be 30 characters at most, with no line breaks.",
-  sender_name: "The sender name can be 24 characters at most, with no line breaks.",
-  tagline: "Taglines can be 120 characters at most.",
-  seo_title: "The browser title is required, 70 characters at most.",
-  seo_description: "The description can be 200 characters at most.",
-  theme_id: "Pick one of the colour themes.",
-  font_pair: "Pick one of the font pairs.",
-  accent: "The accent colour must look like #cb4a1c.",
-  server: "Something went wrong, please try again.",
-};
-
-function message(code: string): string {
-  if (MESSAGES[code]) return MESSAGES[code];
-  if (code.startsWith("ov_")) return `The advanced colour ${code.slice(3).replace("_", " ")} must look like #cb4a1c.`;
-  const m = /^(light|dark)_(.+)$/.exec(code);
-  if (m && RULE_TEXT[m[2]]) return `In ${m[1]} mode, ${RULE_TEXT[m[2]]}.`;
-  return `Check ${code.replaceAll("_", " ")}.`;
-}
 
 const LABELS: Record<OverrideKey, string> = {
   bg: "Background",
@@ -95,8 +64,8 @@ export default function BrandForm({ brand }: { brand: Brand }) {
     return { theme: resolved, failed: checkTheme(resolved) };
   }, [brand, themeId, accent, overrides]);
 
-  const fonts = FONT_VARS[fontPair] ?? FONT_VARS.northbound;
-  const pair = FONT_PAIRS[fontPair] ?? FONT_PAIRS.northbound;
+  const fonts = Object.hasOwn(FONT_VARS, fontPair) ? FONT_VARS[fontPair] : FONT_VARS.northbound;
+  const pair = Object.hasOwn(FONT_PAIRS, fontPair) ? FONT_PAIRS[fontPair] : FONT_PAIRS.northbound;
   const previewLogo = brandLogoText({ ...brand, logoText, shortName });
   const errors = [...new Set(state.errors)];
 
@@ -113,7 +82,7 @@ export default function BrandForm({ brand }: { brand: Brand }) {
       {(errors.length > 0 || failed.length > 0) && (
         <ul role="alert" className="mb-4 list-disc pl-5 text-sm text-blaze">
           {(errors.length > 0 ? errors : failed).map((code) => (
-            <li key={code}>{message(code)}</li>
+            <li key={code}>{brandErrorMessage(code)}</li>
           ))}
         </ul>
       )}

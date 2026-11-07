@@ -142,8 +142,8 @@ export default async function RootLayout({
     // Never throws: the built-in Northbound defaults on any failure.
     getBrand().catch(() => DEFAULT_BRAND),
   ]);
-  const pair = FONT_PAIRS[brand.fontPair] ?? FONT_PAIRS.northbound;
-  const pairVars = FONT_VARS[brand.fontPair] ?? FONT_VARS.northbound;
+  const pair = Object.hasOwn(FONT_PAIRS, brand.fontPair) ? FONT_PAIRS[brand.fontPair] : FONT_PAIRS.northbound;
+  const pairVars = Object.hasOwn(FONT_VARS, brand.fontPair) ? FONT_VARS[brand.fontPair] : FONT_VARS.northbound;
   const shippingThreshold = freeShippingThreshold(promotions);
 
   // Every visitor gets the same HTML in the default language; the boot script

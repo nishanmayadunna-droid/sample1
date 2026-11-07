@@ -20,7 +20,12 @@ export default function BrandLogo({ brand, onDark = false, className = "" }: { b
   }
   const parts = logoText(brand).split("·");
   return (
-    <span className={`display inline-block max-w-[11rem] truncate text-2xl leading-none tracking-tight sm:max-w-[16rem] ${className}`}>
+    // The display face has a tight line height; padding with an equal negative margin keeps the box the
+    // same size but stops `truncate` (overflow hidden) from clipping descenders and Sinhala vowel signs.
+    <span
+      className={`display inline-block max-w-[11rem] truncate text-2xl leading-none tracking-tight sm:max-w-[16rem] ${className}`}
+      style={{ paddingTop: "0.12em", paddingBottom: "0.22em", marginTop: "-0.12em", marginBottom: "-0.22em" }}
+    >
       {parts.map((part, index) => (
         <span key={index}>
           {index > 0 && <span className="text-blaze">·</span>}

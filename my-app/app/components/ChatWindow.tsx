@@ -23,8 +23,8 @@ function safeHref(href: string): "internal" | "external" | null {
 function LinkButton({ link, onNavigate }: { link: ChatLink; onNavigate: () => void }) {
   const lang = useLang();
   const kind = safeHref(link.href);
-  const className = "rounded-full px-4 py-1.5 text-sm font-medium text-white";
-  const style = { backgroundColor: "var(--maya-accent)" };
+  const className = "rounded-full px-4 py-1.5 text-sm font-medium";
+  const style = { backgroundColor: "var(--maya-accent)", color: "var(--maya-on-accent)" };
   const label = tr(lang, link.label.si, link.label.en);
   if (kind === "internal") {
     return (
@@ -163,7 +163,7 @@ export default function ChatWindow({
       <div ref={listRef} aria-live="polite" className="flex-1 space-y-3 overflow-y-auto px-4 py-4 text-sm">
         {messages.map((m) =>
           m.role === "user" ? (
-            <p key={m.id} className="ml-auto w-fit max-w-[85%] rounded-xl px-3 py-2 text-white" style={{ backgroundColor: "var(--maya-accent)" }}>
+            <p key={m.id} className="ml-auto w-fit max-w-[85%] rounded-xl px-3 py-2" style={{ backgroundColor: "var(--maya-accent)", color: "var(--maya-on-accent)" }}>
               {m.text}
             </p>
           ) : (
@@ -220,8 +220,8 @@ export default function ChatWindow({
           type="submit"
           disabled={thinking || input.trim() === ""}
           aria-label={tr(lang, "යවන්න", "Send")}
-          className="rounded-full px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
-          style={{ backgroundColor: "var(--maya-accent)" }}
+          className="rounded-full px-4 py-2 text-sm font-medium disabled:opacity-40"
+          style={{ backgroundColor: "var(--maya-accent)", color: "var(--maya-on-accent)" }}
         >
           →
         </button>
