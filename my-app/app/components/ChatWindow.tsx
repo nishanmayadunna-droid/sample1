@@ -93,7 +93,7 @@ export default function ChatWindow({
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history, page: context.kind, productName: context.productName }),
+        body: JSON.stringify({ messages: history, productId: context.productId }),
       });
       if (!response.ok) return null;
       const body = (await response.json()) as { reply?: ChatReply; fallback?: boolean };

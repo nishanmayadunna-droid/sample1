@@ -205,6 +205,7 @@ export function answerFor(text: string, config: ChatConfig): ChatReply {
 export type PageContext = {
   kind: "home" | "product" | "cart" | "checkout" | "order" | "other";
   productName?: string;
+  productId?: string;
   source?: string;
 };
 
@@ -225,7 +226,7 @@ export function pageContext(
   const product = /^\/products\/([^/]+)$/.exec(path);
   if (product) {
     const found = products.find((p) => p.id === decodeURIComponent(product[1]));
-    if (found) return { kind: "product", productName: found.name.slice(0, 60), ...base };
+    if (found) return { kind: "product", productName: found.name.slice(0, 60), productId: found.id, ...base };
   }
   return { kind: "other", ...base };
 }

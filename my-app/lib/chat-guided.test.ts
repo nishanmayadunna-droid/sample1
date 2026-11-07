@@ -162,6 +162,7 @@ describe("pageContext and greetingFor", () => {
     expect(pageContext("/products/jacket-1", new URLSearchParams(), products)).toMatchObject({
       kind: "product",
       productName: "Field Jacket",
+      productId: "jacket-1",
     });
   });
   it("ignores an unknown product id and cleans utm_source", () => {
