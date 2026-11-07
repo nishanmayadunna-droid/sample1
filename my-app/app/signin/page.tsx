@@ -6,6 +6,7 @@ import { findUserById } from "@/lib/users";
 import { smsAvailable } from "@/lib/sms-data";
 import SignInForm from "./SignInForm";
 import L from "../components/L";
+import { getBrand } from "@/lib/brand-data";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -24,11 +25,12 @@ export default async function SignInPage({
   if (signedInDestination) redirect(signedInDestination);
 
   const phoneEnabled = await smsAvailable();
+  const brand = await getBrand();
 
   return (
     <div className="mx-auto w-full max-w-md px-4 py-12 sm:px-6">
       <p className="eyebrow text-muted">
-        <L si="Northbound ගිණුම" en="Northbound account" />
+        <L si={`${brand.name} ගිණුම`} en={`${brand.name} account`} />
       </p>
       <h1 className="display mt-2 text-5xl">
         <L si="ඇතුළු වන්න" en="Sign in" />

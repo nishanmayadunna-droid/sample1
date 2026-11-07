@@ -3,13 +3,17 @@ import { getStoreContact } from "@/lib/store-contact-data";
 import { mailHref, telHref, whatsappHref } from "@/lib/store-contact";
 import L from "../components/L";
 import StorePage, { Bullets, Section } from "../components/StorePage";
+import { getBrand } from "@/lib/brand-data";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: "Returns",
-  description: "Northbound's returns and exchange policy.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getBrand();
+  return {
+    title: "Returns",
+    description: `${brand.name}'s returns and exchange policy.`,
+  };
+}
 
 export default async function ReturnsPage() {
   const c = await getStoreContact();

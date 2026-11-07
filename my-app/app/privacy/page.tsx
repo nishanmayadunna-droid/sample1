@@ -3,13 +3,17 @@ import { getStoreContact } from "@/lib/store-contact-data";
 import { mailHref, telHref, whatsappHref } from "@/lib/store-contact";
 import L from "../components/L";
 import StorePage, { Bullets, Section } from "../components/StorePage";
+import { getBrand } from "@/lib/brand-data";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: "Privacy",
-  description: "What personal information Northbound collects and why.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getBrand();
+  return {
+    title: "Privacy",
+    description: `What personal information ${brand.name} collects and why.`,
+  };
+}
 
 export default async function PrivacyPage() {
   const c = await getStoreContact();

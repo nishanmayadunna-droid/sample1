@@ -4,13 +4,13 @@ import L from "./L";
 import ProductImage from "./ProductImage";
 
 /** The brand story, compact: shown on the home page when no promotion banner runs. */
-export default function HomeHero({ hero }: { hero: PricedProduct | undefined }) {
+export default function HomeHero({ hero, brandName }: { hero: PricedProduct | undefined; brandName: string }) {
   return (
     <section className="bg-panel text-panelink">
       <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
         <div>
           <span className="eyebrow rise text-panelmuted">
-            <L si="Northbound — 64°N සිට" en="Est. Northbound — 64°N" />
+            <L si={`${brandName} — 64°N සිට`} en={`Est. ${brandName} — 64°N`} />
           </span>
           <h1 className="display rise mt-4 text-[clamp(2.25rem,6vw,4rem)]" style={{ animationDelay: "80ms" }}>
             <L si="ඉවත දමන්න නොව," en="Made to be" />{" "}

@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import L from "../components/L";
 import StorePage, { Bullets, Section } from "../components/StorePage";
+import { getBrand } from "@/lib/brand-data";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: "Terms",
-  description: "The terms for shopping with Northbound.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getBrand();
+  return {
+    title: "Terms",
+    description: `The terms for shopping with ${brand.name}.`,
+  };
+}
 
 export default function TermsPage() {
   return (

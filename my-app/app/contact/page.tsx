@@ -4,13 +4,17 @@ import { getStoreContact } from "@/lib/store-contact-data";
 import { mailHref, telHref, whatsappHref } from "@/lib/store-contact";
 import L from "../components/L";
 import StorePage from "../components/StorePage";
+import { getBrand } from "@/lib/brand-data";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: "Contact",
-  description: "How to reach Northbound by phone, WhatsApp, email or in person.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getBrand();
+  return {
+    title: "Contact",
+    description: `How to reach ${brand.name} by phone, WhatsApp, email or in person.`,
+  };
+}
 
 const linkClass = "text-blaze underline underline-offset-4";
 

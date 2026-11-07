@@ -21,6 +21,7 @@ import L from "../../components/L";
 import ProductGrid from "../../components/ProductGrid";
 import ProductPurchase from "../../components/ProductPurchase";
 import ReviewSection from "../../components/ReviewSection";
+import { getBrand } from "@/lib/brand-data";
 
 // Re-fetch catalog data from Supabase at most once a minute (ISR).
 export const revalidate = 60;
@@ -47,7 +48,7 @@ export async function generateMetadata({
     // Always an object: a key set to undefined would wipe the root openGraph block.
     openGraph: {
       type: "website",
-      siteName: "Northbound",
+      siteName: (await getBrand()).name,
       url: absoluteUrl(`/products/${encodeURIComponent(product.id)}`),
       images: photo ? [photo] : undefined,
     },

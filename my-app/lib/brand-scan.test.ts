@@ -33,3 +33,20 @@ describe("accent colour", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe("shop name", () => {
+  // These files may name the default shop: the brand defaults and presets, the seeded chat copy.
+  const ALLOWED = new Set(["/lib/brand.ts", "/lib/brand-presets.ts", "/lib/chat-defaults.ts", "/app/layout.tsx"]);
+
+  it("is never written into pages, messages or templates (it comes from the brand settings)", () => {
+    const offenders: string[] = [];
+    for (const dir of ["app", "lib"]) {
+      for (const file of walk(join(root, dir), /\.(ts|tsx)$/)) {
+        const rel = file.replace(root, "").replaceAll("\\", "/");
+        if (/\.test\.tsx?$/.test(rel) || ALLOWED.has(rel)) continue;
+        if (/Northbound|NORTH·?BOUND/.test(readFileSync(file, "utf8"))) offenders.push(rel);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});

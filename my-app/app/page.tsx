@@ -12,17 +12,19 @@ import HomeHero from "./components/HomeHero";
 import Newsletter from "./components/Newsletter";
 import PromiseCards from "./components/PromiseCards";
 import PromoBanners from "./components/PromoBanners";
+import { getBrand } from "@/lib/brand-data";
 
 // Re-fetch catalog data from Supabase at most once a minute (ISR).
 export const revalidate = 60;
 
 export default async function Home() {
   // One catalog query; every section below is a slice of it.
-  const [catalog, categories, promotions, promises] = await Promise.all([
+  const [catalog, categories, promotions, promises, brand] = await Promise.all([
     getAllProducts(),
     getCategories(),
     getRunningPromotions(),
     getVisiblePromises(),
+    getBrand(),
   ]);
   const products = withPricing(catalog, promotions, categories);
   const deals = dealProducts(products);
@@ -40,8 +42,8 @@ export default async function Home() {
     // contact details are optional in the structured data
   }
   const structured = [
-    organizationJsonLd({ name: "Northbound", url: absoluteUrl("/"), phone, email }),
-    websiteJsonLd({ name: "Northbound", url: siteUrl() }),
+    organizationJsonLd({ name: brand.name, url: absoluteUrl("/"), phone, email }),
+    websiteJsonLd({ name: brand.name, url: siteUrl() }),
   ];
 
   return (
@@ -54,7 +56,7 @@ export default async function Home() {
         />
       ))}
       <PromoBanners promotions={promotions} />
-      {!hasBanner && <HomeHero hero={hero} />}
+      {!hasBanner && <HomeHero hero={hero} brandName={brand.name} />}
       <DealsRow deals={deals} endsAt={soonestDealEnd(deals, promotions)} />
       <CategoryShelf products={products} categories={categories} />
       <PromiseCards items={promiseItems(promises, freeShippingThreshold(promotions))} />

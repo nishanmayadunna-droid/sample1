@@ -1,21 +1,26 @@
 import type { Metadata } from "next";
 import L from "../components/L";
 import StorePage, { Bullets, Section } from "../components/StorePage";
+import { getBrand } from "@/lib/brand-data";
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: "About",
-  description: "Who we are and how Northbound picks and sells hard-wearing apparel.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getBrand();
+  return {
+    title: "About",
+    description: `Who we are and how ${brand.name} picks and sells hard-wearing apparel.`,
+  };
+}
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const brand = await getBrand();
   return (
-    <StorePage eyebrow={<L si="අප ගැන" en="About us" />} title="Northbound">
+    <StorePage eyebrow={<L si="අප ගැන" en="About us" />} title={brand.name}>
       <p>
         <L
-          si="Northbound යනු ඉවත දමන්න නොව, දිගු කලක් අඳින්නට සාදන ඇඳුම් වෙළඳසැලකි. සරල, ශක්තිමත් ඇඳුම් තෝරාගෙන ඔබ අතට ගෙන ඒම අපගේ අරමුණයි."
-          en="Northbound is an apparel shop built around one idea: clothes made to be worn out, not thrown out. We pick simple, sturdy pieces and bring them to your door."
+          si={`${brand.name} යනු ඉවත දමන්න නොව, දිගු කලක් අඳින්නට සාදන ඇඳුම් වෙළඳසැලකි. සරල, ශක්තිමත් ඇඳුම් තෝරාගෙන ඔබ අතට ගෙන ඒම අපගේ අරමුණයි.`}
+          en={`${brand.name} is an apparel shop built around one idea: clothes made to be worn out, not thrown out. We pick simple, sturdy pieces and bring them to your door.`}
         />
       </p>
       <Section title={<L si="අපි වැඩ කරන ආකාරය" en="How we work" />}>

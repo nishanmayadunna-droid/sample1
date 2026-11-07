@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import L from "../components/L";
 import ForgotPasswordForm from "./ForgotPasswordForm";
+import { getBrand } from "@/lib/brand-data";
 
 export const metadata: Metadata = { title: "Forgot password", robots: { index: false, follow: false } };
 
-export default function ForgotPasswordPage() {
+export default async function ForgotPasswordPage() {
+  const brand = await getBrand();
   return (
     <div className="mx-auto w-full max-w-md px-4 py-12 sm:px-6">
       <p className="eyebrow text-muted">
-        <L si="Northbound ගිණුම" en="Northbound account" />
+        <L si={`${brand.name} ගිණුම`} en={`${brand.name} account`} />
       </p>
       <h1 className="display mt-2 text-5xl">
         <L si="මුරපදය අමතකද?" en="Forgot password" />

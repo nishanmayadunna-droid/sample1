@@ -45,7 +45,7 @@ export default async function AdminEmailPage() {
       </dl>
       <p className="mt-3 max-w-prose text-sm text-muted">
         The keys are the server environment variables RESEND_API_KEY and EMAIL_FROM (for example
-        &quot;Northbound &lt;orders@your-domain&gt;&quot;), in .env.local and in Vercel. The sender address must be on a
+        &quot;Your Shop &lt;orders@your-domain&gt;&quot;), in .env.local and in Vercel. The sender address must be on a
         domain you have verified with Resend; until then Resend only delivers to your own address.
       </p>
 

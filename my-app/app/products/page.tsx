@@ -8,6 +8,7 @@ import { filterProducts, parseView, type ProductView } from "@/lib/product-filte
 import ProductGrid from "../components/ProductGrid";
 import L from "../components/L";
 import PromoBanner from "../components/PromoBanner";
+import { getBrand } from "@/lib/brand-data";
 
 export async function generateMetadata({
   searchParams,
@@ -15,10 +16,11 @@ export async function generateMetadata({
   searchParams: Promise<Params>;
 }): Promise<Metadata> {
   const params = await searchParams;
+  const brand = await getBrand();
   const filtered = (["category", "view", "q", "promo"] as const).some((k) => params[k]);
   return {
     title: "Shop all",
-    description: "Browse the full Northbound collection.",
+    description: `Browse the full ${brand.name} collection.`,
     alternates: { canonical: "/products" },
     ...(filtered ? { robots: { index: false, follow: true } } : {}),
   };
