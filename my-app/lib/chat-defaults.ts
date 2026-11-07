@@ -82,7 +82,7 @@ const SEEDS: Seed[] = [
   {
     id: "tracking",
     title: { si: "Delivery status දැනගන්නේ", en: "Tracking your order" },
-    keywords: ["track", "tracking", "status", "where is my order", "parcel", "කොහෙද", "ඇණවුම කොහෙද", "ට්‍රැක්", "parcel eka"],
+    keywords: ["track", "tracking", "status", "delivery status", "order status", "track order", "where is my order", "parcel", "කොහෙද", "ඇණවුම කොහෙද", "ට්‍රැක්", "parcel eka"],
     answer: {
       si: "ඔයාගේ ඇණවුමේ තත්ත්වය ඕන වෙලාවක 'මගේ ඇණවුම්' පිටුවෙන් බලන්න පුළුවන්.\nඇණවුම ship වුණාම courier නම, tracking අංකය සහ tracking link එක ඒ පිටුවේම පෙනෙනවා.",
       en: "You can check your order's status any time on the My orders page.\nOnce it ships, the courier, tracking number and a tracking link appear on that page.",
