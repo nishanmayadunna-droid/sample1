@@ -41,3 +41,7 @@ Sign up, sign in (email and Google), add to cart, checkout (COD and, if on, adva
 ## 8. Shop assistant (Maya)
 - [ ] `/admin/chat`: check the answers (Sinhala copy needs your review), fill the trust notes with true statements only, upload your own mascot if you want one, then switch it on. Start with the free **Guided** engine.
 - [ ] Optional AI engine: set `ANTHROPIC_API_KEY` in Vercel, pick the AI engine, set the limits (especially the whole-shop daily cap), and use the token guide at `/admin/chat/token-guide` to estimate the bill. Test real Sinhala questions before relying on it.
+
+## 9. Branding (one shop per deployment)
+- [ ] `/admin/branding`: set the shop name, short name, logo (and a dark-mode logo if the logo is dark), favicon and share image, pick a colour theme and font pair, then check the home page in light and dark mode and on a phone.
+- [ ] Review the home page and About wording yourself: only the shop name follows the branding; the rest of that copy is still the sample text.
