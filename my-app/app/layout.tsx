@@ -7,6 +7,8 @@ import PromiseStrip from "./components/PromiseStrip";
 import Header from "./components/Header";
 import InlineScript from "./components/InlineScript";
 import CartDrawer from "./components/CartDrawer";
+import ChatWidget from "./components/ChatWidget";
+import { getChatConfig } from "@/lib/chat-data";
 import {
   getNextPromotionChange,
   getRunningPromotions,
@@ -18,6 +20,7 @@ import { freeShippingThreshold } from "@/lib/promotions";
 import { getAllProducts, getCategories } from "@/lib/catalog";
 import { toShellProduct, type Category, type ShellProduct } from "@/lib/products";
 import { langBootScript } from "@/lib/i18n";
+import { Suspense } from "react";
 import { siteUrl } from "@/lib/site";
 
 const geistSans = Geist({
@@ -100,13 +103,15 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   // Each read falls back on its own, so the shell never fails the page.
-  const [settings, products, categories, promises, promotions, nextChange] = await Promise.all([
+  const [settings, products, categories, promises, promotions, nextChange, chat] = await Promise.all([
     getStoreSettings(),
     getShellProducts(),
     getShellCategories(),
     getVisiblePromises(),
     getRunningPromotions(),
     getNextPromotionChange(),
+    // Null (unreadable or switched off) means no assistant at all.
+    getChatConfig().catch(() => null),
   ]);
   const shippingThreshold = freeShippingThreshold(promotions);
 
@@ -144,6 +149,11 @@ export default async function RootLayout({
           promises={promises}
           freeShippingThreshold={shippingThreshold}
         />
+        {chat && (
+          <Suspense fallback={null}>
+            <ChatWidget config={chat} products={products.map((p) => ({ id: p.id, name: p.name }))} />
+          </Suspense>
+        )}
         <AnalyticsGate />
       </body>
     </html>

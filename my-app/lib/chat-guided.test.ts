@@ -9,6 +9,7 @@ import {
   normalize,
   pageContext,
   replyForTopic,
+  replyForTopicId,
   visibleTopics,
 } from "./chat-guided";
 
@@ -132,6 +133,22 @@ describe("answerFor", () => {
   it("does not answer from a topic whose feature is off", () => {
     const reply = answerFor("points", config());
     expect(reply.text.en).not.toContain("earn points");
+  });
+});
+
+describe("trust notes", () => {
+  it("are appended to the trust topic only, when the owner wrote some", () => {
+    const withNotes = config({ trust: { si: "අපි 2020 සිට", en: "Trading since 2020" } });
+    const trustReply = replyForTopicId("trust", withNotes);
+    expect(trustReply?.text.en).toContain("Trading since 2020");
+    expect(trustReply?.text.si).toContain("අපි 2020 සිට");
+    expect(replyForTopicId("delivery", withNotes)?.text.en).not.toContain("Trading since 2020");
+    expect(replyForTopicId("trust", config())?.text.en).not.toContain("Trading since");
+    expect(answerFor("can i trust you, is it safe", withNotes).text.en).toContain("Trading since 2020");
+  });
+  it("replyForTopicId is null for an unknown or hidden topic", () => {
+    expect(replyForTopicId("nope", config())).toBeNull();
+    expect(replyForTopicId("points", config())).toBeNull();
   });
 });
 

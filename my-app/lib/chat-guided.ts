@@ -136,9 +136,14 @@ function chipsFor(ids: string[], visible: ChatTopic[], limit: number) {
 }
 
 /** The reply for one topic: filled answer, allowlisted links and follow-up chips. */
-export function replyForTopic(topic: ChatTopic, topics: ChatTopic[], facts: ChatFacts): ChatReply {
-  const si = fillFacts(topic.answer.si, facts);
-  const en = fillFacts(topic.answer.en, facts);
+export function replyForTopic(topic: ChatTopic, topics: ChatTopic[], facts: ChatFacts, trust?: Bi): ChatReply {
+  let si = fillFacts(topic.answer.si, facts);
+  let en = fillFacts(topic.answer.en, facts);
+  // The owner's own trust notes belong to the "can I trust this shop" answer only.
+  if (topic.id === "trust" && trust) {
+    if (trust.si.trim()) si = [si, trust.si.trim()].filter(Boolean).join("\n");
+    if (trust.en.trim()) en = [en, trust.en.trim()].filter(Boolean).join("\n");
+  }
   const links: ChatLink[] = topic.links.filter((l) => isAllowedLink(l.href));
   if (topic.id === "contact") {
     const tel = facts.phone ? telHref(facts.phone) : null;
@@ -152,6 +157,12 @@ export function replyForTopic(topic: ChatTopic, topics: ChatTopic[], facts: Chat
     links,
     chips: chipsFor(topic.followUps, visible, 4),
   };
+}
+
+/** The reply for a topic picked by id (a quick-reply chip); null when it is unknown or not visible. */
+export function replyForTopicId(id: string, config: ChatConfig): ChatReply | null {
+  const topic = visibleTopics(config.topics, config.facts.features).find((t) => t.id === id);
+  return topic ? replyForTopic(topic, config.topics, config.facts, config.trust) : null;
 }
 
 const STARTERS = ["checkout", "payment", "tracking", "notifications", "new-arrivals", "trust"];
@@ -180,7 +191,9 @@ export function answerFor(text: string, config: ChatConfig): ChatReply {
   const scored = scoreAll(text, visible);
   if (scored.length === 0) return fallbackReply(config);
   const [top, second] = scored;
-  if (!second || top.score >= second.score * 1.5) return replyForTopic(top.topic, config.topics, config.facts);
+  if (!second || top.score >= second.score * 1.5) {
+    return replyForTopic(top.topic, config.topics, config.facts, config.trust);
+  }
   const close = scored.filter((s) => s.score * 1.5 >= top.score).slice(0, 3);
   return {
     text: { si: "මේවායින් මොකක් ගැනද?", en: "Which of these do you mean?" },
