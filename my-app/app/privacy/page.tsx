@@ -24,7 +24,7 @@ export default async function PrivacyPage() {
       title={<L si="රහස්‍යතාව" en="Privacy" />}
     >
       <p className="text-muted">
-        <L si="අවසන් යාවත්කාලීන: 2026-11-10" en="Last updated: 2026-11-10" />
+        <L si="අවසන් යාවත්කාලීන: 2026-11-19" en="Last updated: 2026-11-19" />
       </p>
       <Section title={<L si="අප එකතු කරන තොරතුරු" en="What we collect" />}>
         <Bullets>
@@ -96,6 +96,12 @@ export default async function PrivacyPage() {
           <L
             si="දත්ත ගබඩා කිරීම සහ වෙබ් අඩවිය ධාවනය සඳහා Supabase සහ Vercel, SMS සඳහා Text.lk, ලොගින් සඳහා Google, සහ නිර්නාමික සංචාර සංඛ්‍යාලේඛන සඳහා Vercel Web Analytics සහ Speed Insights භාවිතා කෙරේ."
             en="We use Supabase and Vercel to store data and run the site, Text.lk for SMS, Google for sign-in, and Vercel Web Analytics and Speed Insights for anonymous visit statistics."
+          />
+        </p>
+        <p className="mt-3">
+          <L
+            si="සාප්පු සහායකයා (chat) ඔබේ පණිවිඩ ගබඩා කරන්නේ නැත. ඉදිරියේදී AI සහිත chat එකක් සක්‍රිය කළහොත්, එහි පිළිතුරු වැරදිය හැකි අතර ඔබේ පණිවිඩ පිළිතුර සෑදීමට පමණක් සේවා සපයන්නෙකුට යැවේ; ඔබේ නම, ලිපිනය හෝ ඇණවුම් විස්තර යවන්නේ නැත. මුරපද හෝ කාඩ් අංක chat එකේ කිසිවිටෙක ඇතුළත් නොකරන්න."
+            en="The shop assistant chat does not store your messages. If an AI-powered chat is switched on in future, its answers can be wrong and your message is sent to a service provider only to write the reply; your name, address and order details are not sent. Never type passwords or card numbers into the chat."
           />
         </p>
       </Section>

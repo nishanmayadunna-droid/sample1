@@ -37,3 +37,7 @@ Sign up, sign in (email and Google), add to cart, checkout (COD and, if on, adva
 - [ ] Share a product link in WhatsApp and Facebook and check the preview card (title, photo).
 - [ ] Previews are never indexed (robots.txt disallows everything outside production, and Vercel adds a noindex header to preview URLs) -- only the production domain should appear in Google.
 - [ ] Promote only production builds; to ship a preview, merge or redeploy (an API-promoted preview build would serve Disallow: / to Google).
+
+## 8. Shop assistant (Maya)
+- [ ] `/admin/chat`: check the answers (Sinhala copy needs your review), fill the trust notes with true statements only, upload your own mascot if you want one, then switch it on. Start with the free **Guided** engine.
+- [ ] Optional AI engine: set `ANTHROPIC_API_KEY` in Vercel, pick the AI engine, set the limits (especially the whole-shop daily cap), and use the token guide at `/admin/chat/token-guide` to estimate the bill. Test real Sinhala questions before relying on it.
