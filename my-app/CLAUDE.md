@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This project runs **Next.js 16.4.3** with **React 19.2**. APIs, conventions, and file structure may differ from what you remember. **Before writing any Next.js code, read the relevant guide under `node_modules/next/dist/docs/`** (the App Router docs live in `01-app/`) and heed any deprecation notices. Do not rely on remembered Next.js APIs.
 
+## This is a SaaS product
+
+This project is a SaaS product that many different shop owners will run, not one shop's website. Whenever you design or change something, work the way a SaaS does: everything an owner would want to differ (name, logo, colours, copy, languages, currency and country details, limits, integrations and their keys) must be an admin setting, never hard-coded, and "Northbound", "Maya", Rs/LKR and Sri Lanka specifics are only seeded defaults; also think about keeping each shop's data separate, per-plan limits and easy onboarding.
+
 ## Commands
 
 ```bash
