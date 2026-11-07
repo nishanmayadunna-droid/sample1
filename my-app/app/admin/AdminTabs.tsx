@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-type AdminTab = "products" | "orders" | "payments" | "online" | "shipping" | "customers" | "points" | "categories" | "promotions" | "reviews" | "promises" | "sms" | "notifications" | "email" | "push" | "newsletter" | "settings";
+type AdminTab = "products" | "orders" | "payments" | "online" | "shipping" | "customers" | "points" | "categories" | "promotions" | "reviews" | "promises" | "sms" | "notifications" | "email" | "push" | "chat" | "newsletter" | "settings";
 
 /** Section switcher shown at the top of the admin pages. */
 export default function AdminTabs({ active }: { active: AdminTab }) {
@@ -33,6 +33,7 @@ export default function AdminTabs({ active }: { active: AdminTab }) {
       {tab("notifications", "/admin/notifications", "Notifications")}
       {tab("email", "/admin/email", "Email")}
       {tab("push", "/admin/push", "Push")}
+      {tab("chat", "/admin/chat", "Chat")}
       {tab("newsletter", "/admin/newsletter", "Newsletter")}
       {tab("settings", "/admin/settings", "Settings")}
     </nav>
