@@ -80,7 +80,7 @@ function Form({ productId }: { productId: string }) {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-full bg-blaze px-6 py-3 font-medium text-white disabled:opacity-40"
+          className="rounded-full bg-blaze px-6 py-3 font-medium text-onaccent disabled:opacity-40"
         >
           <L si="යවන්න" en="Submit review" />
         </button>

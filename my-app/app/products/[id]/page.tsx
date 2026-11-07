@@ -140,7 +140,7 @@ export default async function ProductPage({
               <span className="text-base text-muted line-through">
                 {formatPrice(pricing.compareAt)}
               </span>
-              <span className="rounded bg-blaze px-1.5 py-0.5 text-xs font-medium text-white">
+              <span className="rounded bg-blaze px-1.5 py-0.5 text-xs font-medium text-onaccent">
                 −{pricing.discountPercent}%{" "}
                 {pricing.promotion ? (
                   <L si={pricing.promotion.nameSi} en={pricing.promotion.nameEn} />

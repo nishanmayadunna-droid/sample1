@@ -27,7 +27,7 @@ export default function HomeHero({ hero }: { hero: PricedProduct | undefined }) 
           </p>
           <Link
             href="/products"
-            className="rise mt-6 inline-block rounded-full bg-blaze px-7 py-3 font-medium text-white transition-transform hover:-translate-y-0.5"
+            className="rise mt-6 inline-block rounded-full bg-blaze px-7 py-3 font-medium text-onaccent transition-transform hover:-translate-y-0.5"
             style={{ animationDelay: "240ms" }}
           >
             <L si="එකතුව බලන්න" en="Shop the collection" />

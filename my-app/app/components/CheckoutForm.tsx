@@ -109,7 +109,7 @@ export default function CheckoutForm({
         <p className="display text-3xl">
           <L si="ඔබේ කරත්තය හිස්" en="Your cart is empty" />
         </p>
-        <Link href="/products" className="rounded-full bg-blaze px-6 py-3 font-medium text-white">
+        <Link href="/products" className="rounded-full bg-blaze px-6 py-3 font-medium text-onaccent">
           <L si="සාප්පුව බලන්න" en="Browse the shop" />
         </Link>
       </div>
@@ -394,7 +394,7 @@ export default function CheckoutForm({
           type="submit"
           disabled={pending}
           aria-label={tr(lang, "ඇණවුම ස්ථාපනය කරන්න", "Place order")}
-          className="rounded-full bg-blaze py-4 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:opacity-40 disabled:hover:translate-y-0"
+          className="rounded-full bg-blaze py-4 font-medium text-onaccent transition-transform hover:-translate-y-0.5 disabled:opacity-40 disabled:hover:translate-y-0"
         >
           <L si="ඇණවුම ස්ථාපනය කරන්න" en="Place order" /> · {formatPrice(total)}
         </button>

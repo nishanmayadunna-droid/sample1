@@ -8,7 +8,7 @@ import { confirmPhoneChangeAction, requestPhoneChangeAction } from "./phone-acti
 
 const inputClass = "mt-2 w-full rounded-md border border-line bg-bg px-4 py-3 outline-none focus:border-ink";
 const buttonClass =
-  "rounded-full bg-blaze px-6 py-3 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60";
+  "rounded-full bg-blaze px-6 py-3 font-medium text-onaccent transition-transform hover:-translate-y-0.5 disabled:opacity-60";
 
 /** Add a phone number to this account, or change the one it has: SMS code to the new number, then confirm. */
 export default function PhoneSection({ phone }: { phone: string | null }) {

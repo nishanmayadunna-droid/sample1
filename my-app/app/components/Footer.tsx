@@ -1,17 +1,21 @@
 import Link from "next/link";
 import type { Category } from "@/lib/products";
 import { promiseItems, type StorePromise } from "@/lib/storefront-form";
+import BrandLogo from "./BrandLogo";
 import L from "./L";
+import type { Brand } from "@/lib/brand";
 import PromiseIcon from "./PromiseIcon";
 
 const linkClass = "hover:text-panelink";
 const headingClass = "font-mono text-[0.7rem] uppercase tracking-[0.16em] text-panelink";
 
 export default function Footer({
+  brand,
   categories,
   promises,
   freeShippingThreshold,
 }: {
+  brand: Brand;
   categories: Category[];
   promises: StorePromise[];
   /** From the running promotions; null hides the free-shipping line. */
@@ -21,14 +25,11 @@ export default function Footer({
     <footer className="mt-8 bg-panel text-panelmuted">
       <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
         <div>
-          <p className="display text-2xl text-panelink">
-            North<span className="text-blaze">·</span>bound
+          <p className="text-panelink">
+            <BrandLogo brand={brand} onDark />
           </p>
           <p className="mt-3 max-w-xs text-sm leading-relaxed">
-            <L
-              si="Demo සාප්පුවකි. ඉවත දමන්න නොව, දිගු කලක් අඳින්නට."
-              en="A demo storefront. Built to be worn out, not thrown out."
-            />
+            <L si={brand.taglineSi} en={brand.taglineEn} />
           </p>
         </div>
 

@@ -23,7 +23,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
         </p>
         <Link
           href="/signin"
-          className="mt-6 inline-block rounded-full bg-blaze px-6 py-3 font-medium text-white transition-transform hover:-translate-y-0.5"
+          className="mt-6 inline-block rounded-full bg-blaze px-6 py-3 font-medium text-onaccent transition-transform hover:-translate-y-0.5"
         >
           <L si="ඇතුළු වන්න" en="Sign in" />
         </Link>
@@ -81,7 +81,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="mt-6 w-full rounded-full bg-blaze py-4 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+        className="mt-6 w-full rounded-full bg-blaze py-4 font-medium text-onaccent transition-transform hover:-translate-y-0.5 disabled:opacity-60"
       >
         <L si="මුරපදය සුරකින්න" en="Save the new password" />
       </button>

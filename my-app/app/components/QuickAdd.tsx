@@ -118,7 +118,7 @@ export default function QuickAdd({
             : tr(lang, `${name} කරත්තයට එක් කරන්න`, `Add ${name} to cart`)
         }
         aria-expanded={mode === "pick" ? open : undefined}
-        className="absolute bottom-2 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-line bg-bg text-ink shadow transition-colors hover:border-blaze hover:bg-blaze hover:text-white"
+        className="absolute bottom-2 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-line bg-bg text-ink shadow transition-colors hover:border-blaze hover:bg-blaze hover:text-onaccent"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-5 w-5">
           <path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L20 8H6.2M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM17 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM14 3v4M12 5h4" />

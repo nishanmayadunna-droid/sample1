@@ -40,7 +40,7 @@ export default function ForgotPasswordForm() {
       <button
         type="submit"
         disabled={pending}
-        className="mt-6 w-full rounded-full bg-blaze py-4 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+        className="mt-6 w-full rounded-full bg-blaze py-4 font-medium text-onaccent transition-transform hover:-translate-y-0.5 disabled:opacity-60"
       >
         <L si="සබැඳිය යවන්න" en="Send the link" />
       </button>

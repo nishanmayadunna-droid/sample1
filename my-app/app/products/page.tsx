@@ -149,7 +149,7 @@ export default async function ProductsPage({
           </p>
           <Link
             href="/products"
-            className="rounded-full bg-blaze px-6 py-3 font-medium text-white transition-transform hover:-translate-y-0.5"
+            className="rounded-full bg-blaze px-6 py-3 font-medium text-onaccent transition-transform hover:-translate-y-0.5"
           >
             <L si="පෙරහන් ඉවත් කරන්න" en="Clear filters" />
           </Link>

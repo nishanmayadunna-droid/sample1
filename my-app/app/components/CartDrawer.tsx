@@ -115,7 +115,7 @@ export default function CartDrawer({
             <Link
               href="/products?view=deals"
               onClick={closeCartDrawer}
-              className="rounded-full bg-blaze px-6 py-3 font-medium text-white"
+              className="rounded-full bg-blaze px-6 py-3 font-medium text-onaccent"
             >
               <L si="⚡ Flash Deals බලන්න" en="⚡ See Flash Deals" />
             </Link>
@@ -189,7 +189,7 @@ export default function CartDrawer({
               <Link
                 href="/cart"
                 onClick={closeCartDrawer}
-                className="mt-4 block rounded-full bg-blaze py-3.5 text-center font-medium text-white transition-transform hover:-translate-y-0.5"
+                className="mt-4 block rounded-full bg-blaze py-3.5 text-center font-medium text-onaccent transition-transform hover:-translate-y-0.5"
               >
                 <L si="කරත්තය බලන්න" en="View cart" />
               </Link>

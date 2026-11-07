@@ -65,7 +65,7 @@ export default function PayOnlineButton({
         type="button"
         onClick={pay}
         disabled={pending}
-        className="rounded-full bg-blaze px-6 py-3 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+        className="rounded-full bg-blaze px-6 py-3 font-medium text-onaccent transition-transform hover:-translate-y-0.5 disabled:opacity-60"
       >
         {pending ? <L si="රැඳී සිටින්න…" en="One moment…" /> : <L si="දැන් ඔන්ලයින් ගෙවන්න" en="Pay online now" />}
       </button>

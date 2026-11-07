@@ -63,3 +63,12 @@ export const FONT_PAIRS: Record<string, FontPair> = {
   modern: { label: "Modern (Space Grotesk and Inter)", displayCase: "none", tracking: "-0.01em" },
   editorial: { label: "Editorial (DM Serif Display and DM Sans)", displayCase: "none", tracking: "0" },
 };
+
+/** The CSS variables (declared by next/font in the root layout) each pair uses. Fixed strings from code, never from the database. */
+export const FONT_VARS: Record<string, { display: string; body: string }> = {
+  northbound: { display: "var(--font-anton)", body: "var(--font-geist-sans)" },
+  classic: { display: "var(--font-playfair)", body: "var(--font-inter)" },
+  friendly: { display: "var(--font-poppins)", body: "var(--font-poppins)" },
+  modern: { display: "var(--font-space)", body: "var(--font-inter)" },
+  editorial: { display: "var(--font-dmserif)", body: "var(--font-dmsans)" },
+};

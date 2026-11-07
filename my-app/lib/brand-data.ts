@@ -35,8 +35,3 @@ export async function getBrandName(): Promise<string> {
 export async function getSenderName(opts: { ascii?: boolean } = {}): Promise<string> {
   return senderName(await getBrand(), { ascii: opts.ascii === true });
 }
-
-/** The public URL of an uploaded brand image. */
-export function brandAssetUrl(path: string): string {
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/brand-assets/${path}`;
-}

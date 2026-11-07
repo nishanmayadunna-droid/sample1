@@ -22,7 +22,7 @@ export default function DeletePromotion({ id, slug, name }: { id: string; slug: 
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="rounded-full border border-blaze px-5 py-2 text-sm font-medium text-blaze transition-colors hover:bg-blaze hover:text-white"
+            className="rounded-full border border-blaze px-5 py-2 text-sm font-medium text-blaze transition-colors hover:bg-blaze hover:text-onaccent"
           >
             Delete promotion
           </button>
@@ -46,7 +46,7 @@ export default function DeletePromotion({ id, slug, name }: { id: string; slug: 
             <button
               type="submit"
               disabled={!confirmed || pending}
-              className="rounded-full bg-blaze px-5 py-2 text-sm font-medium text-white disabled:opacity-40"
+              className="rounded-full bg-blaze px-5 py-2 text-sm font-medium text-onaccent disabled:opacity-40"
             >
               {pending ? "Deleting…" : "Delete forever"}
             </button>

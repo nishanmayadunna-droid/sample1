@@ -13,8 +13,8 @@ import {
   resolveTheme,
   senderName,
   themeCss,
+  logoText,
   validateBrandForm,
-  wordmark,
   type Brand,
 } from "./brand";
 
@@ -74,7 +74,7 @@ describe("custom accent and overrides", () => {
 describe("themeCss", () => {
   it("emits only validated colours for light and dark", () => {
     const css = themeCss(resolveTheme(DEFAULT_BRAND));
-    expect(css).toContain(":root{");
+    expect(css).toContain(":root:root{");
     expect(css).toContain("prefers-color-scheme: dark");
     expect(css).toContain("--on-accent:#ffffff");
     for (const m of css.matchAll(/#[0-9a-zA-Z]+/g)) expect(m[0]).toMatch(/^#[0-9a-f]{6}$/);
@@ -104,6 +104,7 @@ describe("parseBrandRow", () => {
   });
   it("reads good values", () => {
     const b = parseBrandRow({
+      logo_text: "Ka·de",
       name: "Kade",
       short_name: "Kade",
       theme_id: "forest",
@@ -113,6 +114,7 @@ describe("parseBrandRow", () => {
       logo_path: "1700000000000-logo.png",
     });
     expect(b.name).toBe("Kade");
+    expect(b.logoText).toBe("Ka·de");
     expect(b.themeId).toBe("forest");
     expect(b.themeOverrides).toEqual({ dark: { bg: "#101010" } });
     expect(b.logoPath).toBe("1700000000000-logo.png");
@@ -129,13 +131,15 @@ describe("names", () => {
     expect(senderName(brand({ senderName: "කඩේ" }), { ascii: true })).toBe("Shop");
     expect(senderName(brand({ senderName: "Kade Shop" }), { ascii: true })).toBe("Kade Shop");
   });
-  it("makes a wordmark from the short name", () => {
-    expect(wordmark(brand({ shortName: "Kade" }))).toBe("Kade");
+  it("uses the logo text, or the short name when there is none", () => {
+    expect(logoText(brand({ shortName: "Kade", logoText: "Ka·de" }))).toBe("Ka·de");
+    expect(logoText(brand({ shortName: "Kade", logoText: "  " }))).toBe("Kade");
+    expect(DEFAULT_BRAND.logoText).toBe("North·bound");
   });
 });
 
 describe("validateBrandForm", () => {
-  const base = { name: "Kade", short_name: "Kade", sender_name: "", tagline_si: "", tagline_en: "", seo_title: "Kade", seo_description: "d", theme_id: "northbound", accent: "", font_pair: "northbound" };
+  const base = { name: "Kade", short_name: "Kade", logo_text: "Kade", sender_name: "", tagline_si: "", tagline_en: "", seo_title: "Kade", seo_description: "d", theme_id: "northbound", accent: "", font_pair: "northbound" };
   const form = (o: Record<string, string>) => {
     const fd = new FormData();
     for (const [k, v] of Object.entries({ ...base, ...o })) fd.set(k, v);
@@ -152,6 +156,7 @@ describe("validateBrandForm", () => {
       [{ theme_id: "nope" }, "theme_id"],
       [{ font_pair: "comic" }, "font_pair"],
       [{ short_name: "x".repeat(25) }, "short_name"],
+      [{ logo_text: "x".repeat(31) }, "logo_text"],
     ] as const) {
       const r = validateBrandForm(form(patch));
       expect(r.ok).toBe(false);

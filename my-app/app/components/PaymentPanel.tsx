@@ -177,7 +177,7 @@ export default function PaymentPanel({
             htmlFor="slip-file"
             className={`mt-2 flex cursor-pointer flex-col items-center gap-1 rounded-md border border-dashed border-ink/40 px-4 py-6 text-center transition-colors hover:border-ink hover:bg-bg has-[:focus-visible]:border-ink ${busy ? "pointer-events-none opacity-60" : ""}`}
           >
-            <span className="rounded-full bg-blaze px-5 py-2 text-sm font-medium text-white">
+            <span className="rounded-full bg-blaze px-5 py-2 text-sm font-medium text-onaccent">
               {busy ? <L si="upload වෙමින්…" en="Uploading…" /> : <L si="slip එක තෝරන්න" en="Choose your slip" />}
             </span>
             <span className="font-mono text-xs text-muted">

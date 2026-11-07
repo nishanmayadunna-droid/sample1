@@ -12,7 +12,9 @@ import type { Promotion } from "@/lib/promotions";
 import AccountNav from "./AccountNav";
 import CartStockGuard from "./CartStockGuard";
 import CartSync from "./CartSync";
+import BrandLogo from "./BrandLogo";
 import CategoryMenu from "./CategoryMenu";
+import type { Brand } from "@/lib/brand";
 import L from "./L";
 import LangToggle from "./LangToggle";
 import SearchBox from "./SearchBox";
@@ -20,12 +22,14 @@ import SearchBox from "./SearchBox";
 const navLinkClass = "whitespace-nowrap py-2 transition-colors hover:text-ink";
 
 export default function Header({
+  brand,
   defaultLang,
   bilingual,
   categories,
   products,
   promotions,
 }: {
+  brand: Brand;
   defaultLang: Lang;
   bilingual: boolean;
   categories: Category[];
@@ -45,10 +49,10 @@ export default function Header({
       <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 py-3 sm:px-6">
         <Link
           href="/"
-          className="display shrink-0 text-2xl leading-none tracking-tight"
-          aria-label={tr(lang, "Northbound මුල් පිටුව", "Northbound home")}
+          className="shrink-0"
+          aria-label={tr(lang, `${brand.shortName} මුල් පිටුව`, `${brand.shortName} home`)}
         >
-          North<span className="text-blaze">·</span>bound
+          <BrandLogo brand={brand} />
         </Link>
         <div className="hidden flex-1 sm:block">
           <SearchBox products={products} promotions={promotions} categories={categories} />
@@ -103,7 +107,7 @@ export default function Header({
               <path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L20 8H6.2M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM17 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" />
             </svg>
             {hydrated && totalItems > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-blaze px-1 font-sans text-[0.65rem] font-semibold tracking-normal text-white">
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-blaze px-1 font-sans text-[0.65rem] font-semibold tracking-normal text-onaccent">
                 {totalItems > 99 ? "99+" : totalItems}
               </span>
             )}

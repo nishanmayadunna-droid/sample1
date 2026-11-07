@@ -15,6 +15,7 @@
   --panel: #15231d;
   --panel-ink: #e9e9e2;
   --panel-muted: #9aa79d;
+  --on-accent: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -41,15 +42,16 @@
   --color-panel: var(--panel);
   --color-panelink: var(--panel-ink);
   --color-panelmuted: var(--panel-muted);
-  --font-display: var(--font-anton), var(--font-sinhala-bold);
-  --font-sans: var(--font-geist-sans), var(--font-sinhala);
+  --color-onaccent: var(--on-accent);
+  --font-display: var(--font-display-active, var(--font-anton)), var(--font-sinhala-bold);
+  --font-sans: var(--font-body-active, var(--font-geist-sans)), var(--font-sinhala);
   --font-mono: var(--font-geist-mono), var(--font-sinhala);
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-geist-sans), var(--font-sinhala), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body-active, var(--font-geist-sans)), var(--font-sinhala), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -57,10 +59,10 @@ body {
 /* Display face: condensed poster grotesque, always set in caps. */
 .display {
   /* Anton has no Sinhala glyphs; they come from the bold-only Noto face. */
-  font-family: var(--font-anton), var(--font-sinhala-bold), ui-sans-serif, sans-serif;
+  font-family: var(--font-display-active, var(--font-anton)), var(--font-sinhala-bold), ui-sans-serif, sans-serif;
   font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.005em;
+  text-transform: var(--display-case, uppercase);
+  letter-spacing: var(--display-tracking, 0.005em);
   line-height: 0.92;
 }
 

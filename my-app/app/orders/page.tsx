@@ -28,7 +28,7 @@ export default async function MyOrdersPage() {
           <p className="text-sm text-muted">
             <L si="තවම ඇණවුම් නැත." en="No orders yet." />
           </p>
-          <Link href="/products" className="rounded-full bg-blaze px-6 py-3 font-medium text-white">
+          <Link href="/products" className="rounded-full bg-blaze px-6 py-3 font-medium text-onaccent">
             <L si="සාප්පුව බලන්න" en="Browse the shop" />
           </Link>
         </div>

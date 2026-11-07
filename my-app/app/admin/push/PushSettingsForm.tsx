@@ -88,7 +88,7 @@ export default function PushSettingsForm({ settings }: { settings: PushSettings 
       <button
         type="submit"
         disabled={pending}
-        className="mt-6 rounded-full bg-blaze px-6 py-3 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+        className="mt-6 rounded-full bg-blaze px-6 py-3 font-medium text-onaccent transition-transform hover:-translate-y-0.5 disabled:opacity-60"
       >
         {pending ? "Saving…" : "Save"}
       </button>

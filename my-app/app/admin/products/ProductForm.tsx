@@ -359,7 +359,7 @@ export default function ProductForm({
       <button
         type="submit"
         disabled={pending || uploading}
-        className="mt-6 w-full rounded-full bg-blaze py-4 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+        className="mt-6 w-full rounded-full bg-blaze py-4 font-medium text-onaccent transition-transform hover:-translate-y-0.5 disabled:opacity-60"
       >
         {pending ? "Saving…" : mode === "create" ? "Create product" : "Save changes"}
       </button>

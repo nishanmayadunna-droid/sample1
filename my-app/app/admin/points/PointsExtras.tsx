@@ -20,7 +20,7 @@ const inputClass = "mt-2 w-full rounded-md border border-line bg-bg px-4 py-3 ou
 const smallButton =
   "rounded-md border border-line px-3 py-1.5 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted hover:border-ink hover:text-ink disabled:opacity-40";
 const primaryButton =
-  "mt-4 rounded-full bg-blaze px-6 py-3 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60";
+  "mt-4 rounded-full bg-blaze px-6 py-3 font-medium text-onaccent transition-transform hover:-translate-y-0.5 disabled:opacity-60";
 const colombo = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Colombo", dateStyle: "medium", timeStyle: "short" });
 
 /** A form that posts to an action without React resetting the inputs on an error. */

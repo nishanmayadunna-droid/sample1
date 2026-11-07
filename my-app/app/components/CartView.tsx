@@ -54,7 +54,7 @@ export default function CartView({
         </p>
         <Link
           href="/products"
-          className="rounded-full bg-blaze px-6 py-3 font-medium text-white transition-transform hover:-translate-y-0.5"
+          className="rounded-full bg-blaze px-6 py-3 font-medium text-onaccent transition-transform hover:-translate-y-0.5"
         >
           <L si="සාප්පුව බලන්න" en="Browse the shop" />
         </Link>
@@ -150,7 +150,7 @@ export default function CartView({
         </div>
         <Link
           href="/checkout"
-          className="mt-6 block w-full rounded-full bg-blaze py-4 text-center font-medium text-white transition-transform hover:-translate-y-0.5"
+          className="mt-6 block w-full rounded-full bg-blaze py-4 text-center font-medium text-onaccent transition-transform hover:-translate-y-0.5"
         >
           <L si="Checkout" en="Checkout" />
         </Link>

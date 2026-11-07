@@ -20,7 +20,7 @@ export default async function AdminCategoriesPage() {
         </div>
         <Link
           href="/admin/categories/new"
-          className="rounded-full bg-blaze px-6 py-3 font-medium text-white transition-transform hover:-translate-y-0.5"
+          className="rounded-full bg-blaze px-6 py-3 font-medium text-onaccent transition-transform hover:-translate-y-0.5"
         >
           New category
         </Link>

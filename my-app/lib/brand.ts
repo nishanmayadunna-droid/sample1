@@ -1,8 +1,8 @@
 // The shop's brand: name, logo, colours, fonts. Pure rules, no I/O, safe in client components.
 // Everything an owner may change lives in the `store_brand` row; DEFAULT_BRAND is today's Northbound look.
-import { FONT_PAIRS, PRESETS, type PresetTokens } from "./brand-presets";
+import { FONT_PAIRS, FONT_VARS, PRESETS, type PresetTokens } from "./brand-presets";
 
-export { FONT_PAIRS, PRESETS };
+export { FONT_PAIRS, FONT_VARS, PRESETS };
 export type { PresetTokens };
 
 export const OVERRIDE_KEYS = ["bg", "surface", "text", "muted", "accent", "panel", "panelInk", "panelMuted"] as const;
@@ -16,6 +16,8 @@ export type Theme = { light: ThemeMode; dark: ThemeMode };
 export type Brand = {
   name: string;
   shortName: string;
+  /** Shown as the logo when there is no picture; a · gets the accent colour. */
+  logoText: string;
   senderName: string;
   taglineSi: string;
   taglineEn: string;
@@ -34,6 +36,7 @@ export type Brand = {
 export const DEFAULT_BRAND: Brand = {
   name: "Northbound",
   shortName: "Northbound",
+  logoText: "North·bound",
   senderName: "",
   taglineSi: "Demo සාප්පුවකි. ඉවත දමන්න නොව, දිගු කලක් අඳින්නට.",
   taglineEn: "A demo storefront. Built to be worn out, not thrown out.",
@@ -152,13 +155,15 @@ function modeCss(mode: ThemeMode): string {
 
 /** The CSS text injected in the layout: light on :root, dark under prefers-color-scheme. */
 export function themeCss(theme: Theme): string {
-  return `:root{${modeCss(theme.light)}}@media (prefers-color-scheme: dark){:root{${modeCss(theme.dark)}}}`;
+  // :root:root outranks the stylesheet's :root whichever comes first in the document.
+  return `:root:root{${modeCss(theme.light)}}@media (prefers-color-scheme: dark){:root:root{${modeCss(theme.dark)}}}`;
 }
 
 // Names ---------------------------------------------------------------------------------------
 
-export function wordmark(brand: Brand): string {
-  return brand.shortName || brand.name;
+/** The text shown as the logo when no picture is uploaded. */
+export function logoText(brand: Brand): string {
+  return brand.logoText.trim() || brand.shortName || brand.name;
 }
 
 /** The name used in SMS, email and push. Owner alerts must stay printable ASCII (a Sinhala name costs more per SMS). */
@@ -210,6 +215,7 @@ export function parseBrandRow(input: unknown): Brand {
   return {
     name: required(row.name, 40, d.name),
     shortName: required(row.short_name, 24, d.shortName),
+    logoText: required(row.logo_text, 30, d.logoText),
     senderName: text(row.sender_name, 24, d.senderName),
     taglineSi: text(row.tagline_si, 120, d.taglineSi),
     taglineEn: text(row.tagline_en, 120, d.taglineEn),
@@ -229,6 +235,7 @@ export function parseBrandRow(input: unknown): Brand {
 export type BrandRow = {
   name: string;
   short_name: string;
+  logo_text: string;
   sender_name: string;
   tagline_si: string;
   tagline_en: string;
@@ -252,6 +259,8 @@ export function validateBrandForm(fd: FormData): { ok: true; value: BrandRow } |
   if (name === "" || name.length > 40) errors.push("name");
   const shortName = field(fd, "short_name", 24);
   if (shortName === "" || shortName.length > 24) errors.push("short_name");
+  const logoTextValue = field(fd, "logo_text", 30);
+  if (logoTextValue.length > 30) errors.push("logo_text");
   const senderNameValue = field(fd, "sender_name", 24);
   if (senderNameValue.length > 24) errors.push("sender_name");
   const taglineSi = field(fd, "tagline_si", 120);
@@ -286,6 +295,7 @@ export function validateBrandForm(fd: FormData): { ok: true; value: BrandRow } |
   const value: BrandRow = {
     name,
     short_name: shortName,
+    logo_text: logoTextValue || shortName,
     sender_name: senderNameValue,
     tagline_si: taglineSi,
     tagline_en: taglineEn,
@@ -300,4 +310,9 @@ export function validateBrandForm(fd: FormData): { ok: true; value: BrandRow } |
     resolveTheme({ ...DEFAULT_BRAND, themeId, accent: value.accent, themeOverrides: overrides }),
   );
   return failed.length > 0 ? { ok: false, errors: failed } : { ok: true, value };
+}
+
+/** The public URL of an uploaded brand image (the Supabase URL is public, so this works in client components). */
+export function brandAssetUrl(path: string): string {
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/brand-assets/${path}`;
 }

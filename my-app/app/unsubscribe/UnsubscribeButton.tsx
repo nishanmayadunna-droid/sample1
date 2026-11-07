@@ -38,7 +38,7 @@ export default function UnsubscribeButton({ token }: { token: string }) {
             }
           })
         }
-        className="rounded-full bg-blaze px-6 py-3 font-medium text-white disabled:opacity-60"
+        className="rounded-full bg-blaze px-6 py-3 font-medium text-onaccent disabled:opacity-60"
       >
         <L si="ඉවත් වන්න" en="Unsubscribe" />
       </button>

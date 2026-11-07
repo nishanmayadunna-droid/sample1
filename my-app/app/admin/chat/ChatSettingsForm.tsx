@@ -187,7 +187,7 @@ export default function ChatSettingsForm({
       </fieldset>
 
       <div className="mt-8 flex items-center gap-4">
-        <button type="submit" disabled={pending} className="rounded-full bg-blaze px-6 py-3 font-medium text-white disabled:opacity-60">
+        <button type="submit" disabled={pending} className="rounded-full bg-blaze px-6 py-3 font-medium text-onaccent disabled:opacity-60">
           {pending ? "Saving…" : "Save settings"}
         </button>
         {state.saved && <span role="status" className="text-sm text-muted">Saved.</span>}

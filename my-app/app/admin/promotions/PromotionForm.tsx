@@ -327,7 +327,7 @@ export default function PromotionForm({
       <button
         type="submit"
         disabled={pending || uploading}
-        className="mt-8 rounded-full bg-blaze px-6 py-3 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+        className="mt-8 rounded-full bg-blaze px-6 py-3 font-medium text-onaccent transition-transform hover:-translate-y-0.5 disabled:opacity-60"
       >
         {pending ? "Saving…" : mode === "create" ? "Create promotion" : "Save changes"}
       </button>

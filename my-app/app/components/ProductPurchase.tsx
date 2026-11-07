@@ -119,7 +119,7 @@ export default function ProductPurchase({
           type="button"
           onClick={handleAdd}
           disabled={!canAdd}
-          className="rounded-full bg-blaze px-6 py-4 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+          className="rounded-full bg-blaze px-6 py-4 font-medium text-onaccent transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
         >
           {soldOutEverywhere ? <L si="අවසන්" en="Sold out" /> : <L si="කරත්තයට එක් කරන්න" en="Add to cart" />}
         </button>
@@ -142,7 +142,7 @@ export default function ProductPurchase({
           type="button"
           onClick={handleBarAdd}
           disabled={soldOutEverywhere || (size != null && !canAdd)}
-          className="flex-1 rounded-full bg-blaze px-6 py-3 font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex-1 rounded-full bg-blaze px-6 py-3 font-medium text-onaccent disabled:cursor-not-allowed disabled:opacity-40"
         >
           {soldOutEverywhere ? (
             <L si="අවසන්" en="Sold out" />

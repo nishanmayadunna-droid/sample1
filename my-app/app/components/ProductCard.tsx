@@ -51,7 +51,7 @@ export default function ProductCard({
         </Link>
         {pricing.discountPercent != null && (
           <span className="pointer-events-none absolute left-2 top-2 flex flex-col items-start gap-1">
-            <span className="rounded bg-blaze px-1.5 py-0.5 font-mono text-[0.65rem] font-semibold text-white">
+            <span className="rounded bg-blaze px-1.5 py-0.5 font-mono text-[0.65rem] font-semibold text-onaccent">
               −{pricing.discountPercent}%
             </span>
             {pricing.promotion && (

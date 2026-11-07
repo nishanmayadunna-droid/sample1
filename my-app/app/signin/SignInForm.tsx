@@ -32,7 +32,7 @@ async function passwordSignIn(
 const inputClass =
   "mt-2 w-full rounded-md border border-line bg-bg px-4 py-3 outline-none focus:border-ink";
 const submitClass =
-  "mt-6 w-full rounded-full bg-blaze py-4 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60";
+  "mt-6 w-full rounded-full bg-blaze py-4 font-medium text-onaccent transition-transform hover:-translate-y-0.5 disabled:opacity-60";
 
 function Field({
   label,

@@ -175,7 +175,7 @@ export default function PushToggle({
           type="button"
           onClick={enable}
           disabled={pending || status === "denied"}
-          className="rounded-full bg-blaze px-6 py-3 font-medium text-white transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+          className="rounded-full bg-blaze px-6 py-3 font-medium text-onaccent transition-transform hover:-translate-y-0.5 disabled:opacity-60"
         >
           <L si="මෙම උපාංගයේ දැනුම්දීම් සක්‍රිය කරන්න" en="Enable alerts on this device" />
         </button>

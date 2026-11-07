@@ -236,7 +236,7 @@ async function AwaitingAdvanceView() {
                         : "no expiry"}
                   </span>
                   {stale && (
-                    <span className="rounded bg-blaze px-1.5 py-0.5 font-mono text-[0.65rem] uppercase text-white">
+                    <span className="rounded bg-blaze px-1.5 py-0.5 font-mono text-[0.65rem] uppercase text-onaccent">
                       stale
                     </span>
                   )}
