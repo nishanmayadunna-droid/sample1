@@ -6,7 +6,7 @@
 // FCM HTTP v1: https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages
 import { createSign } from "node:crypto";
 import { buildMessage, type MessageData, type NotificationEvent } from "./notifications";
-import { buildOwnerMessage, OWNER_ALERT_EVENTS, type OwnerAlertEvent, type OwnerMessageData } from "./owner-alerts";
+import { buildOwnerMessage, ownerBrandName, OWNER_ALERT_EVENTS, type OwnerAlertEvent, type OwnerMessageData } from "./owner-alerts";
 import type { Lang } from "./i18n";
 
 export const PUSH_OWNER_EVENTS = OWNER_ALERT_EVENTS;
@@ -98,11 +98,15 @@ function clip(text: string, max: number): string {
   return chars.length <= max ? text : `${chars.slice(0, max - 1).join("").trimEnd()}…`;
 }
 
-const PREFIX = /^Northbound:\s*/;
+/** The SMS text starts with `<shop name>: `; a push shows its own title, so the name prefix is dropped. */
+function withoutPrefix(text: string, brand: string): string {
+  const prefix = `${brand}:`;
+  return text.startsWith(prefix) ? text.slice(prefix.length).trimStart() : text;
+}
 
 /** The owner's push: the same wording as the owner SMS, with a link into the admin. */
-export function ownerPush(data: OwnerMessageData): PushMessage {
-  const body = clip(buildOwnerMessage(data).replace(PREFIX, ""), MAX_BODY);
+export function ownerPush(data: OwnerMessageData, brandName: string): PushMessage {
+  const body = clip(withoutPrefix(buildOwnerMessage(data, brandName), ownerBrandName(brandName)), MAX_BODY);
   switch (data.event) {
     case "new_order":
       return { title: `New order ${data.orderNumber}`, body, path: `/admin/orders/${data.orderNumber}` };
@@ -116,10 +120,10 @@ export function ownerPush(data: OwnerMessageData): PushMessage {
 }
 
 /** A customer's push: the same wording as their SMS in the shop's language, with a link to their order. */
-export function customerPush(event: NotificationEvent, data: MessageData, lang: Lang): PushMessage {
+export function customerPush(event: NotificationEvent, data: MessageData, lang: Lang, brandName: string): PushMessage {
   return {
     title: lang === "si" ? `ඇණවුම ${data.orderNumber}` : `Order ${data.orderNumber}`,
-    body: clip(buildMessage(event, data, lang).replace(PREFIX, ""), MAX_BODY),
+    body: clip(withoutPrefix(buildMessage(event, data, lang, brandName), brandName), MAX_BODY),
     path: `/orders/${data.orderNumber}`,
   };
 }

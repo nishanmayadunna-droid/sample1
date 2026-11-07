@@ -1,5 +1,5 @@
 // Public read of the shop's brand. Cookie-less client, so pages stay static (ISR).
-// It never throws: any error, or a missing table, gives today's Northbound defaults, so the
+// It never throws: any error, or a missing table, gives the built-in default brand, so the
 // storefront keeps working (and the code can be deployed before the migration).
 import "server-only";
 import { cache } from "react";

@@ -45,7 +45,7 @@ describe("toTextlkRecipient", () => {
 
 describe("otpMessage", () => {
   it("includes the code and validity", () => {
-    expect(otpMessage("123456")).toBe("Northbound code: 123456. Valid 5 minutes.");
+    expect(otpMessage("123456", "Northbound")).toBe("Northbound code: 123456. Valid 5 minutes.");
   });
 });
 

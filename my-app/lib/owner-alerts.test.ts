@@ -51,11 +51,11 @@ describe("parseOwnerAlertSettings", () => {
 describe("buildOwnerMessage", () => {
   it("describes each event and stays within 2 SMS segments", () => {
     const messages = [
-      buildOwnerMessage({ event: "new_order", orderNumber: "NB-10001", total: 1250000, advanceAmount: 0 }),
-      buildOwnerMessage({ event: "new_order", orderNumber: "NB-10001", total: 1250000, advanceAmount: 250000 }),
-      buildOwnerMessage({ event: "new_slip", orderNumber: "NB-10001" }),
-      buildOwnerMessage({ event: "low_stock", productName: "Merino Longsleeve", size: "M", left: 2 }),
-      buildOwnerMessage({ event: "sms_failed", orderNumber: "NB-10001", customerEvent: "shipped" }),
+      buildOwnerMessage({ event: "new_order", orderNumber: "NB-10001", total: 1250000, advanceAmount: 0 }, "Northbound"),
+      buildOwnerMessage({ event: "new_order", orderNumber: "NB-10001", total: 1250000, advanceAmount: 250000 }, "Northbound"),
+      buildOwnerMessage({ event: "new_slip", orderNumber: "NB-10001" }, "Northbound"),
+      buildOwnerMessage({ event: "low_stock", productName: "Merino Longsleeve", size: "M", left: 2 }, "Northbound"),
+      buildOwnerMessage({ event: "sms_failed", orderNumber: "NB-10001", customerEvent: "shipped" }, "Northbound"),
     ];
     for (const message of messages) {
       expect(message.startsWith("Northbound:")).toBe(true);
@@ -65,13 +65,13 @@ describe("buildOwnerMessage", () => {
     expect(messages[1]).toContain("advance");
   });
   it("keeps a Sinhala or very long product name from breaking the message", () => {
-    const sinhala = buildOwnerMessage({ event: "low_stock", productName: "ලස්සන ටී ෂර්ට්", size: "M", left: 1 });
+    const sinhala = buildOwnerMessage({ event: "low_stock", productName: "ලස්සන ටී ෂර්ට්", size: "M", left: 1 }, "Northbound");
     expect(segmentCount(sinhala)).toBe(1);
-    const long = buildOwnerMessage({ event: "low_stock", productName: "x".repeat(300), size: "M", left: 1 });
+    const long = buildOwnerMessage({ event: "low_stock", productName: "x".repeat(300), size: "M", left: 1 }, "Northbound");
     expect(segmentCount(long)).toBeLessThanOrEqual(2);
   });
   it("says sold out at zero", () => {
-    expect(buildOwnerMessage({ event: "low_stock", productName: "Tee", size: "S", left: 0 })).toContain("sold out");
+    expect(buildOwnerMessage({ event: "low_stock", productName: "Tee", size: "S", left: 0 }, "Northbound")).toContain("sold out");
   });
 });
 

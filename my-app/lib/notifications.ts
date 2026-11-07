@@ -48,7 +48,7 @@ function colomboDate(d: Date): string {
   return dateFormatter.format(d);
 }
 
-type Options = { withUrl: boolean; reason?: string };
+type Options = { withUrl: boolean; reason?: string; brand: string };
 
 function compose(event: NotificationEvent, d: MessageData, lang: Lang, o: Options): string {
   const si = lang === "si";
@@ -56,24 +56,24 @@ function compose(event: NotificationEvent, d: MessageData, lang: Lang, o: Option
   switch (event) {
     case "placed":
       return si
-        ? `Northbound: ඔබේ ඇණවුම ${n} ලැබුණා. මුළු මුදල ${formatPrice(d.total)}. ස්තූතියි!`
-        : `Northbound: order ${n} received. Total ${formatPrice(d.total)}. Thank you!`;
+        ? `${o.brand}: ඔබේ ඇණවුම ${n} ලැබුණා. මුළු මුදල ${formatPrice(d.total)}. ස්තූතියි!`
+        : `${o.brand}: order ${n} received. Total ${formatPrice(d.total)}. Thank you!`;
     case "advance_due": {
       const amount = formatPrice(d.advanceAmount ?? 0);
       const date = d.payBefore ? colomboDate(d.payBefore) : null;
       return si
-        ? `Northbound: ඇණවුම ${n} ලැබුණා. අත්තිකාරම ${amount} ${date ? `${date} දිනට පෙර ` : ""}ගෙවා, ඇණවුම් පිටුවේ slip එක upload කරන්න.`
-        : `Northbound: order ${n} placed. Please pay the ${amount} advance${date ? ` before ${date}` : ""} and upload the slip on your order page.`;
+        ? `${o.brand}: ඇණවුම ${n} ලැබුණා. අත්තිකාරම ${amount} ${date ? `${date} දිනට පෙර ` : ""}ගෙවා, ඇණවුම් පිටුවේ slip එක upload කරන්න.`
+        : `${o.brand}: order ${n} placed. Please pay the ${amount} advance${date ? ` before ${date}` : ""} and upload the slip on your order page.`;
     }
     case "slip_approved":
       return si
-        ? `Northbound: ${n} සඳහා අත්තිකාරම තහවුරු විය. ස්තූතියි!`
-        : `Northbound: advance for ${n} confirmed. Thank you!`;
+        ? `${o.brand}: ${n} සඳහා අත්තිකාරම තහවුරු විය. ස්තූතියි!`
+        : `${o.brand}: advance for ${n} confirmed. Thank you!`;
     case "slip_rejected": {
       const reason = o.reason ?? d.rejectReason ?? "";
       return si
-        ? `Northbound: ${n} සඳහා slip එක පිළිගත නොහැකි විය: ${reason}. නැවත upload කරන්න.`
-        : `Northbound: your slip for ${n} was not accepted: ${reason}. Please upload a new one.`;
+        ? `${o.brand}: ${n} සඳහා slip එක පිළිගත නොහැකි විය: ${reason}. නැවත upload කරන්න.`
+        : `${o.brand}: your slip for ${n} was not accepted: ${reason}. Please upload a new one.`;
     }
     case "shipped": {
       const courier = d.courierName?.trim() ?? "";
@@ -81,39 +81,39 @@ function compose(event: NotificationEvent, d: MessageData, lang: Lang, o: Option
       const url = o.withUrl && no && d.trackingUrl ? ` ${d.trackingUrl}` : "";
       if (si) {
         const via = courier ? ` ${courier} මගින්` : "";
-        return `Northbound: ${n}${via} යවා ඇත.${no ? ` Tracking ${no}.` : ""}${url}`;
+        return `${o.brand}: ${n}${via} යවා ඇත.${no ? ` Tracking ${no}.` : ""}${url}`;
       }
       const via = courier ? ` via ${courier}` : "";
       const track = no ? `, tracking ${no}` : "";
-      return `Northbound: order ${n} is on its way${via}${track}.${url}`;
+      return `${o.brand}: order ${n} is on its way${via}${track}.${url}`;
     }
     case "delivered": {
       const p = d.pointsEarned ?? 0;
       if (si) {
-        return `Northbound: ඔබේ ඇණවුම ${n} භාර දෙන ලදී.${p > 0 ? ` ඔබට points ${p} ලැබුණා.` : ""} ස්තූතියි!`;
+        return `${o.brand}: ඔබේ ඇණවුම ${n} භාර දෙන ලදී.${p > 0 ? ` ඔබට points ${p} ලැබුණා.` : ""} ස්තූතියි!`;
       }
-      return `Northbound: order ${n} delivered.${p > 0 ? ` You earned ${p} points.` : ""} Thank you!`;
+      return `${o.brand}: order ${n} delivered.${p > 0 ? ` You earned ${p} points.` : ""} Thank you!`;
     }
     case "cancelled":
       return si
-        ? `Northbound: ඇණවුම ${n} අවලංගු කරන ලදී.${d.systemCancelled ? " අත්තිකාරම නියමිත වේලාවට ලැබුණේ නැත." : ""}`
-        : `Northbound: order ${n} was cancelled.${d.systemCancelled ? " Your advance did not arrive in time." : ""}`;
+        ? `${o.brand}: ඇණවුම ${n} අවලංගු කරන ලදී.${d.systemCancelled ? " අත්තිකාරම නියමිත වේලාවට ලැබුණේ නැත." : ""}`
+        : `${o.brand}: order ${n} was cancelled.${d.systemCancelled ? " Your advance did not arrive in time." : ""}`;
   }
 }
 
 /** SMS text for an event. Over 2 segments: drop the tracking URL, then trim the reject reason. */
-export function buildMessage(event: NotificationEvent, data: MessageData, lang: Lang): string {
-  let text = compose(event, data, lang, { withUrl: true });
+export function buildMessage(event: NotificationEvent, data: MessageData, lang: Lang, brand: string): string {
+  let text = compose(event, data, lang, { withUrl: true, brand });
   if (segmentCount(text) <= MAX_SEGMENTS) return text;
 
-  text = compose(event, data, lang, { withUrl: false });
+  text = compose(event, data, lang, { withUrl: false, brand });
   if (segmentCount(text) <= MAX_SEGMENTS) return text;
 
   if (event === "slip_rejected" && data.rejectReason) {
     const full = Array.from(data.rejectReason);
     for (let len = full.length - 1; len >= 0; len--) {
       const reason = full.slice(0, len).join("").trimEnd() + (lang === "en" ? "..." : "…");
-      text = compose(event, data, lang, { withUrl: false, reason });
+      text = compose(event, data, lang, { withUrl: false, reason, brand });
       if (segmentCount(text) <= MAX_SEGMENTS) return text;
     }
   }

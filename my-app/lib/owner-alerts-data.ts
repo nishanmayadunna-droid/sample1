@@ -20,6 +20,7 @@ import {
   type OwnerAlertSettings,
   type OwnerMessageData,
 } from "@/lib/owner-alerts";
+import { getSenderName } from "@/lib/brand-data";
 
 type SettingsRow = {
   enabled: boolean;
@@ -106,7 +107,7 @@ export async function alertOwner(data: OwnerMessageData, subject: string, day?: 
     let capOk = true;
     if (decision === "send") capOk = await underOwnerCap();
 
-    const body = buildOwnerMessage(data);
+    const body = buildOwnerMessage(data, await getSenderName({ ascii: true }));
     const { data: row, error } = await supabaseAdmin
       .from("owner_alerts")
       .insert({

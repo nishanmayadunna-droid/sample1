@@ -76,26 +76,32 @@ function ascii(text: string, max: number): string {
   return clean.length > max ? `${clean.slice(0, max - 1).trimEnd()}.` : clean;
 }
 
-export function buildOwnerMessage(data: OwnerMessageData): string {
+/** The shop name as it may appear in an owner SMS: printable ASCII only (a Sinhala name would raise the cost), else "Shop". */
+export function ownerBrandName(brandName: string): string {
+  return ascii(brandName, 24) || "Shop";
+}
+
+export function buildOwnerMessage(data: OwnerMessageData, brandName: string): string {
+  const brand = ownerBrandName(brandName);
   switch (data.event) {
     case "new_order": {
       const pay = data.advanceAmount > 0 ? `advance ${formatPrice(data.advanceAmount)} due` : "COD";
-      return `Northbound: new order ${data.orderNumber}, ${formatPrice(data.total)} (${pay}).`;
+      return `${brand}: new order ${data.orderNumber}, ${formatPrice(data.total)} (${pay}).`;
     }
     case "new_slip":
-      return `Northbound: payment slip uploaded for ${data.orderNumber}. Please review it.`;
+      return `${brand}: payment slip uploaded for ${data.orderNumber}. Please review it.`;
     case "low_stock": {
       const name = ascii(data.productName, 40) || "A product";
       const left = data.left <= 0 ? "sold out" : `${data.left} left`;
-      return `Northbound: low stock, ${name} (${ascii(data.size, 12)}): ${left}.`;
+      return `${brand}: low stock, ${name} (${ascii(data.size, 12)}): ${left}.`;
     }
     case "sms_failed":
-      return `Northbound: the ${ascii(data.customerEvent, 20)} SMS for ${data.orderNumber} failed to send. Check Notifications.`;
+      return `${brand}: the ${ascii(data.customerEvent, 20)} SMS for ${data.orderNumber} failed to send. Check Notifications.`;
   }
 }
 
-export function ownerMessageSegments(data: OwnerMessageData): number {
-  return segmentCount(buildOwnerMessage(data));
+export function ownerMessageSegments(data: OwnerMessageData, brandName: string): number {
+  return segmentCount(buildOwnerMessage(data, brandName));
 }
 
 export function shouldSendOwner(input: {

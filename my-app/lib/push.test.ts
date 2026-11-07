@@ -67,21 +67,21 @@ describe("tokens and platforms", () => {
 
 describe("messages", () => {
   it("builds the owner's push with a link into the admin", () => {
-    const order = ownerPush({ event: "new_order", orderNumber: "NB-10001", total: 1250000, advanceAmount: 0 });
+    const order = ownerPush({ event: "new_order", orderNumber: "NB-10001", total: 1250000, advanceAmount: 0 }, "Northbound");
     expect(order.title).toBe("New order NB-10001");
     expect(order.body).not.toContain("Northbound:");
     expect(order.body).toContain("NB-10001");
     expect(order.path).toBe("/admin/orders/NB-10001");
-    expect(ownerPush({ event: "new_slip", orderNumber: "NB-10001" }).path).toBe("/admin/orders/NB-10001");
-    expect(ownerPush({ event: "sms_failed", orderNumber: "NB-10001", customerEvent: "shipped" }).path).toBe("/admin/notifications");
-    expect(ownerPush({ event: "low_stock", productName: "Tee", size: "M", left: 2 }).path).toBe("/admin");
+    expect(ownerPush({ event: "new_slip", orderNumber: "NB-10001" }, "Northbound").path).toBe("/admin/orders/NB-10001");
+    expect(ownerPush({ event: "sms_failed", orderNumber: "NB-10001", customerEvent: "shipped" }, "Northbound").path).toBe("/admin/notifications");
+    expect(ownerPush({ event: "low_stock", productName: "Tee", size: "M", left: 2 }, "Northbound").path).toBe("/admin");
   });
   it("builds a customer's push in the shop language with a link to their order", () => {
-    const en = customerPush("shipped", { orderNumber: "NB-10001", total: 1000, courierName: "Pronto", trackingNumber: "T123456" }, "en");
+    const en = customerPush("shipped", { orderNumber: "NB-10001", total: 1000, courierName: "Pronto", trackingNumber: "T123456" }, "en", "Northbound");
     expect(en.title).toBe("Order NB-10001");
     expect(en.body).toContain("on its way");
     expect(en.path).toBe("/orders/NB-10001");
-    const si = customerPush("delivered", { orderNumber: "NB-10001", total: 1000 }, "si");
+    const si = customerPush("delivered", { orderNumber: "NB-10001", total: 1000 }, "si", "Northbound");
     expect(si.title).toContain("ඇණවුම");
     expect(si.body).not.toContain("Northbound:");
   });
@@ -89,7 +89,7 @@ describe("messages", () => {
     const long = customerPush(
       "slip_rejected",
       { orderNumber: "NB-10001", total: 1000, rejectReason: "x".repeat(400) },
-      "en",
+      "en", "Northbound",
     );
     expect(Array.from(long.body).length).toBeLessThanOrEqual(180);
   });

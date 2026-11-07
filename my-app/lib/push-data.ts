@@ -36,6 +36,7 @@ import {
   type PushPlatform,
   type PushSettings,
 } from "@/lib/push";
+import { getSenderName } from "@/lib/brand-data";
 
 // Credentials -------------------------------------------------------------------------------
 
@@ -352,7 +353,7 @@ export async function pushOwnerAlert(data: OwnerMessageData, subject: string, da
       event: data.event,
       recipient: "admins",
       rows,
-      push: ownerPush(data),
+      push: ownerPush(data, await getSenderName({ ascii: true })),
     });
   } catch (e) {
     console.error("owner push error", e instanceof Error ? e.name : "unknown");
@@ -383,7 +384,7 @@ export async function pushOrderEvent(
       event,
       recipient: maskUserId(order.userId),
       rows,
-      push: customerPush(event, data, store.defaultLang),
+      push: customerPush(event, data, store.defaultLang, await getSenderName()),
     });
   } catch (e) {
     console.error("order push error", e instanceof Error ? e.name : "unknown");

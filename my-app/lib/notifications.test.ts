@@ -22,7 +22,7 @@ const base: MessageData = { orderNumber: "NB-10001", total: 450000 };
 
 describe("buildMessage", () => {
   it("placed shows the order number and total", () => {
-    const m = buildMessage("placed", base, "en");
+    const m = buildMessage("placed", base, "en", "Northbound");
     expect(m).toContain("NB-10001");
     expect(m).toContain(formatPrice(450000));
   });
@@ -34,38 +34,38 @@ describe("buildMessage", () => {
       trackingNumber: "AB1234",
       trackingUrl: "https://t.example/AB1234",
     };
-    const m = buildMessage("shipped", data, "en");
+    const m = buildMessage("shipped", data, "en", "Northbound");
     expect(m).toContain("Pronto");
     expect(m).toContain("AB1234");
     expect(m).toContain("https://t.example/AB1234");
-    expect(buildMessage("shipped", { ...data, trackingUrl: null }, "en")).not.toContain("http");
+    expect(buildMessage("shipped", { ...data, trackingUrl: null }, "en", "Northbound")).not.toContain("http");
   });
 
   it("advance_due includes the amount and the Colombo date only when given", () => {
     const withDate = buildMessage(
       "advance_due",
       { ...base, advanceAmount: 100000, payBefore: new Date("2026-11-12T20:00:00Z") },
-      "en",
+      "en", "Northbound",
     );
     expect(withDate).toContain(formatPrice(100000));
     expect(withDate).toContain("2026-11-13"); // 20:00Z is 01:30 next day in Colombo
-    const without = buildMessage("advance_due", { ...base, advanceAmount: 100000, payBefore: null }, "en");
+    const without = buildMessage("advance_due", { ...base, advanceAmount: 100000, payBefore: null }, "en", "Northbound");
     expect(without).toContain(formatPrice(100000));
     expect(without).not.toContain("before");
   });
 
   it("delivered mentions points only when positive", () => {
-    expect(buildMessage("delivered", { ...base, pointsEarned: 20 }, "en")).toContain("20");
-    expect(buildMessage("delivered", { ...base, pointsEarned: 0 }, "en")).not.toMatch(/point/i);
+    expect(buildMessage("delivered", { ...base, pointsEarned: 20 }, "en", "Northbound")).toContain("20");
+    expect(buildMessage("delivered", { ...base, pointsEarned: 0 }, "en", "Northbound")).not.toMatch(/point/i);
   });
 
   it("cancelled mentions the advance only when system cancelled", () => {
-    expect(buildMessage("cancelled", { ...base, systemCancelled: true }, "en")).toContain("advance");
-    expect(buildMessage("cancelled", base, "en")).not.toContain("advance");
+    expect(buildMessage("cancelled", { ...base, systemCancelled: true }, "en", "Northbound")).toContain("advance");
+    expect(buildMessage("cancelled", base, "en", "Northbound")).not.toContain("advance");
   });
 
   it("slip_rejected includes the reason", () => {
-    expect(buildMessage("slip_rejected", { ...base, rejectReason: "Blurry image" }, "en")).toContain(
+    expect(buildMessage("slip_rejected", { ...base, rejectReason: "Blurry image" }, "en", "Northbound")).toContain(
       "Blurry image",
     );
   });
@@ -85,12 +85,12 @@ describe("buildMessage", () => {
     };
     for (const event of NOTIFICATION_EVENTS) {
       for (const lang of ["en", "si"] as const) {
-        const m = buildMessage(event, worst, lang);
+        const m = buildMessage(event, worst, lang, "Northbound");
         expect(segmentCount(m), `${event}/${lang}: ${m}`).toBeLessThanOrEqual(2);
       }
     }
     // The URL is dropped first, keeping courier and tracking number.
-    const shipped = buildMessage("shipped", worst, "en");
+    const shipped = buildMessage("shipped", worst, "en", "Northbound");
     expect(shipped).toContain("C".repeat(20));
     expect(shipped).toContain("T".repeat(15));
   });
@@ -105,7 +105,7 @@ describe("buildMessage fallbacks", () => {
   };
 
   it("drops a long tracking url in si but keeps courier and tracking number", () => {
-    const m = buildMessage("shipped", ship, "si");
+    const m = buildMessage("shipped", ship, "si", "Northbound");
     expect(m).not.toContain("http");
     expect(segmentCount(m)).toBeLessThanOrEqual(2);
     expect(m).toContain("C".repeat(20));
@@ -113,14 +113,14 @@ describe("buildMessage fallbacks", () => {
   });
 
   it("keeps the url when it fits", () => {
-    const m = buildMessage("shipped", { ...ship, trackingUrl: "https://t.example/AB" }, "en");
+    const m = buildMessage("shipped", { ...ship, trackingUrl: "https://t.example/AB" }, "en", "Northbound");
     expect(m).toContain("https://t.example/AB");
   });
 
   it("truncates a long reject reason with an ellipsis", () => {
     const data: MessageData = { ...base, rejectReason: "r".repeat(400) };
     for (const [lang, ellipsis] of [["en", "..."], ["si", "…"]] as const) {
-      const m = buildMessage("slip_rejected", data, lang);
+      const m = buildMessage("slip_rejected", data, lang, "Northbound");
       expect(segmentCount(m)).toBeLessThanOrEqual(2);
       expect(m).toContain("NB-10001");
       expect(m).toContain("r" + ellipsis);
@@ -212,7 +212,7 @@ describe("shipped message fallbacks", () => {
   for (const lang of ["en", "si"] as const) {
     for (const [name, extra] of cases) {
       it(`${lang} ${name}: short, no blank artefacts`, () => {
-        const t = buildMessage("shipped", { ...base, ...extra }, lang);
+        const t = buildMessage("shipped", { ...base, ...extra }, lang, "Northbound");
         expect(segmentCount(t)).toBeLessThanOrEqual(2);
         expect(t).not.toMatch(/, tracking \.|tracking \.|via \.|via ,|  /);
         expect(t).toContain("NB-10001");
@@ -220,11 +220,11 @@ describe("shipped message fallbacks", () => {
     }
   }
   it("reads naturally in English", () => {
-    expect(buildMessage("shipped", base, "en")).toBe("Northbound: order NB-10001 is on its way.");
-    expect(buildMessage("shipped", { ...base, courierName: "Pronto" }, "en")).toBe(
+    expect(buildMessage("shipped", base, "en", "Northbound")).toBe("Northbound: order NB-10001 is on its way.");
+    expect(buildMessage("shipped", { ...base, courierName: "Pronto" }, "en", "Northbound")).toBe(
       "Northbound: order NB-10001 is on its way via Pronto.",
     );
-    expect(buildMessage("shipped", { ...base, trackingNumber: "AB123" }, "en")).toBe(
+    expect(buildMessage("shipped", { ...base, trackingNumber: "AB123" }, "en", "Northbound")).toBe(
       "Northbound: order NB-10001 is on its way, tracking AB123.",
     );
   });
@@ -261,7 +261,7 @@ describe("isStaleForStatus", () => {
 describe("delivered (si)", () => {
   it("differs from placed", () => {
     const d: MessageData = { orderNumber: "NB-10001", total: 100000 };
-    expect(buildMessage("delivered", d, "si")).toContain("භාර දෙන ලදී");
-    expect(buildMessage("delivered", d, "si")).not.toBe(buildMessage("placed", d, "si"));
+    expect(buildMessage("delivered", d, "si", "Northbound")).toContain("භාර දෙන ලදී");
+    expect(buildMessage("delivered", d, "si", "Northbound")).not.toBe(buildMessage("placed", d, "si", "Northbound"));
   });
 });

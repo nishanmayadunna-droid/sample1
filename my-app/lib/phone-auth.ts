@@ -6,6 +6,7 @@ import { generateCode, hashCode, isValidCodeInput, otpMessage } from "@/lib/otp"
 import { sendSms } from "@/lib/sms";
 import { getSmsSettings, smsAvailable } from "@/lib/sms-data";
 import { createPhoneUser, findUserByPhone, type AppUser } from "@/lib/users";
+import { getSenderName } from "@/lib/brand-data";
 
 export type RequestResult =
   | "sent"
@@ -43,7 +44,7 @@ export async function requestPhoneCode(rawPhone: string): Promise<RequestResult>
   const { senderId } = await getSmsSettings();
   // A failed send keeps its row on purpose: the SMS may still have been
   // delivered and billed, so it must keep counting toward the caps.
-  if (!(await sendSms(phone, otpMessage(code), senderId))) return "send_failed";
+  if (!(await sendSms(phone, otpMessage(code, await getSenderName()), senderId))) return "send_failed";
   return "sent";
 }
 

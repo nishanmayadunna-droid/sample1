@@ -26,6 +26,7 @@ import {
   isStaleForStatus,
   withinSendCaps,
 } from "@/lib/notifications";
+import { getSenderName } from "@/lib/brand-data";
 
 type SettingsRow = { enabled: boolean } & Record<`ev_${NotificationEvent}`, boolean>;
 
@@ -136,7 +137,7 @@ export async function notifyOrder(
     await emailOrderEvent(order, actual, data, opts.slipId);
     // A push to the customer's own devices too, in addition to the SMS and email (never throws).
     await pushOrderEvent(order, actual, data, opts.slipId);
-    const body = buildMessage(actual, data, store.defaultLang);
+    const body = buildMessage(actual, data, store.defaultLang, await getSenderName());
 
     const decision = shouldSend({
       settings,

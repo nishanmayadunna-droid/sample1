@@ -163,6 +163,13 @@ describe("validateBrandForm", () => {
       if (!r.ok) expect(r.errors).toContain(code);
     }
   });
+  it("refuses control characters in the names (they could break a line in an email subject)", () => {
+    for (const field of ["name", "short_name", "sender_name", "logo_text"]) {
+      const r = validateBrandForm(form({ [field]: "KadeShop" }));
+      expect(r.ok, field).toBe(false);
+      if (!r.ok) expect(r.errors).toContain(field);
+    }
+  });
   it("refuses a theme that fails the contrast gate, with codes", () => {
     const r = validateBrandForm(form({ accent: "#f5e960" }));
     expect(r.ok).toBe(false);

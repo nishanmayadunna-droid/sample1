@@ -35,6 +35,7 @@ import {
   type EmailKind,
   type EmailSettings,
 } from "@/lib/email";
+import { getSenderName } from "@/lib/brand-data";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
@@ -200,13 +201,17 @@ export async function emailOrderEvent(
     if (!(await emailAvailable())) return;
     const user = await findUserById(order.userId);
     if (!user?.email) return;
-    const message = orderEmail({
-      orderNumber: order.orderNumber,
-      en: buildMessage(event, data, "en"),
-      si: buildMessage(event, data, "si"),
-      link: absoluteUrl(`/orders/${order.orderNumber}`),
-      event,
-    });
+    const brandName = await getSenderName();
+    const message = orderEmail(
+      {
+        orderNumber: order.orderNumber,
+        en: buildMessage(event, data, "en", brandName),
+        si: buildMessage(event, data, "si", brandName),
+        link: absoluteUrl(`/orders/${order.orderNumber}`),
+        event,
+      },
+      brandName,
+    );
     await sendEmail({
       kind: "order",
       dedupe: `${order.id}:${event}:${dedupeKey(event, slipId)}`,
@@ -262,11 +267,12 @@ async function sendTokenEmail(kind: "reset" | "verify", userId: string, to: stri
   }
   if (data !== "ok") return false;
   const link = tokenLink(absoluteUrl(""), kind, token);
+  const brandName = await getSenderName();
   await sendEmail({
     kind,
     dedupe: hashToken(token).slice(0, 32),
     to,
-    email: kind === "reset" ? resetEmail(link) : verifyEmailMessage(link),
+    email: kind === "reset" ? resetEmail(link, brandName) : verifyEmailMessage(link, brandName),
   });
   return true;
 }
@@ -331,11 +337,12 @@ export async function confirmEmailToken(token: string): Promise<"ok" | "invalid"
 /** Sends the double opt-in email for an address; the caller already stored the token's hash. */
 export async function sendNewsletterConfirmation(email: string, token: string): Promise<void> {
   const link = tokenLink(absoluteUrl(""), "newsletter", token);
+  const brandName = await getSenderName();
   await sendEmail({
     kind: "newsletter_confirm",
     dedupe: hashToken(token).slice(0, 32),
     to: email,
-    email: newsletterConfirmEmail(link),
+    email: newsletterConfirmEmail(link, brandName),
   });
 }
 

@@ -87,7 +87,7 @@ describe("tokenLink", () => {
 describe("templates", () => {
   const link = "https://shop.lk/reset-password?token=" + "a".repeat(64);
   it("are bilingual and carry the link in both text and html", () => {
-    for (const email of [resetEmail(link), verifyEmailMessage(link), newsletterConfirmEmail(link)]) {
+    for (const email of [resetEmail(link, "Northbound"), verifyEmailMessage(link, "Northbound"), newsletterConfirmEmail(link, "Northbound")]) {
       expect(email.subject).toContain("|");
       expect(email.text).toContain(link);
       expect(email.html).toContain(link);
@@ -96,8 +96,8 @@ describe("templates", () => {
     }
   });
   it("say how long the link works", () => {
-    expect(resetEmail(link).text).toContain("1 hour");
-    expect(verifyEmailMessage(link).text).toContain("48 hours");
+    expect(resetEmail(link, "Northbound").text).toContain("1 hour");
+    expect(verifyEmailMessage(link, "Northbound").text).toContain("48 hours");
   });
   it("escape what goes into the html", () => {
     const email = orderEmail({
@@ -106,17 +106,17 @@ describe("templates", () => {
       si: "a & b",
       link: 'https://shop.lk/o?x="1"&y=2',
       event: "shipped",
-    });
+    }, "Northbound");
     expect(email.html).not.toContain("<script>");
     expect(email.html).toContain("&lt;script&gt;");
     expect(email.html).toContain("a &amp; b");
     expect(email.html).toContain("&quot;1&quot;");
   });
   it("order emails name the order and the event", () => {
-    const email = orderEmail({ orderNumber: "NB-10001", en: "Shipped.", si: "යවා ඇත.", link, event: "shipped" });
+    const email = orderEmail({ orderNumber: "NB-10001", en: "Shipped.", si: "යවා ඇත.", link, event: "shipped" }, "Northbound");
     expect(email.subject).toContain("NB-10001");
     expect(email.subject).toContain("on its way");
-    expect(orderEmail({ orderNumber: "NB-1", en: "x", si: "y", link, event: "mystery" }).subject).toContain("update");
+    expect(orderEmail({ orderNumber: "NB-1", en: "x", si: "y", link, event: "mystery" }, "Northbound").subject).toContain("update");
   });
   it("escapeHtml handles the five special characters", () => {
     expect(escapeHtml(`<>&"'`)).toBe("&lt;&gt;&amp;&quot;&#39;");

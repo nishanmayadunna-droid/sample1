@@ -23,8 +23,8 @@ export function toTextlkRecipient(phone: string): string | null {
   return `94${local.slice(1)}`;
 }
 
-export function otpMessage(code: string): string {
-  return `Northbound code: ${code}. Valid 5 minutes.`;
+export function otpMessage(code: string, brandName: string): string {
+  return `${brandName} code: ${code}. Valid 5 minutes.`;
 }
 
 export function isValidCodeInput(raw: string): boolean {

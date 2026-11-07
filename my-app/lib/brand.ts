@@ -260,6 +260,10 @@ export function validateBrandForm(fd: FormData): { ok: true; value: BrandRow } |
   const shortName = field(fd, "short_name", 24);
   if (shortName === "" || shortName.length > 24) errors.push("short_name");
   const logoTextValue = field(fd, "logo_text", 30);
+  // A control character (a line break, say) could break a line in an email subject or an SMS.
+  for (const [code, value] of [["name", name], ["short_name", shortName], ["logo_text", logoTextValue], ["sender_name", field(fd, "sender_name", 24)]] as const) {
+    if (/[ -]/.test(value) && !errors.includes(code)) errors.push(code);
+  }
   if (logoTextValue.length > 30) errors.push("logo_text");
   const senderNameValue = field(fd, "sender_name", 24);
   if (senderNameValue.length > 24) errors.push("sender_name");
