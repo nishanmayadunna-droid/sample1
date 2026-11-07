@@ -10,14 +10,17 @@ import {
   type ChatReply,
   type ParsedChatSettings,
 } from "./chat";
-import { effectivePrice, type Product } from "./products";
+import { effectivePrice, formatPrice, type Product } from "./products";
 import { lowStockLeft } from "./stock";
 
 export type AiMessage = { role: "user" | "assistant"; text: string };
 
 const MAX_MESSAGES = 10;
 const MAX_REPLY_CHARS = 1200;
+/** Earlier assistant turns are our own replies (guided answers or AI text), so they get their own, larger limit. */
+const MAX_ASSISTANT_CHARS = 2000;
 const MAX_TOOL_ROUNDS = 2;
+const MIN_RATING_REVIEWS = 5;
 const MODEL_TIMEOUT_MS = 20_000;
 
 /** The links the model may ask for, by id. It never writes a URL. */
@@ -61,10 +64,14 @@ export function validateChatRequest(body: unknown, s: AiSettings, productIds: Se
     const m = asRow(item);
     if ((m.role !== "user" && m.role !== "assistant") || typeof m.text !== "string") return { ok: false };
     const text = m.text.trim();
-    if (text === "" || text.length > s.maxMessageChars) return { ok: false };
+    // The admin's length limit is for what a customer types; our own earlier replies are longer.
+    const limit = m.role === "user" ? s.maxMessageChars : MAX_ASSISTANT_CHARS;
+    if (text === "" || text.length > limit) return { ok: false };
     messages.push({ role: m.role, text });
   }
-  if (messages[messages.length - 1].role !== "user") return { ok: false };
+  // The conversation must start with the customer (the chat's own greeting is not part of it).
+  while (messages.length > 0 && messages[0].role === "assistant") messages.shift();
+  if (messages.length === 0 || messages[messages.length - 1].role !== "user") return { ok: false };
   const productId = typeof row.productId === "string" && productIds.has(row.productId) ? row.productId : undefined;
   return { ok: true, messages, productId };
 }
@@ -102,15 +109,17 @@ export function sanitizeAiReply(raw: unknown): ChatReply {
   return { text: reply, links, chips: [] };
 }
 
-export type ToolProduct = { id: string; name: string; price: number; rating: number | null; lowStock: boolean };
+/** `price` is the list or sale price in rupees, before any promotion applied at the cart. */
+export type ToolProduct = { id: string; name: string; price: string; rating: number | null; lowStock: boolean };
 
 /** What the product search tool returns to the model: at most 5, with a real low-stock flag. */
 export function toolResultForProducts(products: Product[]): ToolProduct[] {
   return products.slice(0, 5).map((p) => ({
     id: p.id,
     name: p.name,
-    price: effectivePrice(p),
-    rating: p.rating?.average ?? null,
+    price: formatPrice(effectivePrice(p)),
+    // One or two reviews are not social proof, so they are not shown as a rating.
+    rating: p.rating && p.rating.count >= MIN_RATING_REVIEWS ? p.rating.average : null,
     lowStock: p.sizes.some((size) => lowStockLeft(p, size) !== null),
   }));
 }
@@ -145,7 +154,7 @@ export type ModelTools = {
 const TOOL_DEFS = [
   {
     name: "search_products",
-    description: "Find up to 5 products by a short text query. Returns id, name, price in cents, rating and a real lowStock flag.",
+    description: "Find up to 5 products by a short text query. Returns id, name, price in rupees (before any promotion), rating (only with enough reviews) and a real lowStock flag.",
     input_schema: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
   },
   {

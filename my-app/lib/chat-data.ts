@@ -7,7 +7,9 @@ import { bankDetailsComplete, getPaymentSettings } from "./payments-data";
 import { onlinePaymentAvailable } from "./payhere-data";
 import { pushAvailable } from "./push-data";
 import { emailAvailable } from "./email-data";
-import { smsAvailable } from "./sms-data";
+import { getSmsSettings, smsAvailable } from "./sms-data";
+import { smsTokenSet } from "./sms";
+import { getNotificationSettings } from "./notifications-data";
 import { getPointsSettings } from "./points-data";
 import { getAllProducts } from "./catalog";
 import { getRunningPromotions, getStoreSettings } from "./storefront";
@@ -51,11 +53,16 @@ async function readTopics(): Promise<ChatTopic[]> {
 
 /** The facts guided answers may quote. Each one is optional: a failed read just drops it. */
 export async function buildFacts(): Promise<ChatFacts> {
-  const [card, advance, sms, email, push, points, shop, promotions, contact, products] = await Promise.all([
+  const [card, advance, orderSms, smsLogin, email, push, points, shop, promotions, contact, products] = await Promise.all([
     quiet(async () => (await onlinePaymentAvailable()).available),
     quiet(async () => {
       const payment = await getPaymentSettings();
       return payment.mode !== "off" && bankDetailsComplete(payment);
+    }),
+    // Order SMS (Part 13) is its own switch, plus the SMS token and sender id; phone sign-in (Part 9) is a different one.
+    quiet(async () => {
+      const [notifications, sms] = await Promise.all([getNotificationSettings(), getSmsSettings()]);
+      return notifications.enabled && smsTokenSet() && sms.senderId !== "";
     }),
     quiet(smsAvailable),
     quiet(emailAvailable),
@@ -76,7 +83,9 @@ export async function buildFacts(): Promise<ChatFacts> {
     }
   }
 
-  const facts: ChatFacts = { features: { card, advance, sms, email, push, points } };
+  const facts: ChatFacts = {
+    features: { card, advance, sms: orderSms, smsLogin, email, push, points, notify: orderSms || email || push },
+  };
   if (shop) facts.shippingFee = shop.shippingFee;
   const free = freeShippingThreshold(promotions);
   if (free !== null) facts.freeShippingFrom = free;

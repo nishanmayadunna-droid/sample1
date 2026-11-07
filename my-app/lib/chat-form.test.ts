@@ -39,6 +39,20 @@ describe("parseChatSettingsForm", () => {
       expect(r.value.ai_guest_per_minute).toBe(5);
     }
   });
+  it("saves in Guided mode when the greyed-out AI fields are not sent (disabled controls are left out of FormData)", () => {
+    const withoutAi = Object.fromEntries(Object.entries(base).filter(([k]) => !k.startsWith("ai_")));
+    const r = parseChatSettingsForm(form(withoutAi), { aiKeySet: false });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.value.engine).toBe("guided");
+      expect("ai_model" in r.value).toBe(false);
+      expect("ai_guest_per_minute" in r.value).toBe(false);
+    }
+  });
+  it("still validates AI fields that are sent", () => {
+    const r = parseChatSettingsForm(form({ ...base, ai_shop_daily_cap: "0" }), { aiKeySet: false });
+    expect(r.ok).toBe(false);
+  });
   it("refuses the AI engine without a key", () => {
     const r = parseChatSettingsForm(form({ ...base, engine: "ai" }), { aiKeySet: false });
     expect(r).toEqual({ ok: false, errors: ["ai_key_missing"] });

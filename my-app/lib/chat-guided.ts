@@ -225,7 +225,14 @@ export function pageContext(
   if (path.startsWith("/orders/")) return { kind: "order", ...base };
   const product = /^\/products\/([^/]+)$/.exec(path);
   if (product) {
-    const found = products.find((p) => p.id === decodeURIComponent(product[1]));
+    let id = product[1];
+    try {
+      id = decodeURIComponent(id);
+    } catch {
+      // A malformed % sequence is just "not a product we know".
+      return { kind: "other", ...base };
+    }
+    const found = products.find((p) => p.id === id);
     if (found) return { kind: "product", productName: found.name.slice(0, 60), productId: found.id, ...base };
   }
   return { kind: "other", ...base };

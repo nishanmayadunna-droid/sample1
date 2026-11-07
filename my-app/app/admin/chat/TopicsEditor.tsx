@@ -80,7 +80,7 @@ function TopicForm({ topic, onDone }: { topic: ChatTopic | null; onDone: () => v
       </div>
       <p className="mt-2 font-mono text-xs text-muted">
         Facts: {"{shippingFee} {freeShippingFrom} {returnDays} {phone} {whatsapp} {email} {reviewCount} {averageRating}"}. A sentence with a
-        missing fact is left out. Start a line with [card] [advance] [sms] [email] [push] or [points] to show it only while that feature is on.
+        missing fact is left out. Start a line with [card] [advance] [sms] (order SMS) [smsLogin] (phone sign-in) [email] [push] [points] or [notify] (any notification) to show it only while that feature is on.
       </p>
       <label className="mt-4 block text-sm">
         Keywords (commas or new lines; Sinhala, English and Singlish)

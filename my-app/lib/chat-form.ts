@@ -20,14 +20,16 @@ export type ChatSettingsRow = {
   first_message_en: string;
   trust_si: string;
   trust_en: string;
-  ai_model: string;
-  ai_guest_per_minute: number;
-  ai_guest_per_day: number;
-  ai_user_per_minute: number;
-  ai_user_per_day: number;
-  ai_shop_daily_cap: number;
-  ai_max_message_chars: number;
-  ai_max_reply_tokens: number;
+  // The AI fields are absent when the form's AI section was greyed out (disabled controls are not
+  // sent), and then the stored values are kept.
+  ai_model?: string;
+  ai_guest_per_minute?: number;
+  ai_guest_per_day?: number;
+  ai_user_per_minute?: number;
+  ai_user_per_day?: number;
+  ai_shop_daily_cap?: number;
+  ai_max_message_chars?: number;
+  ai_max_reply_tokens?: number;
 };
 
 export type FormResult<T> = { ok: true; value: T } | { ok: false; errors: string[] };
@@ -37,12 +39,14 @@ const text = (fd: FormData, name: string, max: number) => {
   return typeof raw === "string" ? raw.trim().slice(0, max) : "";
 };
 
-const limit = (fd: FormData, name: string, min: number, max: number, errors: string[]): number => {
+/** A whole-number field that may be absent (undefined = keep the stored value); present but invalid is an error. */
+const limit = (fd: FormData, name: string, min: number, max: number, errors: string[]): number | undefined => {
+  if (!fd.has(name)) return undefined;
   const raw = fd.get(name);
   const value = typeof raw === "string" && /^\d{1,6}$/.test(raw.trim()) ? Number(raw.trim()) : NaN;
   if (!Number.isInteger(value) || value < min || value > max) {
     errors.push(name);
-    return min;
+    return undefined;
   }
   return value;
 };
@@ -61,7 +65,7 @@ export function parseChatSettingsForm(fd: FormData, ctx: { aiKeySet: boolean }):
   const accent = accentRaw === "" ? DEFAULT_ACCENT : accentRaw;
   if (!/^#[0-9a-fA-F]{6}$/.test(accent)) errors.push("accent");
 
-  const model = text(fd, "ai_model", 80);
+  const model = fd.has("ai_model") ? text(fd, "ai_model", 80) : undefined;
   if (model === "") errors.push("ai_model");
 
   const value: ChatSettingsRow = {
@@ -85,6 +89,10 @@ export function parseChatSettingsForm(fd: FormData, ctx: { aiKeySet: boolean }):
     ai_max_message_chars: limit(fd, "ai_max_message_chars", 50, 2000, errors),
     ai_max_reply_tokens: limit(fd, "ai_max_reply_tokens", 50, 2000, errors),
   };
+  // Leave out the AI fields that were not sent, so a save never overwrites them with nothing.
+  for (const key of Object.keys(value) as (keyof ChatSettingsRow)[]) {
+    if (value[key] === undefined) delete value[key];
+  }
   return errors.length > 0 ? { ok: false, errors } : { ok: true, value };
 }
 

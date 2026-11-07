@@ -66,7 +66,7 @@ export default function ChatWidget({
     >
       {open && (
         <div className="w-[min(22rem,calc(100vw-2rem))]">
-          <ChatWindow config={config} context={context} onClose={close} />
+          <ChatWindow config={config} context={context} lifted={pathname.startsWith("/products/")} onClose={close} />
         </div>
       )}
       {showBubble && (

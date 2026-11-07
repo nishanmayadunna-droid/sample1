@@ -13,7 +13,7 @@ import {
   visibleTopics,
 } from "./chat-guided";
 
-const off = { card: false, advance: false, sms: false, email: false, push: false, points: false };
+const off = { card: false, advance: false, sms: false, smsLogin: false, email: false, push: false, points: false, notify: false };
 const facts = (over: Partial<ChatFacts> = {}): ChatFacts => ({ features: { ...off }, ...over });
 const config = (over: Partial<ChatConfig> = {}): ChatConfig => ({ ...DEFAULT_CONFIG, enabled: true, ...over });
 
@@ -136,6 +136,24 @@ describe("answerFor", () => {
   });
 });
 
+describe("notifications topic", () => {
+  it("is not offered anywhere while the shop sends no notifications", () => {
+    const cfg = config();
+    expect(greetingFor({ kind: "home" }, cfg).chips.map((c) => c.id)).not.toContain("notifications");
+    expect(replyForTopicId("notifications", cfg)).toBeNull();
+    const tracking = replyForTopicId("tracking", cfg)!;
+    expect(tracking.chips.map((c) => c.id)).not.toContain("notifications");
+    expect(answerFor("notifications please", cfg).text.en).not.toContain("keep checking the site");
+  });
+  it("appears, with only the true channels, once one is on", () => {
+    const cfg = config({ facts: { features: { ...off, notify: true, email: true } } });
+    expect(greetingFor({ kind: "home" }, cfg).chips.map((c) => c.id)).toContain("notifications");
+    const reply = replyForTopicId("notifications", cfg)!;
+    expect(reply.text.en).toContain("You also get an email");
+    expect(reply.text.en).not.toContain("SMS");
+  });
+});
+
 describe("trust notes", () => {
   it("are appended to the trust topic only, when the owner wrote some", () => {
     const withNotes = config({ trust: { si: "අපි 2020 සිට", en: "Trading since 2020" } });
@@ -164,6 +182,10 @@ describe("pageContext and greetingFor", () => {
       productName: "Field Jacket",
       productId: "jacket-1",
     });
+  });
+  it("does not throw on a malformed percent sequence in the path", () => {
+    expect(() => pageContext("/products/%E0%A4%A", new URLSearchParams(), products)).not.toThrow();
+    expect(pageContext("/products/%E0%A4%A", new URLSearchParams(), products).kind).toBe("other");
   });
   it("ignores an unknown product id and cleans utm_source", () => {
     expect(pageContext("/products/ghost", new URLSearchParams(), products).kind).toBe("other");

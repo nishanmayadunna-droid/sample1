@@ -50,7 +50,7 @@ describe("default topics", () => {
     for (const t of DEFAULT_TOPICS) {
       for (const text of [t.answer.si, t.answer.en]) {
         for (const m of text.matchAll(/\{(\w+)\}/g)) expect(KNOWN_PLACEHOLDERS, `${t.id} {${m[1]}}`).toContain(m[1]);
-        for (const m of text.matchAll(/^\[(\w+)\]/gm)) expect(["card", "advance", "sms", "email", "push", "points"]).toContain(m[1]);
+        for (const m of text.matchAll(/^\[(\w+)\]/gm)) expect(["card", "advance", "sms", "smsLogin", "email", "push", "points", "notify"]).toContain(m[1]);
       }
     }
   });
@@ -73,6 +73,20 @@ describe("default topics", () => {
     expect(byId["points"].requires).toBe("points");
     expect(byId["advance"].requires).toBe("advance");
     expect(byId["payment-card"].requires).toBe("card");
+    // Only worth showing when the shop really sends customers some kind of notification.
+    expect(byId["notifications"].requires).toBe("notify");
+  });
+
+  it("keeps the SMS claims on the right switch and the trust answer honest about advances", () => {
+    const byId = Object.fromEntries(DEFAULT_TOPICS.map((t) => [t.id, t]));
+    // Order SMS ([sms]) is not phone sign-in ([smsLogin]).
+    expect(byId["account"].answer.en).toContain("[smsLogin]");
+    expect(byId["account"].answer.en).not.toContain("[sms]");
+    expect(byId["notifications"].answer.en).toContain("[sms]");
+    const trust = byId["trust"].answer.en;
+    expect(trust).not.toMatch(/risk/i);
+    expect(trust).toContain("[advance]");
+    expect(byId["trust"].answer.si).toContain("[advance]");
   });
 });
 

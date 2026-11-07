@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  CHAT_FEATURES,
   DEFAULT_AI_SETTINGS,
   chatVisibleOn,
   isAllowedLink,
@@ -32,6 +33,12 @@ describe("isAllowedLink", () => {
     for (const bad of ["https://evil.test", "//evil.test", "/admin", "javascript:alert(1)", "", "/checkout/../admin"]) {
       expect(isAllowedLink(bad)).toBe(false);
     }
+  });
+});
+
+describe("features", () => {
+  it("separates order SMS, SMS sign-in and any-notification flags", () => {
+    for (const f of ["sms", "smsLogin", "notify"]) expect(CHAT_FEATURES).toContain(f);
   });
 });
 

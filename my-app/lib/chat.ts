@@ -1,8 +1,12 @@
 // Maya chat: shared types and pure parsing. No I/O, safe in client components.
 
 export type Bi = { si: string; en: string };
-export type ChatFeature = "card" | "advance" | "sms" | "email" | "push" | "points";
-export const CHAT_FEATURES: readonly ChatFeature[] = ["card", "advance", "sms", "email", "push", "points"];
+/**
+ * What a topic or sentence can depend on. `sms` is the order-SMS switch, `smsLogin` is phone sign-in,
+ * and `notify` is true when the shop sends customers any notification at all (order SMS, email or push).
+ */
+export type ChatFeature = "card" | "advance" | "sms" | "smsLogin" | "email" | "push" | "points" | "notify";
+export const CHAT_FEATURES: readonly ChatFeature[] = ["card", "advance", "sms", "smsLogin", "email", "push", "points", "notify"];
 
 export type ChatLink = { label: Bi; href: string };
 

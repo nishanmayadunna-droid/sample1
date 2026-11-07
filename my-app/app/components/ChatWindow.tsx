@@ -46,10 +46,13 @@ function LinkButton({ link, onNavigate }: { link: ChatLink; onNavigate: () => vo
 export default function ChatWindow({
   config,
   context,
+  lifted,
   onClose,
 }: {
   config: ChatConfig;
   context: PageContext;
+  /** On phones the launcher sits above the sticky add bar, so the window must be shorter to keep its header on screen. */
+  lifted: boolean;
   onClose: () => void;
 }) {
   const lang = useLang();
@@ -103,11 +106,11 @@ export default function ChatWindow({
     }
   }
 
-  async function ask(typed: string, answer: () => ChatReply) {
+  async function ask(typed: string, answer: () => ChatReply, useAi: boolean) {
     push({ role: "user", text: typed });
     setThinking(true);
     // Any AI failure, limit or timeout silently continues with the guided answer.
-    const reply = (config.engine === "ai" ? await askAi(typed) : null) ?? answer();
+    const reply = (useAi && config.engine === "ai" ? await askAi(typed) : null) ?? answer();
     // A moment of "typing" so a reply does not appear to jump in; purely cosmetic.
     await new Promise((resolve) => setTimeout(resolve, 300));
     setThinking(false);
@@ -119,12 +122,13 @@ export default function ChatWindow({
     const typed = input.trim().slice(0, 300);
     if (typed === "" || thinking) return;
     setInput("");
-    void ask(typed, () => answerFor(typed, config));
+    void ask(typed, () => answerFor(typed, config), true);
   }
 
   function chip(id: string, label: string) {
     if (thinking) return;
-    void ask(label, () => replyForTopicId(id, config) ?? answerFor(label, config));
+    // A tapped question has a vetted, owner-written answer: no model call, no cost.
+    void ask(label, () => replyForTopicId(id, config) ?? answerFor(label, config), false);
   }
 
   const showAiNote = config.engine === "ai";
@@ -133,7 +137,11 @@ export default function ChatWindow({
     <div
       role="dialog"
       aria-label={config.assistantName}
-      className="maya-pop flex max-h-[min(34rem,calc(100dvh-6rem))] w-full flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-xl"
+      className={`maya-pop flex w-full flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-xl ${
+        lifted
+          ? "max-h-[min(34rem,calc(100dvh-13rem))] sm:max-h-[min(34rem,calc(100dvh-9rem))]"
+          : "max-h-[min(34rem,calc(100dvh-9rem))]"
+      }`}
     >
       <div className="flex items-center gap-3 bg-black px-4 py-3 text-white">
         <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white">

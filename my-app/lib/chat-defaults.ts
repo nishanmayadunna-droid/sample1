@@ -94,6 +94,7 @@ const SEEDS: Seed[] = [
     id: "notifications",
     title: { si: "Notifications on කිරීමේ ප්‍රයෝජන", en: "Why turn notifications on" },
     keywords: ["notification", "notifications", "alert", "sms", "email", "push", "දැනුම්", "නොටිෆිකේෂන්", "message", "දැනුම් දීම"],
+    requires: "notify",
     answer: {
       si: "ඇණවුම ගැන දැනගන්න ඔයාට නිතර අඩවියට එන්න ඕන නෑ.\n[sms] ඇණවුම place වුණාම, ship වුණාම, deliver වුණාම SMS එකක් එනවා.\n[email] ඊමේල් එකකුත් එනවා.\n[push] ගිණුම් පිටුවේ notifications on කළොත් ඔයාගේ phone/browser එකටත් දැනුම් එනවා.",
       en: "You don't have to keep checking the site for your order.\n[sms] You get an SMS when your order is placed, shipped and delivered.\n[email] You also get an email.\n[push] Turn on notifications on your account page and they reach your phone or browser too.",
@@ -162,8 +163,8 @@ const SEEDS: Seed[] = [
     title: { si: "ගිණුම / ඇතුළු වීම", en: "Account and sign-in" },
     keywords: ["account", "sign in", "login", "log in", "register", "sign up", "ගිණුම", "ලොගින්", "ඇතුළු වෙන්න", "password"],
     answer: {
-      si: "ඇණවුම් කරන්න ගිණුමකින් ඇතුළු වෙන්න ඕන. Google හෝ ඊමේල් එකෙන් ඇතුළු වෙන්න පුළුවන්.\n[sms] දුරකථන අංකයට එන SMS කේතයෙනුත් ඇතුළු වෙන්න පුළුවන්.",
-      en: "You need to be signed in to place an order. You can sign in with Google or email.\n[sms] You can also sign in with an SMS code sent to your phone number.",
+      si: "ඇණවුම් කරන්න ගිණුමකින් ඇතුළු වෙන්න ඕන. Google හෝ ඊමේල් එකෙන් ඇතුළු වෙන්න පුළුවන්.\n[smsLogin] දුරකථන අංකයට එන SMS කේතයෙනුත් ඇතුළු වෙන්න පුළුවන්.",
+      en: "You need to be signed in to place an order. You can sign in with Google or email.\n[smsLogin] You can also sign in with an SMS code sent to your phone number.",
     },
     links: [link("මගේ ගිණුම", "My account", "/account")],
     followUps: ["checkout", "notifications"],
@@ -173,8 +174,8 @@ const SEEDS: Seed[] = [
     title: { si: "අපිව විශ්වාස කරන්න පුළුවන්ද?", en: "Can I trust this shop?" },
     keywords: ["trust", "safe", "secure", "genuine", "real", "scam", "legit", "විශ්වාස", "ආරක්ෂිතද", "ඇත්තද", "wishwasa"],
     answer: {
-      si: "ඔයාට බඩු ලැබුණාම ගෙවන්න (Cash on delivery) පුළුවන්, ඒ නිසා කලින් සල්ලි දීලා අවදානමක් ගන්න ඕන නෑ.\n{reviewCount}ක ගනුදෙනුකරුවන්ගේ reviews වල සාමාන්‍යය {averageRating} / 5.\nReturn කොන්දේසි Returns පිටුවේ පැහැදිලිව තියෙනවා.\nඅපව ඕන වෙලාවක අමතන්නත් පුළුවන්.",
-      en: "You can pay when your order arrives (cash on delivery), so you don't have to risk money up front.\nOur {reviewCount} customer reviews average {averageRating} out of 5.\nOur return terms are clear on the Returns page.\nYou can contact us any time.",
+      si: "ඔයාට බඩු ලැබුණාම ගෙවන්න (Cash on delivery) පුළුවන්.\n[advance] සමහර ඇණවුම් වලට කුඩා advance එකක් අවශ්‍යයි, ඉතිරිය බඩු ලැබෙන විට ගෙවන්න.\n{reviewCount}ක ගනුදෙනුකරුවන්ගේ reviews වල සාමාන්‍යය {averageRating} / 5.\nReturn කොන්දේසි Returns පිටුවේ පැහැදිලිව තියෙනවා.\nඅපව ඕන වෙලාවක අමතන්නත් පුළුවන්.",
+      en: "You can pay when your order arrives (cash on delivery).\n[advance] Some orders need a small advance, and the rest is paid when it arrives.\nOur {reviewCount} customer reviews average {averageRating} out of 5.\nOur return terms are clear on the Returns page.\nYou can contact us any time.",
     },
     links: [link("අප ගැන", "About us", "/about"), link("Returns", "Returns", "/returns"), link("අප අමතන්න", "Contact", "/contact")],
     followUps: ["payment", "contact"],
@@ -210,6 +211,6 @@ export const DEFAULT_CONFIG: ChatConfig = {
   trust: { si: "", en: "" },
   topics: DEFAULT_TOPICS,
   facts: {
-    features: { card: false, advance: false, sms: false, email: false, push: false, points: false },
+    features: { card: false, advance: false, sms: false, smsLogin: false, email: false, push: false, points: false, notify: false },
   },
 };
