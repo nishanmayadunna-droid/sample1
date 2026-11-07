@@ -151,15 +151,16 @@ export default function PaymentPanel({
 
       {canUpload && (
         <div className="mt-5">
-          <label className="eyebrow block text-muted" htmlFor="slip-file">
-            <L si="slip එක upload කරන්න (JPG, PNG, WebP හෝ PDF, 5MB දක්වා)" en="Upload your slip (JPG, PNG, WebP or PDF, up to 5MB)" />
-          </label>
+          <p className="eyebrow text-muted">
+            <L si="බැංකු slip එක" en="Bank slip" />
+          </p>
           <input
             id="slip-file"
             ref={inputRef}
             type="file"
             accept={SLIP_TYPES.join(",")}
             disabled={busy}
+            className="sr-only"
             onChange={(event) => {
               const file = event.target.files?.[0];
               if (!file) return;
@@ -170,8 +171,19 @@ export default function PaymentPanel({
               }
               void upload(file);
             }}
-            className="mt-2 block text-sm"
           />
+          {/* A big, labelled drop-style button instead of the browser's raw file input. */}
+          <label
+            htmlFor="slip-file"
+            className={`mt-2 flex cursor-pointer flex-col items-center gap-1 rounded-md border border-dashed border-ink/40 px-4 py-6 text-center transition-colors hover:border-ink hover:bg-bg has-[:focus-visible]:border-ink ${busy ? "pointer-events-none opacity-60" : ""}`}
+          >
+            <span className="rounded-full bg-blaze px-5 py-2 text-sm font-medium text-white">
+              {busy ? <L si="upload වෙමින්…" en="Uploading…" /> : <L si="slip එක තෝරන්න" en="Choose your slip" />}
+            </span>
+            <span className="font-mono text-xs text-muted">
+              <L si="JPG, PNG, WebP හෝ PDF · 5MB දක්වා" en="JPG, PNG, WebP or PDF · up to 5MB" />
+            </span>
+          </label>
           {message && (
             <p role="status" className={`mt-2 text-sm ${message === "saved" ? "text-muted" : "text-blaze"}`}>
               {message === "saved" && <L si="ස්තූතියි! ඔබේ slip එක ලැබුණා. අපි පරීක්ෂා කරන්නෙමු." en="Thanks! We've received your slip and will check it." />}

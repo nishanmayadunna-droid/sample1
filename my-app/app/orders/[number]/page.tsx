@@ -107,7 +107,10 @@ export default async function OrderPage({
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6">
-      <p className="eyebrow text-muted">
+      <Link href="/orders" className="font-mono text-xs text-muted underline underline-offset-4 hover:text-ink">
+        ← <L si="මගේ ඇණවුම්" en="My orders" />
+      </Link>
+      <p className="eyebrow mt-4 text-muted">
         <L si="ඔබේ ඇණවුම" en="Your order" />
       </p>
       <h1 className="display mt-2 text-5xl">{order.orderNumber}</h1>

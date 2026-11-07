@@ -84,6 +84,11 @@ export default function Footer({
           </h2>
           <ul className="mt-4 flex flex-col gap-2.5 text-sm">
             <li>
+              <Link href="/orders" className={linkClass}>
+                <L si="මගේ ඇණවුම්" en="My orders" />
+              </Link>
+            </li>
+            <li>
               <Link href="/account" className={linkClass}>
                 <L si="මගේ ගිණුම" en="My account" />
               </Link>

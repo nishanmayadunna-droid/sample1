@@ -29,6 +29,9 @@ export default function AccountNav() {
           Admin
         </Link>
       )}
+      <Link href="/orders" className={linkClass}>
+        <L si="මගේ ඇණවුම්" en="My orders" />
+      </Link>
       <Link href="/account" className={`${linkClass} max-w-32 truncate`}>
         {session.user.name ?? session.user.email ?? <L si="ගිණුම" en="Account" />}
       </Link>
